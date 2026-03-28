@@ -154,7 +154,6 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
   const handleGenerate = () => {
     if (!excalidrawAPI) return;
 
-    // Determine placement offset: below the lowest existing element
     const existingElements = excalidrawAPI.getSceneElements() as Array<{ x: number; y: number; width?: number; height?: number }>;
     let ox = 50, oy = 50;
     if (existingElements.length > 0) {
@@ -170,16 +169,35 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
       case 'cafe': rawElements = generateCafeElements(config, ox, oy); break;
     }
 
-    // Convert raw definitions to proper Excalidraw elements
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const newElements = convertToExcalidrawElements(rawElements as any);
+    // Extract seat positions from chair elements (ellipses with #9ca3af)
+    const chairElements = rawElements.filter(el => el.type === 'ellipse' && el.backgroundColor === '#9ca3af');
+    const zoneId = gid();
+    const zoneType = config.type === 'desk-area' ? 'desk' : config.type === 'meeting' ? 'meeting' : config.type === 'cafe' ? 'cafe' : 'lounge';
+    const newSeats = chairElements.map((c, i) => ({
+      id: `seat-${zoneId}-${i}`,
+      roomId: zoneId,
+      x: (c.x as number) + ((c.width as number) || 22) / 2,
+      y: (c.y as number) + ((c.height as number) || 22) / 2,
+      occupied: false,
+    }));
+    const newZone = {
+      id: zoneId,
+      type: zoneType as 'desk' | 'meeting' | 'lounge' | 'cafe' | 'open',
+      name: config.name,
+      x: ox, y: oy,
+      w: 0, h: 0, // will be computed if needed
+      seats: newSeats,
+    };
 
-    // Merge with existing elements
+    // Save zone/seats to store
+    const store = useOfficeStore.getState();
+    store.setZones([...store.zones, newZone]);
+
+    // Add Excalidraw elements
+    const newElements = convertToExcalidrawElements(rawElements as any);
     excalidrawAPI.updateScene({
       elements: [...excalidrawAPI.getSceneElements(), ...newElements],
     });
-
-    // Scroll to show the new elements
     excalidrawAPI.scrollToContent(newElements, { fitToViewport: true, viewportZoomFactor: 0.8 });
 
     onClose();

@@ -78,43 +78,28 @@ export default function VirtualOffice() {
           setSceneOffset({ x: minX - PADDING, y: minY - PADDING });
         }
 
-        // Auto-generate zones from chair elements and assign users to seats
-        // Chairs = small ellipses with chair color
-        const chairs = nonDeleted.filter((el: any) =>
-          el.type === 'ellipse' && el.backgroundColor === '#9ca3af' && el.width <= 30 && el.height <= 30
-        );
-        if (chairs.length > 0) {
-          const store = useOfficeStore.getState();
-          // Create seats at SVG-pixel coordinates (already offset by sceneOffset)
-          const offset = { x: minX - PADDING, y: minY - PADDING };
-          const seats = chairs.map((c: any, i: number) => ({
-            id: `seat-${i}`,
-            roomId: '',
-            x: c.x + c.width / 2 - offset.x,
-            y: c.y + c.height / 2 - offset.y,
-            occupied: false as boolean,
-            occupiedBy: undefined as string | undefined,
+        // Convert stored seat Excalidraw coords to SVG pixel coords
+        const store = useOfficeStore.getState();
+        const offset = { x: minX - PADDING, y: minY - PADDING };
+        if (store.zones.length > 0) {
+          const convertedZones = store.zones.map(zone => ({
+            ...zone,
+            seats: zone.seats.map(seat => ({
+              ...seat,
+              // Convert from Excalidraw coords to SVG pixel coords
+              x: seat.x - offset.x,
+              y: seat.y - offset.y,
+            })),
           }));
-
-          // Assign mock users to seats
-          const users = store.users;
-          users.forEach((u, idx) => {
-            if (idx < seats.length) {
-              seats[idx].occupied = true;
-              seats[idx].occupiedBy = u.id;
-            }
-          });
-
-          // Update user positions to their seat's SVG coordinates
-          const updatedUsers = users.map((u, idx) => {
-            if (idx < seats.length) {
-              return { ...u, position: { x: seats[idx].x, y: seats[idx].y } };
+          // Update user positions to match their seat's SVG coords
+          const updatedUsers = store.users.map(u => {
+            for (const zone of convertedZones) {
+              const seat = zone.seats.find(s => s.occupiedBy === u.id);
+              if (seat) return { ...u, position: { x: seat.x, y: seat.y } };
             }
             return u;
           });
-
-          const zones = [{ id: 'auto-all', type: 'desk' as const, name: 'オフィス', x: 0, y: 0, w: svgSize.width, h: svgSize.height, seats }];
-          useOfficeStore.setState({ zones, users: updatedUsers });
+          useOfficeStore.setState({ zones: convertedZones, users: updatedUsers });
         }
 
         const serializer = new XMLSerializer();
