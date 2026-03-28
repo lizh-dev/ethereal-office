@@ -192,8 +192,10 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
           seats: sortedChairs.map((c: any, i: number) => ({
             id: `seat-${i}`,
             roomId: 'office',
-            x: c.x + c.width / 2,
-            y: c.y + c.height / 2,
+            x: c.x,
+            y: c.y,
+            w: c.width,
+            h: c.height,
             occupied: false,
           })),
         }];
@@ -218,10 +220,16 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
     return loadFromLocalStorage() ?? getDefaultInitialData();
   }, []);
 
-  // Debounced save to localStorage
+  const setExcalidrawAppState = useOfficeStore((s) => s.setExcalidrawAppState);
+
+  // onChange: update appState in store (real-time) + debounced save to localStorage
   const handleChange = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (elements: readonly any[], appState: any) => {
+      // Real-time appState update for avatar overlay positioning
+      setExcalidrawAppState(appState);
+
+      // Debounced localStorage save
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         try {
@@ -230,12 +238,10 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
             STORAGE_KEY,
             JSON.stringify({ elements, appState: cleanAppState }),
           );
-        } catch {
-          // localStorage full or unavailable — silently ignore
-        }
+        } catch {}
       }, DEBOUNCE_MS);
     },
-    [],
+    [setExcalidrawAppState],
   );
 
   // Cleanup timer on unmount

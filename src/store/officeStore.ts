@@ -28,6 +28,8 @@ interface OfficeState {
   chatMessages: ChatMessage[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   excalidrawAPI: any | null;
+  excalidrawAppState: any | null;
+  setExcalidrawAppState: (state: any) => void;
 
   // Seat/Zone system
   zones: Zone[];
@@ -97,6 +99,8 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   showAvatarSelector: false,
   chatMessages: [],
   excalidrawAPI: null,
+  excalidrawAppState: null,
+  setExcalidrawAppState: (state) => set({ excalidrawAppState: state }),
 
   // Seat/Zone system
   zones: defaultZones,

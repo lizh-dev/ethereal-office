@@ -20,11 +20,10 @@ function sceneToScreen(sceneX: number, sceneY: number, appState: any): { x: numb
   const zoom = appState.zoom?.value || 1;
   const scrollX = appState.scrollX || 0;
   const scrollY = appState.scrollY || 0;
-  const offsetLeft = appState.offsetLeft || 0;
-  const offsetTop = appState.offsetTop || 0;
+  // Do NOT add offsetLeft/offsetTop — the overlay div is already positioned at the same origin as Excalidraw
   return {
-    x: (sceneX + scrollX) * zoom + offsetLeft,
-    y: (sceneY + scrollY) * zoom + offsetTop,
+    x: (sceneX + scrollX) * zoom,
+    y: (sceneY + scrollY) * zoom,
   };
 }
 
@@ -38,20 +37,8 @@ export default function FloorCanvas() {
   const moveCurrentUser = useOfficeStore((s) => s.moveCurrentUser);
   const isViewMode = editorMode !== 'edit';
 
-  // Track appState for coordinate conversion
-  const [appState, setAppState] = useState<any>(null);
-
-  // Poll appState from Excalidraw for avatar positioning
-  useEffect(() => {
-    if (!excalidrawAPI || !isViewMode) return;
-    const interval = setInterval(() => {
-      try {
-        const state = excalidrawAPI.getAppState();
-        setAppState(state);
-      } catch {}
-    }, 100);
-    return () => clearInterval(interval);
-  }, [excalidrawAPI, isViewMode]);
+  // appState from Excalidraw onChange (real-time, no polling)
+  const appState = useOfficeStore((s) => s.excalidrawAppState);
 
   const zones = useOfficeStore((s) => s.zones);
   const sitAt = useOfficeStore((s) => s.sitAt);
@@ -122,7 +109,8 @@ export default function FloorCanvas() {
           style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}
           onClick={handleCanvasClick}
         >
-          {allUsers.map((user) => {
+          {/* Avatars hidden for debug */}
+          {false && allUsers.map((user) => {
             const pos = sceneToScreen(user.position.x, user.position.y, appState);
             const isCurrent = user.id === currentUser.id;
             const zoom = appState.zoom?.value || 1;
@@ -173,6 +161,25 @@ export default function FloorCanvas() {
                   </div>
                 )}
               </div>
+            );
+          })}
+
+          {/* DEBUG: Red dots at seat positions to verify alignment */}
+          {zones.flatMap(z => z.seats).map((seat: any, i) => {
+            const zoom = appState.zoom?.value || 1;
+            const sw = (seat.w || 22) * zoom;
+            const sh = (seat.h || 22) * zoom;
+            const pos = sceneToScreen(seat.x, seat.y, appState);
+            return (
+              <div key={`debug-${i}`} style={{
+                position: 'absolute',
+                left: pos.x, top: pos.y,
+                width: sw, height: sh, borderRadius: '50%',
+                background: 'rgba(255,0,0,0.2)',
+                border: '2px solid rgba(255,0,0,0.8)',
+                zIndex: 999,
+                pointerEvents: 'none',
+              }} />
             );
           })}
         </div>
