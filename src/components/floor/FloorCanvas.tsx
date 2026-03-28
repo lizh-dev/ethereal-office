@@ -137,6 +137,16 @@ export default function FloorCanvas() {
     return () => window.removeEventListener('resize', update);
   }, []);
 
+  const chatMessages = useOfficeStore((s) => s.chatMessages);
+  const sendMessage = useOfficeStore((s) => s.sendMessage);
+  const [chatInput, setChatInput] = useState('');
+
+  const handleSend = () => {
+    if (!chatInput.trim()) return;
+    sendMessage(chatInput.trim());
+    setChatInput('');
+  };
+
   const allUsers = [...users, currentUser];
 
   return (
@@ -202,9 +212,46 @@ export default function FloorCanvas() {
                     {user.name.split(' ')[0]}{isCurrent ? ' (You)' : ''}
                   </div>
                 )}
+                {/* Chat bubble */}
+                {chatMessages.filter(m => m.userId === user.id && Date.now() - m.timestamp < 5000).slice(-1).map(m => (
+                  <div key={m.timestamp} style={{
+                    position: 'absolute', bottom: size + 4, left: '50%', transform: 'translateX(-50%)',
+                    background: '#fff', borderRadius: 8, padding: '4px 8px', fontSize: 11,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)', whiteSpace: 'nowrap', maxWidth: 150,
+                    overflow: 'hidden', textOverflow: 'ellipsis', zIndex: 30,
+                    border: '1px solid #e5e5e5',
+                  }}>
+                    {m.text}
+                  </div>
+                ))}
               </div>
             );
           })}
+
+          {/* Chat input */}
+          <div style={{
+            position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 50, pointerEvents: 'auto',
+            display: 'flex', gap: 8, alignItems: 'center',
+          }} onClick={e => e.stopPropagation()}>
+            <input
+              type="text" value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
+              placeholder="メッセージを入力..."
+              style={{
+                width: 280, padding: '8px 14px', borderRadius: 20,
+                border: '1px solid #e5e5e5', fontSize: 13, outline: 'none',
+                background: 'rgba(255,255,255,0.95)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              }}
+            />
+            <button onClick={handleSend} style={{
+              width: 36, height: 36, borderRadius: '50%', border: 'none',
+              background: '#4F46E5', color: '#fff', cursor: 'pointer', fontSize: 16,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(79,70,229,0.3)',
+            }}>↑</button>
+          </div>
 
           {/* Empty seat indicators */}
           {zones.flatMap(z => z.seats).filter(s => !s.occupied).map((seat: any, i) => {
