@@ -5,7 +5,7 @@ import { useOfficeStore } from '@/store/officeStore';
 import type { PresenceStatus } from '@/types';
 
 const WS_URL = 'ws://localhost:3001';
-const RECONNECT_INTERVAL = 3000;
+const RECONNECT_INTERVAL = 10000; // Don't spam reconnects when server is down
 
 interface WsSend {
   move: (x: number, y: number) => void;
@@ -132,7 +132,7 @@ export function useWebSocket(): { send: WsSend; connected: boolean } {
     };
 
     ws.onerror = (err) => {
-      console.error('[WS] Error:', err);
+      // Silently handle - WS server may not be running
       ws.close();
     };
   }, [
