@@ -155,7 +155,12 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
         const chairs = elements.filter((el: any) =>
           el.type === 'ellipse' && !el.isDeleted &&
           el.backgroundColor === '#9ca3af' && el.width <= 30 && el.height <= 30
-        );
+        ).sort((a: any, b: any) => {
+          // Sort top-to-bottom, then left-to-right
+          const dy = a.y - b.y;
+          if (Math.abs(dy) > 10) return dy;
+          return a.x - b.x;
+        });
         if (chairs.length === 0) return;
 
         const zones = [{
