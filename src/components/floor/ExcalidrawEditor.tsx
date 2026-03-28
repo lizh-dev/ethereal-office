@@ -252,7 +252,16 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
   }, []);
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%', height: '100%' }} className={viewMode ? 'excalidraw-view-mode' : ''}>
+      <style>{`
+        .excalidraw-view-mode .excalidraw .App-menu,
+        .excalidraw-view-mode .excalidraw .layer-ui__wrapper__top-right,
+        .excalidraw-view-mode .excalidraw .layer-ui__wrapper__footer-left,
+        .excalidraw-view-mode .excalidraw .App-toolbar-container,
+        .excalidraw-view-mode .excalidraw .HintViewer {
+          display: none !important;
+        }
+      `}</style>
       <Excalidraw
         excalidrawAPI={handleAPI}
         initialData={initialData}
