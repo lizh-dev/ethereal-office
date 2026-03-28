@@ -14,6 +14,11 @@ const STATUS_COLORS: Record<string, string> = {
   online: '#4CAF50', busy: '#F44336', focusing: '#FF9800', offline: '#BDBDBD',
 };
 
+const PROXIMITY_DIST = 120; // scene units
+const ACTION_EMOJI: Record<string, string> = {
+  working: '💻', meeting: '🤝', break: '☕', away: '💤', idle: '',
+};
+
 // Convert Excalidraw scene coords to screen pixel coords
 function sceneToScreen(sceneX: number, sceneY: number, appState: any): { x: number; y: number } {
   if (!appState) return { x: sceneX, y: sceneY };
@@ -137,6 +142,19 @@ export default function FloorCanvas() {
     return () => window.removeEventListener('resize', update);
   }, []);
 
+  const currentAction = useOfficeStore((s) => s.currentAction);
+
+  // Keyboard: Esc = stand up
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && currentSeatId && isViewMode) {
+        standUp();
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [currentSeatId, isViewMode, standUp]);
+
   const chatMessages = useOfficeStore((s) => s.chatMessages);
   const sendMessage = useOfficeStore((s) => s.sendMessage);
   const [chatInput, setChatInput] = useState('');
@@ -162,6 +180,23 @@ export default function FloorCanvas() {
           style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}
           onClick={handleCanvasClick}
         >
+          {/* Proximity lines between nearby users */}
+          <svg style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1 }}>
+            {allUsers.map((a, i) => allUsers.slice(i + 1).map(b => {
+              const dist = Math.hypot(a.position.x - b.position.x, a.position.y - b.position.y);
+              if (dist > PROXIMITY_DIST || a.status === 'offline' || b.status === 'offline') return null;
+              const posA = sceneToScreen(a.position.x, a.position.y, appState);
+              const posB = sceneToScreen(b.position.x, b.position.y, appState);
+              const alpha = (1 - dist / PROXIMITY_DIST) * 0.4;
+              return (
+                <line key={`${a.id}-${b.id}`}
+                  x1={posA.x + 11} y1={posA.y + 11} x2={posB.x + 11} y2={posB.y + 11}
+                  stroke={`rgba(99,102,241,${alpha})`} strokeWidth={1.5} strokeDasharray="4 3"
+                />
+              );
+            }))}
+          </svg>
+
           {allUsers.map((user) => {
             const pos = sceneToScreen(user.position.x, user.position.y, appState);
             const isCurrent = user.id === currentUser.id;
@@ -212,6 +247,17 @@ export default function FloorCanvas() {
                     {user.name.split(' ')[0]}{isCurrent ? ' (You)' : ''}
                   </div>
                 )}
+                {/* Action badge */}
+                {isCurrent && currentAction !== 'idle' && ACTION_EMOJI[currentAction] && (
+                  <div style={{
+                    position: 'absolute', top: -4, right: -4,
+                    fontSize: 12, background: '#fff', borderRadius: '50%',
+                    width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.15)', zIndex: 25,
+                  }}>
+                    {ACTION_EMOJI[currentAction]}
+                  </div>
+                )}
                 {/* Chat bubble */}
                 {chatMessages.filter(m => m.userId === user.id && Date.now() - m.timestamp < 5000).slice(-1).map(m => (
                   <div key={m.timestamp} style={{
@@ -227,6 +273,19 @@ export default function FloorCanvas() {
               </div>
             );
           })}
+
+          {/* Stand up button */}
+          {currentSeatId && (
+            <button onClick={(e) => { e.stopPropagation(); standUp(); }} style={{
+              position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)',
+              zIndex: 50, pointerEvents: 'auto', padding: '6px 16px', borderRadius: 16,
+              border: '1px solid #e5e5e5', background: 'rgba(255,255,255,0.95)', cursor: 'pointer',
+              fontSize: 12, color: '#6B7280', boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}>
+              🚶 立ち上がる（Esc）
+            </button>
+          )}
 
           {/* Chat input */}
           <div style={{
