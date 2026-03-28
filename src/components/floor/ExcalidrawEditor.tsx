@@ -2,7 +2,8 @@
 
 import { Excalidraw, convertToExcalidrawElements } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useOfficeStore } from '@/store/officeStore';
 
 function deskSet(x: number, y: number, gid: string) {
   return [
@@ -51,6 +52,14 @@ function loungeArea(name: string, ox: number, oy: number) {
 }
 
 export default function ExcalidrawEditor() {
+  const setExcalidrawAPI = useOfficeStore((s) => s.setExcalidrawAPI);
+
+  const handleAPI = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (api: any) => { setExcalidrawAPI(api); },
+    [setExcalidrawAPI],
+  );
+
   const initialData = useMemo(() => {
     const raw = [
       ...openSpace('オープンスペース', 3, 4, 25, 50, 50),
@@ -70,6 +79,7 @@ export default function ExcalidrawEditor() {
   return (
     <div style={{ width: '100%', height: '100%' }}>
       <Excalidraw
+        excalidrawAPI={handleAPI}
         initialData={initialData}
         gridModeEnabled={true}
         theme="light"

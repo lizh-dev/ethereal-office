@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import { FloorPlan, User, ViewMode, EditorMode, Camera, Furniture, Room, FurnitureType, RoomType } from '@/types';
 import { defaultFloorPlan, mockUsers } from '@/data/floorPlan';
 
+// LEGACY: The floorPlan/rooms/furniture data below was used by the old Konva/Canvas
+// renderer. It is no longer consumed by the Excalidraw-based canvas but is kept for
+// now to avoid breaking any remaining references. Consider removing once the migration
+// is fully verified.
+
 interface OfficeState {
   floorPlan: FloorPlan;
   users: User[];
@@ -14,6 +19,8 @@ interface OfficeState {
   draggingItem: { type: 'furniture' | 'room'; id: string } | null;
   showGrid: boolean;
   showAvatarSelector: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  excalidrawAPI: any | null;
 
   setViewMode: (mode: ViewMode) => void;
   setEditorMode: (mode: EditorMode) => void;
@@ -34,6 +41,8 @@ interface OfficeState {
   setShowGrid: (show: boolean) => void;
   setShowAvatarSelector: (show: boolean) => void;
   setCurrentUserAvatar: (style: string, seed: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setExcalidrawAPI: (api: any) => void;
   exportFloorPlan: () => string;
   importFloorPlan: (json: string) => void;
 
@@ -67,6 +76,7 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   draggingItem: null,
   showGrid: true,
   showAvatarSelector: false,
+  excalidrawAPI: null,
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setEditorMode: (mode) => set({ editorMode: mode, selectedFurnitureId: null, selectedRoomId: null }),
@@ -143,6 +153,8 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
     set((state) => ({
       currentUser: { ...state.currentUser, avatarStyle: style, avatarSeed: seed },
     })),
+
+  setExcalidrawAPI: (api) => set({ excalidrawAPI: api }),
 
   exportFloorPlan: () => {
     const { floorPlan } = get();
