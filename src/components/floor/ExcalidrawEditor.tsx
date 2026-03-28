@@ -147,8 +147,41 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
       const lib = getFurnitureLibrary();
       api.updateLibrary({ libraryItems: lib.libraryItems, merge: true, openLibraryMenu: false });
 
-      // Initialize seats from default floor plan (only once)
-      setTimeout(() => initializeSeats(), 500);
+      // Initialize seats from ACTUAL rendered elements (not raw data)
+      setTimeout(() => {
+        const elements = api.getSceneElements();
+        if (!elements || elements.length === 0) return;
+        // Find actual chair elements (small ellipses with chair color)
+        const chairs = elements.filter((el: any) =>
+          el.type === 'ellipse' && !el.isDeleted &&
+          el.backgroundColor === '#9ca3af' && el.width <= 30 && el.height <= 30
+        );
+        if (chairs.length === 0) return;
+
+        const zones = [{
+          id: 'office', type: 'desk' as const, name: 'オフィス',
+          x: 0, y: 0, w: 0, h: 0,
+          seats: chairs.map((c: any, i: number) => ({
+            id: `seat-${i}`,
+            roomId: 'office',
+            x: c.x + c.width / 2,
+            y: c.y + c.height / 2,
+            occupied: false,
+          })),
+        }];
+
+        const store = useOfficeStore.getState();
+        const allSeats = zones[0].seats;
+        const updatedUsers = store.users.map((user, idx) => {
+          if (idx < allSeats.length) {
+            allSeats[idx].occupied = true;
+            allSeats[idx].occupiedBy = user.id;
+            return { ...user, position: { x: allSeats[idx].x, y: allSeats[idx].y } };
+          }
+          return user;
+        });
+        useOfficeStore.setState({ zones, users: updatedUsers });
+      }, 800);
     },
     [setExcalidrawAPI],
   );
