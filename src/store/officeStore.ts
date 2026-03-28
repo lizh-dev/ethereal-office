@@ -97,15 +97,15 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   floorPlan: defaultFloorPlan,
   users: [], // Real users come via WebSocket
   currentUser: {
-    id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: `ユーザー${Math.floor(Math.random() * 1000)}`,
+    id: 'pending', // Will be set on client-side mount
+    name: 'ユーザー',
     role: 'メンバー',
     avatarColor: '#4F46E5',
     initials: 'U',
     status: 'online',
     position: { x: 400, y: 200 },
     avatarStyle: 'notionists',
-    avatarSeed: `user-${Math.floor(Math.random() * 100)}`,
+    avatarSeed: 'default',
   },
   viewMode: 'floor',
   editorMode: 'view',

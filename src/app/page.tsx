@@ -19,6 +19,21 @@ export default function Home() {
   const [showSpaceWizard, setShowSpaceWizard] = useState(false);
   const { send, connected } = useWebSocket();
 
+  // Generate unique user ID on client mount (avoids hydration mismatch)
+  useEffect(() => {
+    if (currentUser.id === 'pending') {
+      const num = Math.floor(Math.random() * 1000);
+      useOfficeStore.setState({
+        currentUser: {
+          ...currentUser,
+          id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: `ユーザー${num}`,
+          avatarSeed: `user-${num}`,
+        },
+      });
+    }
+  }, [currentUser]);
+
   // Keep refs to avoid stale closures in subscriptions
   const sendRef = useRef(send);
   sendRef.current = send;
