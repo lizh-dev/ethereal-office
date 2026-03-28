@@ -2,8 +2,12 @@
 
 import { Excalidraw, convertToExcalidrawElements } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
+import { getFurnitureLibrary } from './furnitureLibrary';
+
+const STORAGE_KEY = 'ethereal-office-scene';
+const DEBOUNCE_MS = 1000;
 
 function deskSet(x: number, y: number, gid: string) {
   return [
@@ -51,28 +55,98 @@ function loungeArea(name: string, ox: number, oy: number) {
   ];
 }
 
-export default function ExcalidrawEditor() {
+function getDefaultInitialData() {
+  const raw = [
+    ...openSpace('オープンスペース', 3, 4, 25, 50, 50),
+    ...meetingRoom('会議室 A', 3, 520, 50),
+    ...meetingRoom('会議室 B', 2, 520, 260),
+    ...openSpace('エンジニアリング', 2, 3, 25, 50, 400),
+    ...loungeArea('ラウンジ', 520, 470),
+  ];
+  const elements = convertToExcalidrawElements(raw as any);
+  return {
+    elements,
+    appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
+    scrollToContent: true,
+  };
+}
+
+function loadFromLocalStorage(): { elements: any; appState: any; scrollToContent: boolean } | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    if (parsed && Array.isArray(parsed.elements) && parsed.elements.length > 0) {
+      return {
+        elements: parsed.elements,
+        appState: parsed.appState ?? {},
+        scrollToContent: true,
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+interface ExcalidrawEditorProps {
+  viewMode?: boolean;
+}
+
+export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorProps) {
   const setExcalidrawAPI = useOfficeStore((s) => s.setExcalidrawAPI);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const apiRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleAPI = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (api: any) => { setExcalidrawAPI(api); },
+    (api: any) => {
+      apiRef.current = api;
+      setExcalidrawAPI(api);
+    },
     [setExcalidrawAPI],
   );
 
+  useEffect(() => {
+    const api = apiRef.current;
+    if (!api) return;
+    const lib = getFurnitureLibrary();
+    api.updateLibrary({
+      libraryItems: lib.libraryItems,
+      merge: true,
+      openLibraryMenu: false,
+    });
+  }, [apiRef.current]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const initialData = useMemo(() => {
-    const raw = [
-      ...openSpace('オープンスペース', 3, 4, 25, 50, 50),
-      ...meetingRoom('会議室 A', 3, 520, 50),
-      ...meetingRoom('会議室 B', 2, 520, 260),
-      ...openSpace('エンジニアリング', 2, 3, 25, 50, 400),
-      ...loungeArea('ラウンジ', 520, 470),
-    ];
-    const elements = convertToExcalidrawElements(raw as any);
-    return {
-      elements,
-      appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
-      scrollToContent: true,
+    return loadFromLocalStorage() ?? getDefaultInitialData();
+  }, []);
+
+  // Debounced save to localStorage
+  const handleChange = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (elements: any[], appState: any) => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        try {
+          const { collaborators, ...cleanAppState } = appState;
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ elements, appState: cleanAppState }),
+          );
+        } catch {
+          // localStorage full or unavailable — silently ignore
+        }
+      }, DEBOUNCE_MS);
+    },
+    [],
+  );
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
 
@@ -84,6 +158,8 @@ export default function ExcalidrawEditor() {
         gridModeEnabled={true}
         theme="light"
         langCode="ja-JP"
+        viewModeEnabled={viewMode}
+        onChange={handleChange}
         UIOptions={{
           canvasActions: { loadScene: false, saveToActiveFile: false, toggleTheme: false },
         }}
