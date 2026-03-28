@@ -78,6 +78,45 @@ export default function VirtualOffice() {
           setSceneOffset({ x: minX - PADDING, y: minY - PADDING });
         }
 
+        // Auto-generate zones from chair elements and assign users to seats
+        // Chairs = small ellipses with chair color
+        const chairs = nonDeleted.filter((el: any) =>
+          el.type === 'ellipse' && el.backgroundColor === '#9ca3af' && el.width <= 30 && el.height <= 30
+        );
+        if (chairs.length > 0) {
+          const store = useOfficeStore.getState();
+          // Create seats at SVG-pixel coordinates (already offset by sceneOffset)
+          const offset = { x: minX - PADDING, y: minY - PADDING };
+          const seats = chairs.map((c: any, i: number) => ({
+            id: `seat-${i}`,
+            roomId: '',
+            x: c.x + c.width / 2 - offset.x,
+            y: c.y + c.height / 2 - offset.y,
+            occupied: false as boolean,
+            occupiedBy: undefined as string | undefined,
+          }));
+
+          // Assign mock users to seats
+          const users = store.users;
+          users.forEach((u, idx) => {
+            if (idx < seats.length) {
+              seats[idx].occupied = true;
+              seats[idx].occupiedBy = u.id;
+            }
+          });
+
+          // Update user positions to their seat's SVG coordinates
+          const updatedUsers = users.map((u, idx) => {
+            if (idx < seats.length) {
+              return { ...u, position: { x: seats[idx].x, y: seats[idx].y } };
+            }
+            return u;
+          });
+
+          const zones = [{ id: 'auto-all', type: 'desk' as const, name: 'オフィス', x: 0, y: 0, w: svgSize.width, h: svgSize.height, seats }];
+          useOfficeStore.setState({ zones, users: updatedUsers });
+        }
+
         const serializer = new XMLSerializer();
         const svgString = serializer.serializeToString(svg);
         const encoded = encodeURIComponent(svgString);
@@ -151,12 +190,13 @@ export default function VirtualOffice() {
       if (!container) return;
 
       const rect = container.getBoundingClientRect();
-      const sceneX = (e.clientX - rect.left - pan.x) / zoom + sceneOffset.x;
-      const sceneY = (e.clientY - rect.top - pan.y) / zoom + sceneOffset.y;
+      // Convert screen coords to SVG pixel coords
+      const svgX = (e.clientX - rect.left - pan.x) / zoom;
+      const svgY = (e.clientY - rect.top - pan.y) / zoom;
 
-      moveCurrentUser(sceneX, sceneY);
+      moveCurrentUser(svgX, svgY);
     },
-    [zoom, pan, isPanning, moveCurrentUser, sceneOffset, currentSeatId],
+    [zoom, pan, isPanning, moveCurrentUser, currentSeatId],
   );
 
   // Zoom controls
@@ -228,12 +268,11 @@ export default function VirtualOffice() {
         )}
 
         {/* Seat indicators layer (below avatars, above SVG) */}
-        <div style={{ position: 'absolute', left: -sceneOffset.x, top: -sceneOffset.y, width: '100%', height: '100%' }}>
+        {/* Seat/Avatar layers — positions already in SVG pixel coords */}
+        <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }}>
           <SeatLayer />
         </div>
-
-        {/* Avatar layer: offset by sceneOffset so Excalidraw coords → SVG pixel coords */}
-        <div style={{ position: 'absolute', left: -sceneOffset.x, top: -sceneOffset.y, width: '100%', height: '100%' }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }}>
           <AvatarLayer />
         </div>
       </div>

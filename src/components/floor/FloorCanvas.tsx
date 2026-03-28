@@ -112,10 +112,7 @@ export default function FloorCanvas() {
   const ref = useRef<HTMLDivElement>(null);
   const [h, setH] = useState(600);
   const editorMode = useOfficeStore((s) => s.editorMode);
-  const excalidrawAPI = useOfficeStore((s) => s.excalidrawAPI);
-  const setZones = useOfficeStore((s) => s.setZones);
   const isViewMode = editorMode !== 'edit';
-  const prevModeRef = useRef(editorMode);
 
   useEffect(() => {
     const update = () => { if (ref.current) setH(ref.current.clientHeight); };
@@ -123,22 +120,6 @@ export default function FloorCanvas() {
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);
-
-  // When switching from edit → view, auto-generate zones from Excalidraw elements
-  useEffect(() => {
-    if (prevModeRef.current === 'edit' && editorMode !== 'edit' && excalidrawAPI) {
-      try {
-        const elements = excalidrawAPI.getSceneElements();
-        const zones = autoGenerateZones(elements);
-        if (zones.length > 0) {
-          setZones(zones);
-        }
-      } catch (e) {
-        console.error('Failed to auto-generate zones:', e);
-      }
-    }
-    prevModeRef.current = editorMode;
-  }, [editorMode, excalidrawAPI, setZones]);
 
   return (
     <div ref={ref} style={{ width: '100%', height: '100%', position: 'relative' }}>
