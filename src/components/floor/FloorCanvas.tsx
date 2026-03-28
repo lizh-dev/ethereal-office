@@ -81,17 +81,7 @@ export default function FloorCanvas() {
         const zones = [{ id: 'office', type: 'desk' as const, name: 'オフィス', x: 0, y: 0, w: 0, h: 0,
           seats: sorted.map((c: any, i: number) => ({ id: `seat-${i}`, roomId: 'office', x: c.x, y: c.y, w: c.width, h: c.height, occupied: false, occupiedBy: undefined as string | undefined })),
         }];
-        const store = useOfficeStore.getState();
-        const allSeats = zones[0].seats;
-        const updatedUsers = store.users.map((user, idx) => {
-          if (idx < allSeats.length) {
-            allSeats[idx].occupied = true;
-            allSeats[idx].occupiedBy = user.id;
-            return { ...user, position: { x: allSeats[idx].x, y: allSeats[idx].y } };
-          }
-          return user;
-        });
-        useOfficeStore.setState({ zones, users: updatedUsers });
+        useOfficeStore.setState({ zones });
       }
     }
     prevModeRef.current = editorMode;

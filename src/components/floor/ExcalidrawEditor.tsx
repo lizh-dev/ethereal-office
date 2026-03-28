@@ -202,17 +202,8 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
           })),
         }];
 
-        const store = useOfficeStore.getState();
-        const allSeats = zones[0].seats;
-        const updatedUsers = store.users.map((user, idx) => {
-          if (idx < allSeats.length) {
-            allSeats[idx].occupied = true;
-            allSeats[idx].occupiedBy = user.id;
-            return { ...user, position: { x: allSeats[idx].x, y: allSeats[idx].y } };
-          }
-          return user;
-        });
-        useOfficeStore.setState({ zones, users: updatedUsers });
+        // Just save zones with empty seats — users join via WebSocket
+        useOfficeStore.setState({ zones });
       }, 800);
     },
     [setExcalidrawAPI],

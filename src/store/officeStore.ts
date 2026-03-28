@@ -95,17 +95,17 @@ let roomIdCounter = 100;
 
 export const useOfficeStore = create<OfficeState>((set, get) => ({
   floorPlan: defaultFloorPlan,
-  users: mockUsers,
+  users: [], // Real users come via WebSocket
   currentUser: {
-    id: 'current',
-    name: '斎藤優',
-    role: 'エンジニア',
+    id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: `ユーザー${Math.floor(Math.random() * 1000)}`,
+    role: 'メンバー',
     avatarColor: '#4F46E5',
-    initials: '斎',
+    initials: 'U',
     status: 'online',
-    position: { x: 680, y: 180 },
+    position: { x: 400, y: 200 },
     avatarStyle: 'notionists',
-    avatarSeed: '斎藤優',
+    avatarSeed: `user-${Math.floor(Math.random() * 100)}`,
   },
   viewMode: 'floor',
   editorMode: 'view',
