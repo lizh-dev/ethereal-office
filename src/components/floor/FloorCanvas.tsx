@@ -152,8 +152,7 @@ export default function FloorCanvas() {
           style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}
           onClick={handleCanvasClick}
         >
-          {/* Avatars hidden for debug */}
-          {false && allUsers.map((user) => {
+          {allUsers.map((user) => {
             const pos = sceneToScreen(user.position.x, user.position.y, appState);
             const isCurrent = user.id === currentUser.id;
             const zoom = appState.zoom?.value || 1;
@@ -207,24 +206,6 @@ export default function FloorCanvas() {
             );
           })}
 
-          {/* DEBUG: Red dots at seat positions to verify alignment */}
-          {zones.flatMap(z => z.seats).map((seat: any, i) => {
-            const zoom = appState.zoom?.value || 1;
-            const sw = (seat.w || 22) * zoom;
-            const sh = (seat.h || 22) * zoom;
-            const pos = sceneToScreen(seat.x, seat.y, appState);
-            return (
-              <div key={`debug-${i}`} style={{
-                position: 'absolute',
-                left: pos.x, top: pos.y,
-                width: sw, height: sh, borderRadius: '50%',
-                background: 'rgba(255,0,0,0.2)',
-                border: '2px solid rgba(255,0,0,0.8)',
-                zIndex: 999,
-                pointerEvents: 'none',
-              }} />
-            );
-          })}
         </div>
       )}
     </div>
