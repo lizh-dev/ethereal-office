@@ -104,20 +104,19 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
     (api: any) => {
       apiRef.current = api;
       setExcalidrawAPI(api);
+
+      // Load furniture library as soon as the API is available.
+      // Previously this was in a useEffect dependent on apiRef.current,
+      // which never re-fired because ref mutations don't trigger renders.
+      const lib = getFurnitureLibrary();
+      api.updateLibrary({
+        libraryItems: lib.libraryItems,
+        merge: true,
+        openLibraryMenu: false,
+      });
     },
     [setExcalidrawAPI],
   );
-
-  useEffect(() => {
-    const api = apiRef.current;
-    if (!api) return;
-    const lib = getFurnitureLibrary();
-    api.updateLibrary({
-      libraryItems: lib.libraryItems,
-      merge: true,
-      openLibraryMenu: false,
-    });
-  }, [apiRef.current]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const initialData = useMemo(() => {
     return loadFromLocalStorage() ?? getDefaultInitialData();

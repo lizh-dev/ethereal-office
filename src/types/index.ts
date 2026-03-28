@@ -66,6 +66,28 @@ export interface User {
   avatarSeed?: string;
 }
 
+export interface Seat {
+  id: string;
+  roomId: string;
+  x: number;
+  y: number;
+  occupied: boolean;
+  occupiedBy?: string; // userId
+}
+
+export interface Zone {
+  id: string;
+  type: 'desk' | 'meeting' | 'lounge' | 'cafe' | 'open';
+  name: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  seats: Seat[];
+}
+
+export type UserAction = 'working' | 'meeting' | 'break' | 'away' | 'idle';
+
 export type ViewMode = 'floor' | 'meetings' | 'chat' | 'profile';
 export type EditorMode = 'view' | 'edit';
 

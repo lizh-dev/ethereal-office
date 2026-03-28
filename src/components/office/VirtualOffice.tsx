@@ -4,6 +4,7 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import { exportToSvg } from '@excalidraw/excalidraw';
 import { useOfficeStore } from '@/store/officeStore';
 import AvatarLayer from './AvatarLayer';
+import SeatLayer from './SeatLayer';
 import ChatInput from './ChatInput';
 
 const MIN_ZOOM = 0.3;
@@ -23,6 +24,8 @@ export default function VirtualOffice() {
 
   const excalidrawAPI = useOfficeStore((s) => s.excalidrawAPI);
   const moveCurrentUser = useOfficeStore((s) => s.moveCurrentUser);
+  const currentSeatId = useOfficeStore((s) => s.currentSeatId);
+  const standUp = useOfficeStore((s) => s.standUp);
 
   // Export Excalidraw scene as SVG background
   useEffect(() => {
@@ -122,25 +125,23 @@ export default function VirtualOffice() {
   }, []);
 
   // Click to move avatar (convert screen coords to Excalidraw scene coords)
+  // Only allow free movement when NOT seated
   const handleFloorClick = useCallback(
     (e: React.MouseEvent) => {
       if (isPanning) return;
       if (e.button !== 0 || e.altKey) return;
+      if (currentSeatId) return; // seated users cannot free-move
 
       const container = containerRef.current;
       if (!container) return;
 
       const rect = container.getBoundingClientRect();
-      // Convert screen position to Excalidraw scene coordinates
-      // The transformed layer maps scene coords to screen like:
-      //   screenX = pan.x + (sceneCoord - svgOffset.x) * zoom
-      // So sceneCoord = (screenX - pan.x) / zoom + svgOffset.x
       const sceneX = (e.clientX - rect.left - pan.x) / zoom + svgOffset.x;
       const sceneY = (e.clientY - rect.top - pan.y) / zoom + svgOffset.y;
 
       moveCurrentUser(sceneX, sceneY);
     },
-    [zoom, pan, isPanning, moveCurrentUser, svgOffset],
+    [zoom, pan, isPanning, moveCurrentUser, svgOffset, currentSeatId],
   );
 
   // Zoom controls
@@ -211,12 +212,55 @@ export default function VirtualOffice() {
           </div>
         )}
 
+        {/* Seat indicators layer (below avatars, above SVG) */}
+        <div style={{ position: 'absolute', left: -svgOffset.x, top: -svgOffset.y, width: '100%', height: '100%' }}>
+          <SeatLayer />
+        </div>
+
         {/* Avatar layer renders on top. Offset so avatar positions
             (which are in Excalidraw scene coords) align with the SVG. */}
         <div style={{ position: 'absolute', left: -svgOffset.x, top: -svgOffset.y, width: '100%', height: '100%' }}>
           <AvatarLayer />
         </div>
       </div>
+
+      {/* Stand Up button (shown when seated) */}
+      {currentSeatId && (
+        <button
+          onClick={(e) => { e.stopPropagation(); standUp(); }}
+          style={{
+            position: 'absolute',
+            bottom: 80,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 60,
+            padding: '8px 20px',
+            borderRadius: 20,
+            border: 'none',
+            backgroundColor: '#4F46E5',
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(79,70,229,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            transition: 'transform 0.15s, box-shadow 0.15s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateX(-50%) scale(1.05)';
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(79,70,229,0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+            e.currentTarget.style.boxShadow = '0 4px 14px rgba(79,70,229,0.4)';
+          }}
+        >
+          <span style={{ fontSize: 16 }}>🧍</span>
+          立ち上がる
+        </button>
+      )}
 
       {/* Zoom controls (fixed position in bottom-left) */}
       <div

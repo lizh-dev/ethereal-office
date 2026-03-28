@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
 import RightPanel from '@/components/layout/RightPanel';
 import FloorCanvas from '@/components/floor/FloorCanvas';
 import EditorPanel from '@/components/editor/EditorPanel';
 import AvatarSelector from '@/components/profile/AvatarSelector';
-import SpaceWizard from '@/components/editor/SpaceWizard';
 import { useOfficeStore } from '@/store/officeStore';
+
+const SpaceWizard = dynamic(() => import('@/components/editor/SpaceWizard'), { ssr: false });
 
 export default function Home() {
   const { editorMode, showAvatarSelector } = useOfficeStore();

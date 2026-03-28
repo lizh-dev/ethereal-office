@@ -1,11 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-// Dynamic import to avoid SSR issues (Excalidraw uses browser APIs)
-let _convert: typeof import('@excalidraw/excalidraw').convertToExcalidrawElements | null = null;
-if (typeof window !== 'undefined') {
-  import('@excalidraw/excalidraw').then(mod => { _convert = mod.convertToExcalidrawElements; });
-}
+import { convertToExcalidrawElements } from '@excalidraw/excalidraw';
 import { useOfficeStore } from '@/store/officeStore';
 
 interface SpaceConfig {
@@ -176,8 +172,7 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
 
     // Convert raw definitions to proper Excalidraw elements
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!_convert) { console.error('convertToExcalidrawElements not loaded'); onClose(); return; }
-    const newElements = _convert(rawElements as any);
+    const newElements = convertToExcalidrawElements(rawElements as any);
 
     // Merge with existing elements
     excalidrawAPI.updateScene({

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { FloorPlan, User, ViewMode, EditorMode, Camera, Furniture, Room, FurnitureType, RoomType } from '@/types';
-import { defaultFloorPlan, mockUsers } from '@/data/floorPlan';
+import { FloorPlan, User, ViewMode, EditorMode, Camera, Furniture, Room, FurnitureType, RoomType, Zone, UserAction } from '@/types';
+import { defaultFloorPlan, mockUsers, defaultZones } from '@/data/floorPlan';
 
 // LEGACY: The floorPlan/rooms/furniture data below was used by the old Konva/Canvas
 // renderer. It is no longer consumed by the Excalidraw-based canvas but is kept for
@@ -29,12 +29,22 @@ interface OfficeState {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   excalidrawAPI: any | null;
 
+  // Seat/Zone system
+  zones: Zone[];
+  currentAction: UserAction;
+  currentSeatId: string | null;
+
   setViewMode: (mode: ViewMode) => void;
   setEditorMode: (mode: EditorMode) => void;
   setCamera: (camera: Partial<Camera>) => void;
   moveCurrentUser: (x: number, y: number) => void;
   setCurrentUserStatus: (status: User['status']) => void;
   sendMessage: (text: string) => void;
+
+  // Seat/Zone actions
+  sitAt: (seatId: string) => void;
+  standUp: () => void;
+  setCurrentAction: (action: UserAction) => void;
 
   // Editor actions
   addRoom: (room: Room) => void;
@@ -87,6 +97,11 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   chatMessages: [],
   excalidrawAPI: null,
 
+  // Seat/Zone system
+  zones: defaultZones,
+  currentAction: 'idle',
+  currentSeatId: null,
+
   setViewMode: (mode) => set({ viewMode: mode }),
   setEditorMode: (mode) => set({ editorMode: mode, selectedFurnitureId: null, selectedRoomId: null }),
   setCamera: (camera) => set((state) => ({ camera: { ...state.camera, ...camera } })),
@@ -108,6 +123,77 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
         { userId: state.currentUser.id, text, timestamp: Date.now() },
       ],
     })),
+
+  // Seat/Zone actions
+  sitAt: (seatId) =>
+    set((state) => {
+      // Find the seat and its zone
+      let targetSeat: Zone['seats'][0] | null = null;
+      let targetZone: Zone | null = null;
+      for (const zone of state.zones) {
+        const seat = zone.seats.find((s) => s.id === seatId);
+        if (seat) {
+          targetSeat = seat;
+          targetZone = zone;
+          break;
+        }
+      }
+      if (!targetSeat || !targetZone || targetSeat.occupied) return state;
+
+      // Determine action based on zone type
+      const actionMap: Record<Zone['type'], UserAction> = {
+        desk: 'working',
+        meeting: 'meeting',
+        lounge: 'break',
+        cafe: 'break',
+        open: 'idle',
+      };
+
+      // First vacate current seat if any
+      const zones = state.zones.map((zone) => ({
+        ...zone,
+        seats: zone.seats.map((s) => {
+          if (s.id === state.currentSeatId) {
+            return { ...s, occupied: false, occupiedBy: undefined };
+          }
+          if (s.id === seatId) {
+            return { ...s, occupied: true, occupiedBy: state.currentUser.id };
+          }
+          return s;
+        }),
+      }));
+
+      return {
+        zones,
+        currentSeatId: seatId,
+        currentAction: actionMap[targetZone.type],
+        currentUser: {
+          ...state.currentUser,
+          position: { x: targetSeat.x, y: targetSeat.y },
+          targetPosition: { x: targetSeat.x, y: targetSeat.y },
+        },
+      };
+    }),
+
+  standUp: () =>
+    set((state) => {
+      if (!state.currentSeatId) return state;
+      const zones = state.zones.map((zone) => ({
+        ...zone,
+        seats: zone.seats.map((s) =>
+          s.id === state.currentSeatId
+            ? { ...s, occupied: false, occupiedBy: undefined }
+            : s,
+        ),
+      }));
+      return {
+        zones,
+        currentSeatId: null,
+        currentAction: 'idle',
+      };
+    }),
+
+  setCurrentAction: (action) => set({ currentAction: action }),
 
   addRoom: (room) =>
     set((state) => ({

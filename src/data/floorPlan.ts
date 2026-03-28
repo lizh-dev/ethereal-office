@@ -1,4 +1,4 @@
-import { FloorPlan, User } from '@/types';
+import { FloorPlan, User, Zone } from '@/types';
 
 export const defaultFloorPlan: FloorPlan = {
   id: 'ethereal-default',
@@ -97,3 +97,142 @@ export const activeMeetings = [
 ];
 
 export const liveRooms = new Set(['conference-a', 'war-room', 'brainstorm-1', 'ceo-suite', 'quiet-room']);
+
+// Zones and seats derived from the floor plan furniture positions.
+// Seat x,y coordinates correspond to chair positions in the Excalidraw scene.
+export const defaultZones: Zone[] = [
+  // --- Meeting: 会議室 A (conference-a) ---
+  {
+    id: 'zone-conference-a',
+    type: 'meeting',
+    name: '会議室 A',
+    x: 30, y: 30, w: 250, h: 190,
+    seats: [
+      // Top row chairs (ca-c-t0..2)
+      { id: 'seat-ca-t0', roomId: 'conference-a', x: 106, y: 76, occupied: false },
+      { id: 'seat-ca-t1', roomId: 'conference-a', x: 146, y: 76, occupied: false },
+      { id: 'seat-ca-t2', roomId: 'conference-a', x: 186, y: 76, occupied: false },
+      // Bottom row chairs (ca-c-b0..2)
+      { id: 'seat-ca-b0', roomId: 'conference-a', x: 106, y: 166, occupied: false },
+      { id: 'seat-ca-b1', roomId: 'conference-a', x: 146, y: 166, occupied: false },
+      { id: 'seat-ca-b2', roomId: 'conference-a', x: 186, y: 166, occupied: false },
+    ],
+  },
+  // --- Meeting: 集中ルーム (quiet-room) ---
+  {
+    id: 'zone-quiet-room',
+    type: 'desk',
+    name: '集中ルーム',
+    x: 30, y: 240, w: 160, h: 140,
+    seats: [
+      // qr-c1, qr-c2
+      { id: 'seat-qr-0', roomId: 'quiet-room', x: 81, y: 306, occupied: false },
+      { id: 'seat-qr-1', roomId: 'quiet-room', x: 151, y: 306, occupied: false },
+    ],
+  },
+  // --- Workspace: オープンスペース (open-plan) ---
+  {
+    id: 'zone-open-plan',
+    type: 'desk',
+    name: 'オープンスペース',
+    x: 210, y: 100, w: 440, h: 280,
+    seats: [
+      // Row 0 (y=130 desks): chairs at y=181, x = 266, 366, 466, 566
+      { id: 'seat-op-0', roomId: 'open-plan', x: 266, y: 181, occupied: false },
+      { id: 'seat-op-1', roomId: 'open-plan', x: 366, y: 181, occupied: false },
+      { id: 'seat-op-2', roomId: 'open-plan', x: 466, y: 181, occupied: false },
+      { id: 'seat-op-3', roomId: 'open-plan', x: 566, y: 181, occupied: false },
+      // Row 1 (y=250 desks): chairs at y=301, x = 266, 366, 466, 566
+      { id: 'seat-op-4', roomId: 'open-plan', x: 266, y: 301, occupied: false },
+      { id: 'seat-op-5', roomId: 'open-plan', x: 366, y: 301, occupied: false },
+      { id: 'seat-op-6', roomId: 'open-plan', x: 466, y: 301, occupied: false },
+      { id: 'seat-op-7', roomId: 'open-plan', x: 566, y: 301, occupied: false },
+    ],
+  },
+  // --- Meeting: 役員室 (ceo-suite) ---
+  {
+    id: 'zone-ceo-suite',
+    type: 'meeting',
+    name: '役員室',
+    x: 700, y: 30, w: 200, h: 160,
+    seats: [
+      // ceo-c at 777, 122
+      { id: 'seat-ceo-0', roomId: 'ceo-suite', x: 777, y: 122, occupied: false },
+    ],
+  },
+  // --- Meeting: 戦略ルーム (war-room) ---
+  {
+    id: 'zone-war-room',
+    type: 'meeting',
+    name: '戦略ルーム',
+    x: 700, y: 210, w: 200, h: 170,
+    seats: [
+      // Top row (wr-c-t0..2)
+      { id: 'seat-wr-t0', roomId: 'war-room', x: 766, y: 256, occupied: false },
+      { id: 'seat-wr-t1', roomId: 'war-room', x: 801, y: 256, occupied: false },
+      { id: 'seat-wr-t2', roomId: 'war-room', x: 836, y: 256, occupied: false },
+      // Bottom row (wr-c-b0..2)
+      { id: 'seat-wr-b0', roomId: 'war-room', x: 766, y: 336, occupied: false },
+      { id: 'seat-wr-b1', roomId: 'war-room', x: 801, y: 336, occupied: false },
+      { id: 'seat-wr-b2', roomId: 'war-room', x: 836, y: 336, occupied: false },
+    ],
+  },
+  // --- Lounge: ラウンジ ---
+  {
+    id: 'zone-lounge',
+    type: 'lounge',
+    name: 'ラウンジ',
+    x: 30, y: 420, w: 200, h: 160,
+    seats: [
+      // Sofa 1 seats (l-s1: x=50, y=450, w=90)
+      { id: 'seat-l-s1a', roomId: 'lounge', x: 75, y: 470, occupied: false },
+      { id: 'seat-l-s1b', roomId: 'lounge', x: 115, y: 470, occupied: false },
+      // Sofa 2 seats (l-s2: x=50, y=530, w=90)
+      { id: 'seat-l-s2a', roomId: 'lounge', x: 75, y: 550, occupied: false },
+      { id: 'seat-l-s2b', roomId: 'lounge', x: 115, y: 550, occupied: false },
+    ],
+  },
+  // --- Cafe: カフェスペース (open-kitchen) ---
+  {
+    id: 'zone-cafe',
+    type: 'cafe',
+    name: 'カフェスペース',
+    x: 370, y: 440, w: 280, h: 140,
+    seats: [
+      // ok-c0..3 chairs around the two tables
+      { id: 'seat-ok-0', roomId: 'open-kitchen', x: 401, y: 550, occupied: false },
+      { id: 'seat-ok-1', roomId: 'open-kitchen', x: 426, y: 550, occupied: false },
+      { id: 'seat-ok-2', roomId: 'open-kitchen', x: 511, y: 550, occupied: false },
+      { id: 'seat-ok-3', roomId: 'open-kitchen', x: 536, y: 550, occupied: false },
+    ],
+  },
+  // --- Meeting: ブレスト 1 (brainstorm-1) ---
+  {
+    id: 'zone-brainstorm',
+    type: 'meeting',
+    name: 'ブレスト 1',
+    x: 700, y: 410, w: 200, h: 170,
+    seats: [
+      // Top row (bs-ct0..2)
+      { id: 'seat-bs-t0', roomId: 'brainstorm-1', x: 771, y: 456, occupied: false },
+      { id: 'seat-bs-t1', roomId: 'brainstorm-1', x: 806, y: 456, occupied: false },
+      { id: 'seat-bs-t2', roomId: 'brainstorm-1', x: 841, y: 456, occupied: false },
+      // Bottom row (bs-cb0..2)
+      { id: 'seat-bs-b0', roomId: 'brainstorm-1', x: 771, y: 536, occupied: false },
+      { id: 'seat-bs-b1', roomId: 'brainstorm-1', x: 806, y: 536, occupied: false },
+      { id: 'seat-bs-b2', roomId: 'brainstorm-1', x: 841, y: 536, occupied: false },
+    ],
+  },
+  // --- Workspace: メディアルーム (media-room) ---
+  {
+    id: 'zone-media-room',
+    type: 'desk',
+    name: 'メディアルーム',
+    x: 30, y: 600, w: 200, h: 130,
+    seats: [
+      // mr-c1, mr-c2
+      { id: 'seat-mr-0', roomId: 'media-room', x: 86, y: 676, occupied: false },
+      { id: 'seat-mr-1', roomId: 'media-room', x: 176, y: 676, occupied: false },
+    ],
+  },
+];
