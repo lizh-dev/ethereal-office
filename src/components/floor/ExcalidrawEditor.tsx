@@ -55,20 +55,28 @@ function loungeArea(name: string, ox: number, oy: number) {
   ];
 }
 
+// Default floor plan data (no side effects — seat init happens in handleAPI)
+const DEFAULT_SPACES = [
+  { name: 'オープンスペース', raw: openSpace('オープンスペース', 3, 4, 25, 50, 50), type: 'desk' as const },
+  { name: '会議室 A', raw: meetingRoom('会議室 A', 3, 520, 50), type: 'meeting' as const },
+  { name: '会議室 B', raw: meetingRoom('会議室 B', 2, 520, 260), type: 'meeting' as const },
+  { name: 'エンジニアリング', raw: openSpace('エンジニアリング', 2, 3, 25, 50, 400), type: 'desk' as const },
+  { name: 'ラウンジ', raw: loungeArea('ラウンジ', 520, 470), type: 'lounge' as const },
+];
+
 function getDefaultInitialData() {
-  const spaces = [
-    { name: 'オープンスペース', raw: openSpace('オープンスペース', 3, 4, 25, 50, 50), type: 'desk' as const },
-    { name: '会議室 A', raw: meetingRoom('会議室 A', 3, 520, 50), type: 'meeting' as const },
-    { name: '会議室 B', raw: meetingRoom('会議室 B', 2, 520, 260), type: 'meeting' as const },
-    { name: 'エンジニアリング', raw: openSpace('エンジニアリング', 2, 3, 25, 50, 400), type: 'desk' as const },
-    { name: 'ラウンジ', raw: loungeArea('ラウンジ', 520, 470), type: 'lounge' as const },
-  ];
-
-  const allRaw = spaces.flatMap(s => s.raw);
+  const allRaw = DEFAULT_SPACES.flatMap(s => s.raw);
   const elements = convertToExcalidrawElements(allRaw as any);
+  return {
+    elements,
+    appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
+    scrollToContent: true,
+  };
+}
 
-  // Extract seat data from chair elements and save to store
-  const zones = spaces.map((space, si) => {
+// Initialize seat data from floor plan (called once after API is ready)
+function initializeSeats() {
+  const zones = DEFAULT_SPACES.map((space, si) => {
     const chairs = space.raw.filter((el: any) => el.type === 'ellipse' && el.backgroundColor === '#9ca3af');
     return {
       id: `init-zone-${si}`,
@@ -85,23 +93,20 @@ function getDefaultInitialData() {
     };
   });
 
-  // Auto-assign mock users to seats
   const store = useOfficeStore.getState();
   const allSeats = zones.flatMap(z => z.seats);
-  store.users.forEach((user, idx) => {
+
+  // Assign users to seats and update their positions
+  const updatedUsers = store.users.map((user, idx) => {
     if (idx < allSeats.length) {
       allSeats[idx].occupied = true;
       allSeats[idx].occupiedBy = user.id;
+      return { ...user, position: { x: allSeats[idx].x, y: allSeats[idx].y } };
     }
+    return user;
   });
-  // Save zones to store (will be converted to SVG coords when VirtualOffice renders)
-  useOfficeStore.setState({ zones });
 
-  return {
-    elements,
-    appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
-    scrollToContent: true,
-  };
+  useOfficeStore.setState({ zones, users: updatedUsers });
 }
 
 function loadFromLocalStorage(): { elements: any; appState: any; scrollToContent: boolean } | null {
@@ -138,15 +143,12 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
       apiRef.current = api;
       setExcalidrawAPI(api);
 
-      // Load furniture library as soon as the API is available.
-      // Previously this was in a useEffect dependent on apiRef.current,
-      // which never re-fired because ref mutations don't trigger renders.
+      // Load furniture library
       const lib = getFurnitureLibrary();
-      api.updateLibrary({
-        libraryItems: lib.libraryItems,
-        merge: true,
-        openLibraryMenu: false,
-      });
+      api.updateLibrary({ libraryItems: lib.libraryItems, merge: true, openLibraryMenu: false });
+
+      // Initialize seats from default floor plan (only once)
+      setTimeout(() => initializeSeats(), 500);
     },
     [setExcalidrawAPI],
   );

@@ -1,118 +1,78 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
-import type { Zone, Seat } from '@/types';
+import { getAvatarUrl } from './assets';
 
 const Editor = dynamic(() => import('./ExcalidrawEditor'), {
   ssr: false,
   loading: () => <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}>読み込み中...</div>,
 });
 
-const VirtualOffice = dynamic(() => import('@/components/office/VirtualOffice'), {
-  ssr: false,
-  loading: () => <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', backgroundColor: '#e8e4df' }}>バーチャルオフィスを準備中...</div>,
-});
+const STATUS_COLORS: Record<string, string> = {
+  online: '#4CAF50', busy: '#F44336', focusing: '#FF9800', offline: '#BDBDBD',
+};
 
-// Analyze Excalidraw elements to auto-generate seats
-// Chairs are ellipses with backgroundColor #9ca3af
-// Rooms are large rectangles with backgroundColor #ffffff
-function autoGenerateZones(elements: any[]): Zone[] {
-  if (!elements || elements.length === 0) return [];
-
-  // Find rooms (large white rectangles)
-  const rooms = elements.filter((el: any) =>
-    el.type === 'rectangle' &&
-    el.backgroundColor === '#ffffff' &&
-    el.width > 100 && el.height > 80 &&
-    !el.isDeleted
-  );
-
-  // Find chairs (small ellipses with chair color)
-  const chairs = elements.filter((el: any) =>
-    el.type === 'ellipse' &&
-    (el.backgroundColor === '#9ca3af' || el.strokeColor === '#78716c') &&
-    el.width <= 30 && el.height <= 30 &&
-    !el.isDeleted
-  );
-
-  // Find text labels
-  const labels = elements.filter((el: any) => el.type === 'text' && !el.isDeleted);
-
-  const zones: Zone[] = [];
-
-  rooms.forEach((room: any, idx: number) => {
-    // Find the label for this room
-    const label = labels.find((l: any) =>
-      l.x >= room.x && l.x <= room.x + room.w &&
-      l.y >= room.y && l.y <= room.y + 30
-    );
-    const name = label?.text || `スペース ${idx + 1}`;
-
-    // Find chairs inside this room
-    const roomChairs = chairs.filter((c: any) =>
-      c.x >= room.x - 5 && c.x + c.width <= room.x + room.width + 5 &&
-      c.y >= room.y - 5 && c.y + c.height <= room.y + room.height + 5
-    );
-
-    // Determine zone type from room content
-    const hasDesks = elements.some((el: any) =>
-      el.type === 'rectangle' &&
-      el.backgroundColor === '#e8e3dd' &&
-      el.x >= room.x && el.x + el.width <= room.x + room.width &&
-      el.y >= room.y && el.y + el.height <= room.y + room.height &&
-      !el.isDeleted
-    );
-    const hasSofas = elements.some((el: any) =>
-      el.type === 'rectangle' &&
-      el.backgroundColor === '#c4bab0' &&
-      el.x >= room.x && el.x + el.width <= room.x + room.width &&
-      !el.isDeleted
-    );
-    const hasOvalTable = elements.some((el: any) =>
-      el.type === 'ellipse' &&
-      el.backgroundColor === '#ddd8d2' &&
-      el.width > 50 &&
-      el.x >= room.x && el.x + el.width <= room.x + room.width &&
-      !el.isDeleted
-    );
-
-    let type: Zone['type'] = 'open';
-    if (hasDesks) type = 'desk';
-    else if (hasOvalTable) type = 'meeting';
-    else if (hasSofas) type = 'lounge';
-
-    const seats: Seat[] = roomChairs.map((c: any, ci: number) => ({
-      id: `auto-seat-${idx}-${ci}`,
-      roomId: room.id || `room-${idx}`,
-      x: c.x + c.width / 2,
-      y: c.y + c.height / 2,
-      occupied: false,
-    }));
-
-    if (seats.length > 0) {
-      zones.push({
-        id: `auto-zone-${idx}`,
-        type,
-        name,
-        x: room.x,
-        y: room.y,
-        w: room.width,
-        h: room.height,
-        seats,
-      });
-    }
-  });
-
-  return zones;
+// Convert Excalidraw scene coords to screen pixel coords
+function sceneToScreen(sceneX: number, sceneY: number, appState: any): { x: number; y: number } {
+  if (!appState) return { x: sceneX, y: sceneY };
+  const zoom = appState.zoom?.value || 1;
+  const scrollX = appState.scrollX || 0;
+  const scrollY = appState.scrollY || 0;
+  const offsetLeft = appState.offsetLeft || 0;
+  const offsetTop = appState.offsetTop || 0;
+  return {
+    x: (sceneX + scrollX) * zoom + offsetLeft,
+    y: (sceneY + scrollY) * zoom + offsetTop,
+  };
 }
 
 export default function FloorCanvas() {
   const ref = useRef<HTMLDivElement>(null);
   const [h, setH] = useState(600);
   const editorMode = useOfficeStore((s) => s.editorMode);
+  const users = useOfficeStore((s) => s.users);
+  const currentUser = useOfficeStore((s) => s.currentUser);
+  const excalidrawAPI = useOfficeStore((s) => s.excalidrawAPI);
+  const moveCurrentUser = useOfficeStore((s) => s.moveCurrentUser);
   const isViewMode = editorMode !== 'edit';
+
+  // Track appState for coordinate conversion
+  const [appState, setAppState] = useState<any>(null);
+
+  // Poll appState from Excalidraw for avatar positioning
+  useEffect(() => {
+    if (!excalidrawAPI || !isViewMode) return;
+    const interval = setInterval(() => {
+      try {
+        const state = excalidrawAPI.getAppState();
+        setAppState(state);
+      } catch {}
+    }, 100);
+    return () => clearInterval(interval);
+  }, [excalidrawAPI, isViewMode]);
+
+  // Click on canvas in view mode = move avatar
+  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
+    if (!isViewMode || !excalidrawAPI) return;
+    const state = excalidrawAPI.getAppState();
+    if (!state) return;
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const zoom = state.zoom?.value || 1;
+    const scrollX = state.scrollX || 0;
+    const scrollY = state.scrollY || 0;
+    const offsetLeft = state.offsetLeft || 0;
+    const offsetTop = state.offsetTop || 0;
+
+    // Screen coords to scene coords
+    const sceneX = (e.clientX - rect.left - offsetLeft) / zoom - scrollX;
+    const sceneY = (e.clientY - rect.top - offsetTop) / zoom - scrollY;
+
+    moveCurrentUser(sceneX, sceneY);
+  }, [isViewMode, excalidrawAPI, moveCurrentUser]);
 
   useEffect(() => {
     const update = () => { if (ref.current) setH(ref.current.clientHeight); };
@@ -121,17 +81,74 @@ export default function FloorCanvas() {
     return () => window.removeEventListener('resize', update);
   }, []);
 
+  const allUsers = [...users, currentUser];
+
   return (
     <div ref={ref} style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <div style={{
-        width: '100%', height: `${h}px`,
-        ...(isViewMode ? { position: 'absolute', left: -9999, top: -9999, visibility: 'hidden' as const } : {}),
-      }}>
-        <Editor viewMode={false} />
+      {/* Excalidraw — always mounted, viewMode toggled */}
+      <div style={{ width: '100%', height: `${h}px` }}>
+        <Editor viewMode={isViewMode} />
       </div>
-      {isViewMode && (
-        <div style={{ width: '100%', height: `${h}px` }}>
-          <VirtualOffice />
+
+      {/* Avatar overlay in view mode */}
+      {isViewMode && appState && (
+        <div
+          style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}
+          onClick={handleCanvasClick}
+        >
+          {allUsers.map((user) => {
+            const pos = sceneToScreen(user.position.x, user.position.y, appState);
+            const isCurrent = user.id === currentUser.id;
+            const zoom = appState.zoom?.value || 1;
+            const size = Math.max(28, 36 * zoom);
+
+            return (
+              <div
+                key={user.id}
+                style={{
+                  position: 'absolute',
+                  left: pos.x - size / 2,
+                  top: pos.y - size / 2,
+                  transition: 'left 0.5s ease, top 0.5s ease',
+                  pointerEvents: 'auto',
+                  zIndex: isCurrent ? 20 : 10,
+                }}
+              >
+                {/* Avatar */}
+                <div style={{
+                  width: size, height: size, borderRadius: '50%',
+                  border: `${isCurrent ? 3 : 2}px solid ${isCurrent ? '#4F46E5' : STATUS_COLORS[user.status]}`,
+                  overflow: 'hidden', background: '#fff',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                }}>
+                  <img
+                    src={getAvatarUrl(user.avatarSeed || user.name, user.avatarStyle || 'notionists')}
+                    alt={user.name}
+                    style={{ width: '100%', height: '100%', display: 'block' }}
+                    draggable={false}
+                  />
+                </div>
+                {/* Status dot */}
+                <div style={{
+                  position: 'absolute', bottom: -1, right: -1,
+                  width: 10, height: 10, borderRadius: '50%',
+                  background: STATUS_COLORS[user.status],
+                  border: '2px solid #fff',
+                }} />
+                {/* Name */}
+                {zoom > 0.5 && (
+                  <div style={{
+                    position: 'absolute', top: size + 2, left: '50%', transform: 'translateX(-50%)',
+                    whiteSpace: 'nowrap', fontSize: 10, fontWeight: 600, color: '#374151',
+                    background: 'rgba(255,255,255,0.9)', borderRadius: 6, padding: '1px 6px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                  }}>
+                    {user.name.split(' ')[0]}{isCurrent ? ' (You)' : ''}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
