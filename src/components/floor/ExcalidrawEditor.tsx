@@ -147,26 +147,49 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
       const lib = getFurnitureLibrary();
       api.updateLibrary({ libraryItems: lib.libraryItems, merge: true, openLibraryMenu: false });
 
-      // Initialize seats from ACTUAL rendered elements (not raw data)
+      // Initialize seats from ACTUAL rendered elements
       setTimeout(() => {
         const elements = api.getSceneElements();
         if (!elements || elements.length === 0) return;
-        // Find actual chair elements (small ellipses with chair color)
-        const chairs = elements.filter((el: any) =>
+
+        // Find desks and chairs
+        const desks = elements.filter((el: any) =>
+          el.type === 'rectangle' && !el.isDeleted &&
+          el.backgroundColor === '#e8e3dd' && el.width > 40 && el.width < 120
+        );
+        const allChairs = elements.filter((el: any) =>
           el.type === 'ellipse' && !el.isDeleted &&
           el.backgroundColor === '#9ca3af' && el.width <= 30 && el.height <= 30
-        ).sort((a: any, b: any) => {
-          // Sort top-to-bottom, then left-to-right
+        );
+
+        // Split: chairs near a desk (within 40px) = desk chairs (priority)
+        // Others = meeting/lounge chairs
+        const deskChairs: any[] = [];
+        const otherChairs: any[] = [];
+        for (const chair of allChairs) {
+          const cx = chair.x + chair.width / 2;
+          const cy = chair.y + chair.height / 2;
+          const nearDesk = desks.some((d: any) => {
+            const dx = d.x + d.width / 2;
+            const dy = d.y + d.height / 2;
+            return Math.abs(cx - dx) < 60 && Math.abs(cy - dy) < 60;
+          });
+          if (nearDesk) deskChairs.push(chair);
+          else otherChairs.push(chair);
+        }
+
+        // Sort each group top-to-bottom, left-to-right
+        const sortChairs = (arr: any[]) => arr.sort((a: any, b: any) => {
           const dy = a.y - b.y;
           if (Math.abs(dy) > 10) return dy;
           return a.x - b.x;
         });
-        if (chairs.length === 0) return;
+        const sortedChairs = [...sortChairs(deskChairs), ...sortChairs(otherChairs)];
 
         const zones = [{
           id: 'office', type: 'desk' as const, name: 'オフィス',
           x: 0, y: 0, w: 0, h: 0,
-          seats: chairs.map((c: any, i: number) => ({
+          seats: sortedChairs.map((c: any, i: number) => ({
             id: `seat-${i}`,
             roomId: 'office',
             x: c.x + c.width / 2,

@@ -53,7 +53,12 @@ export default function FloorCanvas() {
     return () => clearInterval(interval);
   }, [excalidrawAPI, isViewMode]);
 
-  // Click on canvas in view mode = move avatar
+  const zones = useOfficeStore((s) => s.zones);
+  const sitAt = useOfficeStore((s) => s.sitAt);
+  const standUp = useOfficeStore((s) => s.standUp);
+  const currentSeatId = useOfficeStore((s) => s.currentSeatId);
+
+  // Click = find nearest empty chair and sit, or free move
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (!isViewMode || !excalidrawAPI) return;
     const state = excalidrawAPI.getAppState();
@@ -67,12 +72,33 @@ export default function FloorCanvas() {
     const offsetLeft = state.offsetLeft || 0;
     const offsetTop = state.offsetTop || 0;
 
-    // Screen coords to scene coords
     const sceneX = (e.clientX - rect.left - offsetLeft) / zoom - scrollX;
     const sceneY = (e.clientY - rect.top - offsetTop) / zoom - scrollY;
 
-    moveCurrentUser(sceneX, sceneY);
-  }, [isViewMode, excalidrawAPI, moveCurrentUser]);
+    // Check if clicking near an empty seat (within 20px)
+    const SEAT_CLICK_RADIUS = 20;
+    let closestSeat: { id: string; x: number; y: number; dist: number } | null = null;
+    for (const zone of zones) {
+      for (const seat of zone.seats) {
+        if (seat.occupied && seat.occupiedBy !== currentUser.id) continue;
+        const dist = Math.hypot(sceneX - seat.x, sceneY - seat.y);
+        if (dist < SEAT_CLICK_RADIUS && (!closestSeat || dist < closestSeat.dist)) {
+          closestSeat = { id: seat.id, x: seat.x, y: seat.y, dist };
+        }
+      }
+    }
+
+    if (closestSeat) {
+      // Stand up from current seat first, then sit at new one
+      if (currentSeatId) standUp();
+      sitAt(closestSeat.id);
+      moveCurrentUser(closestSeat.x, closestSeat.y);
+    } else {
+      // Free move (stand up if seated)
+      if (currentSeatId) standUp();
+      moveCurrentUser(sceneX, sceneY);
+    }
+  }, [isViewMode, excalidrawAPI, moveCurrentUser, zones, sitAt, standUp, currentSeatId, currentUser.id]);
 
   useEffect(() => {
     const update = () => { if (ref.current) setH(ref.current.clientHeight); };
