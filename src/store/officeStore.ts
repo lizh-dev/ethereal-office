@@ -103,7 +103,7 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
     avatarColor: '#4F46E5',
     initials: 'U',
     status: 'online',
-    position: { x: 400, y: 200 },
+    position: { x: 200, y: 200 },
     avatarStyle: 'notionists',
     avatarSeed: 'default',
   },
