@@ -16,6 +16,8 @@ export default function VirtualOffice() {
   const [svgDataUrl, setSvgDataUrl] = useState<string | null>(null);
   const [svgSize, setSvgSize] = useState({ width: 1200, height: 800 });
   const [svgOffset, setSvgOffset] = useState({ x: 0, y: 0 });
+  // Offset to map Excalidraw coords → SVG pixel coords
+  const [sceneOffset, setSceneOffset] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -61,6 +63,19 @@ export default function VirtualOffice() {
           const w = parseFloat(svg.getAttribute('width') || '1200');
           const h = parseFloat(svg.getAttribute('height') || '800');
           setSvgSize({ width: w, height: h });
+        }
+
+        // Compute scene offset: Excalidraw coord → SVG pixel position
+        // SVG wraps elements in <g transform="translate(padding, padding)">
+        // and positions elements relative to minX/minY of all elements
+        const PADDING = 20;
+        const nonDeleted = elements.filter((el: any) => !el.isDeleted);
+        if (nonDeleted.length > 0) {
+          const minX = Math.min(...nonDeleted.map((el: any) => el.x));
+          const minY = Math.min(...nonDeleted.map((el: any) => el.y));
+          // SVG pixel = (excalidrawCoord - minElement) + padding
+          // So offset to subtract from excalidraw coords = minElement - padding
+          setSceneOffset({ x: minX - PADDING, y: minY - PADDING });
         }
 
         const serializer = new XMLSerializer();
@@ -136,12 +151,12 @@ export default function VirtualOffice() {
       if (!container) return;
 
       const rect = container.getBoundingClientRect();
-      const sceneX = (e.clientX - rect.left - pan.x) / zoom + svgOffset.x;
-      const sceneY = (e.clientY - rect.top - pan.y) / zoom + svgOffset.y;
+      const sceneX = (e.clientX - rect.left - pan.x) / zoom + sceneOffset.x;
+      const sceneY = (e.clientY - rect.top - pan.y) / zoom + sceneOffset.y;
 
       moveCurrentUser(sceneX, sceneY);
     },
-    [zoom, pan, isPanning, moveCurrentUser, svgOffset, currentSeatId],
+    [zoom, pan, isPanning, moveCurrentUser, sceneOffset, currentSeatId],
   );
 
   // Zoom controls
@@ -213,13 +228,12 @@ export default function VirtualOffice() {
         )}
 
         {/* Seat indicators layer (below avatars, above SVG) */}
-        <div style={{ position: 'absolute', left: -svgOffset.x, top: -svgOffset.y, width: '100%', height: '100%' }}>
+        <div style={{ position: 'absolute', left: -sceneOffset.x, top: -sceneOffset.y, width: '100%', height: '100%' }}>
           <SeatLayer />
         </div>
 
-        {/* Avatar layer renders on top. Offset so avatar positions
-            (which are in Excalidraw scene coords) align with the SVG. */}
-        <div style={{ position: 'absolute', left: -svgOffset.x, top: -svgOffset.y, width: '100%', height: '100%' }}>
+        {/* Avatar layer: offset by sceneOffset so Excalidraw coords → SVG pixel coords */}
+        <div style={{ position: 'absolute', left: -sceneOffset.x, top: -sceneOffset.y, width: '100%', height: '100%' }}>
           <AvatarLayer />
         </div>
       </div>
