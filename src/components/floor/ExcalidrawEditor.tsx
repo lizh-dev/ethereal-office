@@ -126,7 +126,7 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
   // Debounced save to localStorage
   const handleChange = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (elements: any[], appState: any) => {
+    (elements: readonly any[], appState: any) => {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         try {

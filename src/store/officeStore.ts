@@ -7,6 +7,12 @@ import { defaultFloorPlan, mockUsers } from '@/data/floorPlan';
 // now to avoid breaking any remaining references. Consider removing once the migration
 // is fully verified.
 
+interface ChatMessage {
+  userId: string;
+  text: string;
+  timestamp: number;
+}
+
 interface OfficeState {
   floorPlan: FloorPlan;
   users: User[];
@@ -19,6 +25,7 @@ interface OfficeState {
   draggingItem: { type: 'furniture' | 'room'; id: string } | null;
   showGrid: boolean;
   showAvatarSelector: boolean;
+  chatMessages: ChatMessage[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   excalidrawAPI: any | null;
 
@@ -27,6 +34,7 @@ interface OfficeState {
   setCamera: (camera: Partial<Camera>) => void;
   moveCurrentUser: (x: number, y: number) => void;
   setCurrentUserStatus: (status: User['status']) => void;
+  sendMessage: (text: string) => void;
 
   // Editor actions
   addRoom: (room: Room) => void;
@@ -76,6 +84,7 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   draggingItem: null,
   showGrid: true,
   showAvatarSelector: false,
+  chatMessages: [],
   excalidrawAPI: null,
 
   setViewMode: (mode) => set({ viewMode: mode }),
@@ -84,12 +93,20 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
 
   moveCurrentUser: (x, y) =>
     set((state) => ({
-      currentUser: { ...state.currentUser, targetPosition: { x, y } },
+      currentUser: { ...state.currentUser, position: { x, y }, targetPosition: { x, y } },
     })),
 
   setCurrentUserStatus: (status) =>
     set((state) => ({
       currentUser: { ...state.currentUser, status },
+    })),
+
+  sendMessage: (text) =>
+    set((state) => ({
+      chatMessages: [
+        ...state.chatMessages.filter((m) => Date.now() - m.timestamp < 10000),
+        { userId: state.currentUser.id, text, timestamp: Date.now() },
+      ],
     })),
 
   addRoom: (room) =>

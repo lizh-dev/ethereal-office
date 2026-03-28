@@ -21,7 +21,8 @@ export default function Home() {
         <TopBar />
         <div className="flex-1 flex min-h-0">
           <FloorCanvas />
-          {editorMode === 'edit' ? <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} /> : <RightPanel />}
+          {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} />}
+          <RightPanel />
         </div>
       </div>
       {showAvatarSelector && <AvatarSelector />}
