@@ -56,14 +56,47 @@ function loungeArea(name: string, ox: number, oy: number) {
 }
 
 function getDefaultInitialData() {
-  const raw = [
-    ...openSpace('オープンスペース', 3, 4, 25, 50, 50),
-    ...meetingRoom('会議室 A', 3, 520, 50),
-    ...meetingRoom('会議室 B', 2, 520, 260),
-    ...openSpace('エンジニアリング', 2, 3, 25, 50, 400),
-    ...loungeArea('ラウンジ', 520, 470),
+  const spaces = [
+    { name: 'オープンスペース', raw: openSpace('オープンスペース', 3, 4, 25, 50, 50), type: 'desk' as const },
+    { name: '会議室 A', raw: meetingRoom('会議室 A', 3, 520, 50), type: 'meeting' as const },
+    { name: '会議室 B', raw: meetingRoom('会議室 B', 2, 520, 260), type: 'meeting' as const },
+    { name: 'エンジニアリング', raw: openSpace('エンジニアリング', 2, 3, 25, 50, 400), type: 'desk' as const },
+    { name: 'ラウンジ', raw: loungeArea('ラウンジ', 520, 470), type: 'lounge' as const },
   ];
-  const elements = convertToExcalidrawElements(raw as any);
+
+  const allRaw = spaces.flatMap(s => s.raw);
+  const elements = convertToExcalidrawElements(allRaw as any);
+
+  // Extract seat data from chair elements and save to store
+  const zones = spaces.map((space, si) => {
+    const chairs = space.raw.filter((el: any) => el.type === 'ellipse' && el.backgroundColor === '#9ca3af');
+    return {
+      id: `init-zone-${si}`,
+      type: space.type,
+      name: space.name,
+      x: 0, y: 0, w: 0, h: 0,
+      seats: chairs.map((c: any, ci: number) => ({
+        id: `init-seat-${si}-${ci}`,
+        roomId: `init-zone-${si}`,
+        x: (c.x as number) + ((c.width as number) || 22) / 2,
+        y: (c.y as number) + ((c.height as number) || 22) / 2,
+        occupied: false,
+      })),
+    };
+  });
+
+  // Auto-assign mock users to seats
+  const store = useOfficeStore.getState();
+  const allSeats = zones.flatMap(z => z.seats);
+  store.users.forEach((user, idx) => {
+    if (idx < allSeats.length) {
+      allSeats[idx].occupied = true;
+      allSeats[idx].occupiedBy = user.id;
+    }
+  });
+  // Save zones to store (will be converted to SVG coords when VirtualOffice renders)
+  useOfficeStore.setState({ zones });
+
   return {
     elements,
     appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 },

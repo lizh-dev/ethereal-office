@@ -70,11 +70,10 @@ export default function VirtualOffice() {
         // and positions elements relative to minX/minY of all elements
         const PADDING = 20;
         const nonDeleted = elements.filter((el: any) => !el.isDeleted);
+        let minX = 0, minY = 0;
         if (nonDeleted.length > 0) {
-          const minX = Math.min(...nonDeleted.map((el: any) => el.x));
-          const minY = Math.min(...nonDeleted.map((el: any) => el.y));
-          // SVG pixel = (excalidrawCoord - minElement) + padding
-          // So offset to subtract from excalidraw coords = minElement - padding
+          minX = Math.min(...nonDeleted.map((el: any) => el.x));
+          minY = Math.min(...nonDeleted.map((el: any) => el.y));
           setSceneOffset({ x: minX - PADDING, y: minY - PADDING });
         }
 
