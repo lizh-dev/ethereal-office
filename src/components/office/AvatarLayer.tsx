@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
 import ChatBubble from './ChatBubble';
-import type { User, PresenceStatus } from '@/types';
+import type { User, PresenceStatus, UserAction } from '@/types';
 
 const PROXIMITY_RADIUS = 120;
 const VOICE_RANGE_DISPLAY = 100;
@@ -23,6 +23,22 @@ const STATUS_LABELS: Record<PresenceStatus, string> = {
   offline: 'オフライン',
 };
 
+const ACTION_EMOJI: Record<UserAction, string> = {
+  working: '\uD83D\uDCBB',
+  meeting: '\uD83E\uDD1D',
+  break: '\u2615',
+  away: '\uD83D\uDCA4',
+  idle: '',
+};
+
+const ACTION_LABELS: Record<UserAction, string> = {
+  working: '作業中',
+  meeting: 'ミーティング',
+  break: '休憩中',
+  away: '離席中',
+  idle: '',
+};
+
 function distance(a: { x: number; y: number }, b: { x: number; y: number }) {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
@@ -33,9 +49,11 @@ interface AvatarProps {
   nearbyUsers: User[];
   hoveredId: string | null;
   onHover: (id: string | null) => void;
+  action?: UserAction;
+  isSeated?: boolean;
 }
 
-function Avatar({ user, isCurrent, nearbyUsers, hoveredId, onHover }: AvatarProps) {
+function Avatar({ user, isCurrent, nearbyUsers, hoveredId, onHover, action, isSeated }: AvatarProps) {
   const pos = user.position;
   const avatarUrl = getAvatarUrl(user.avatarSeed ?? user.name, user.avatarStyle ?? 'notionists');
   const statusColor = STATUS_COLORS[user.status] ?? STATUS_COLORS.offline;
@@ -48,6 +66,9 @@ function Avatar({ user, isCurrent, nearbyUsers, hoveredId, onHover }: AvatarProp
     (m) => m.userId === user.id && Date.now() - m.timestamp < 5000,
   );
 
+  const currentAction = action || 'idle';
+  const actionEmoji = ACTION_EMOJI[currentAction];
+
   return (
     <div
       style={{
@@ -57,6 +78,7 @@ function Avatar({ user, isCurrent, nearbyUsers, hoveredId, onHover }: AvatarProp
         transform: 'translate(-50%, -50%)',
         zIndex: isHovered ? 30 : 20,
         pointerEvents: 'auto',
+        transition: isSeated ? 'left 0.4s ease, top 0.4s ease' : undefined,
       }}
     >
       {/* Proximity / voice range circle */}
@@ -146,6 +168,30 @@ function Avatar({ user, isCurrent, nearbyUsers, hoveredId, onHover }: AvatarProp
           />
         </div>
 
+        {/* Action badge */}
+        {actionEmoji && (
+          <div
+            style={{
+              position: 'absolute',
+              top: -6,
+              right: -10,
+              width: 20,
+              height: 20,
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.95)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 11,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+              zIndex: 5,
+              animation: 'badgePop 0.3s ease-out',
+            }}
+          >
+            {actionEmoji}
+          </div>
+        )}
+
         {/* Name label */}
         <div
           style={{
@@ -206,6 +252,11 @@ function Avatar({ user, isCurrent, nearbyUsers, hoveredId, onHover }: AvatarProp
             />
             <span style={{ color: '#e5e7eb' }}>{STATUS_LABELS[user.status]}</span>
           </div>
+          {currentAction !== 'idle' && (
+            <div style={{ fontSize: 11, color: '#a5b4fc', marginTop: 2 }}>
+              {actionEmoji} {ACTION_LABELS[currentAction]}
+            </div>
+          )}
           {/* Tooltip arrow */}
           <div
             style={{
@@ -227,9 +278,45 @@ function Avatar({ user, isCurrent, nearbyUsers, hoveredId, onHover }: AvatarProp
 export default function AvatarLayer() {
   const users = useOfficeStore((s) => s.users);
   const currentUser = useOfficeStore((s) => s.currentUser);
+  const currentAction = useOfficeStore((s) => s.currentAction);
+  const currentSeatId = useOfficeStore((s) => s.currentSeatId);
+  const zones = useOfficeStore((s) => s.zones);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const allUsers = useMemo(() => [currentUser, ...users], [currentUser, users]);
+
+  // Build a map of userId -> action based on seat occupancy
+  const userActions = useMemo(() => {
+    const map: Record<string, UserAction> = {};
+    for (const zone of zones) {
+      for (const seat of zone.seats) {
+        if (seat.occupied && seat.occupiedBy) {
+          const actionMap: Record<string, UserAction> = {
+            desk: 'working',
+            meeting: 'meeting',
+            lounge: 'break',
+            cafe: 'break',
+            open: 'idle',
+          };
+          map[seat.occupiedBy] = actionMap[zone.type] || 'idle';
+        }
+      }
+    }
+    return map;
+  }, [zones]);
+
+  // Build a set of seated user IDs
+  const seatedUserIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const zone of zones) {
+      for (const seat of zone.seats) {
+        if (seat.occupied && seat.occupiedBy) {
+          set.add(seat.occupiedBy);
+        }
+      }
+    }
+    return set;
+  }, [zones]);
 
   // Compute proximity connections (pairs of users within PROXIMITY_RADIUS)
   const connections = useMemo(() => {
@@ -277,6 +364,10 @@ export default function AvatarLayer() {
         @keyframes connectionPulse {
           0%, 100% { opacity: 0.4; }
           50% { opacity: 0.7; }
+        }
+        @keyframes badgePop {
+          from { transform: scale(0); }
+          to { transform: scale(1); }
         }
       `}</style>
 
@@ -326,6 +417,8 @@ export default function AvatarLayer() {
           nearbyUsers={nearbyUsers}
           hoveredId={hoveredId}
           onHover={setHoveredId}
+          action={userActions[user.id]}
+          isSeated={seatedUserIds.has(user.id)}
         />
       ))}
 
@@ -336,6 +429,8 @@ export default function AvatarLayer() {
         nearbyUsers={nearbyUsers}
         hoveredId={hoveredId}
         onHover={setHoveredId}
+        action={currentSeatId ? currentAction : 'idle'}
+        isSeated={!!currentSeatId}
       />
     </div>
   );

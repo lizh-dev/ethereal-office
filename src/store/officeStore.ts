@@ -42,6 +42,7 @@ interface OfficeState {
   sendMessage: (text: string) => void;
 
   // Seat/Zone actions
+  setZones: (zones: Zone[]) => void;
   sitAt: (seatId: string) => void;
   standUp: () => void;
   setCurrentAction: (action: UserAction) => void;
@@ -125,6 +126,7 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
     })),
 
   // Seat/Zone actions
+  setZones: (zones) => set({ zones }),
   sitAt: (seatId) =>
     set((state) => {
       // Find the seat and its zone
