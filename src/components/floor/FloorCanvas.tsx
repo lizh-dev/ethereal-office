@@ -206,6 +206,25 @@ export default function FloorCanvas() {
             );
           })}
 
+          {/* Empty seat indicators */}
+          {zones.flatMap(z => z.seats).filter(s => !s.occupied).map((seat: any, i) => {
+            const zoom = appState.zoom?.value || 1;
+            const sw = (seat.w || 22) * zoom;
+            const sh = (seat.h || 22) * zoom;
+            const pos = sceneToScreen(seat.x, seat.y, appState);
+            return (
+              <div key={`empty-${i}`} title="クリックして座る" style={{
+                position: 'absolute', left: pos.x, top: pos.y, width: sw, height: sh,
+                borderRadius: '50%', border: '2px dashed rgba(99,102,241,0)',
+                cursor: 'pointer', pointerEvents: 'auto', zIndex: 5,
+                transition: 'border-color 0.2s, background 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)'; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0)'; e.currentTarget.style.background = 'transparent'; }}
+              onClick={e => { e.stopPropagation(); if (currentSeatId) standUp(); sitAt(seat.id); moveCurrentUser(seat.x, seat.y); }}
+              />
+            );
+          })}
         </div>
       )}
     </div>

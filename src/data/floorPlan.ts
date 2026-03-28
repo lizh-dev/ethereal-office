@@ -96,8 +96,6 @@ export const activeMeetings = [
   { roomId: 'brainstorm-1', name: 'ブレスト 1', time: '16:00', color: '#EF4444' },
 ];
 
-export const liveRooms = new Set(['conference-a', 'war-room', 'brainstorm-1', 'ceo-suite', 'quiet-room']);
-
 // Zones and seats derived from the floor plan furniture positions.
 // Seat x,y coordinates correspond to chair positions in the Excalidraw scene.
 export const defaultZones: Zone[] = [

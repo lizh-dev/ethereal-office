@@ -2,11 +2,6 @@ import { create } from 'zustand';
 import { FloorPlan, User, ViewMode, EditorMode, Camera, Furniture, Room, FurnitureType, RoomType, Zone, UserAction } from '@/types';
 import { defaultFloorPlan, mockUsers, defaultZones } from '@/data/floorPlan';
 
-// LEGACY: The floorPlan/rooms/furniture data below was used by the old Konva/Canvas
-// renderer. It is no longer consumed by the Excalidraw-based canvas but is kept for
-// now to avoid breaking any remaining references. Consider removing once the migration
-// is fully verified.
-
 interface ChatMessage {
   userId: string;
   text: string;
