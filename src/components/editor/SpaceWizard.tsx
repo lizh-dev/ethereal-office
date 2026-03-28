@@ -23,8 +23,7 @@ const SPACE_TYPES = [
 const DESK_W = 75, DESK_H = 35, CHAIR_S = 20, MONITOR_W = 22, MONITOR_H = 12;
 const MEETING_TABLE_W = 130, MEETING_TABLE_H = 70, MEETING_CHAIR_S = 22;
 
-let idCounter = 500;
-function nextId(prefix: string) { return `${prefix}-${++idCounter}`; }
+function nextId(prefix: string) { return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`; }
 
 function generateDeskArea(config: SpaceConfig, ox: number, oy: number): { room: Room; furniture: Furniture[] } {
   const { rows, cols, spacing, name } = config;
