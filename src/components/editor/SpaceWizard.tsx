@@ -179,6 +179,7 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
       x: (c.x as number) + ((c.width as number) || 22) / 2,
       y: (c.y as number) + ((c.height as number) || 22) / 2,
       occupied: false,
+      occupiedBy: undefined as string | undefined,
     }));
     const newZone = {
       id: zoneId,
@@ -194,11 +195,15 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
     store.setZones([...store.zones, newZone]);
 
     // Add Excalidraw elements
-    const newElements = convertToExcalidrawElements(rawElements as any);
-    excalidrawAPI.updateScene({
-      elements: [...excalidrawAPI.getSceneElements(), ...newElements],
-    });
-    excalidrawAPI.scrollToContent(newElements, { fitToViewport: true, viewportZoomFactor: 0.8 });
+    try {
+      const newElements = convertToExcalidrawElements(rawElements as any);
+      excalidrawAPI.updateScene({
+        elements: [...excalidrawAPI.getSceneElements(), ...newElements],
+      });
+      excalidrawAPI.scrollToContent(newElements, { fitToViewport: true, viewportZoomFactor: 0.8 });
+    } catch (e) {
+      console.error('Failed to create space:', e);
+    }
 
     onClose();
   };
