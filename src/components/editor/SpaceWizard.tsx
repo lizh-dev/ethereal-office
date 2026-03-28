@@ -28,18 +28,21 @@ function nextId(prefix: string) { return `${prefix}-${++idCounter}`; }
 
 function generateDeskArea(config: SpaceConfig, ox: number, oy: number): { room: Room; furniture: Furniture[] } {
   const { rows, cols, spacing, name } = config;
-  const cellW = DESK_W + spacing;
-  const cellH = DESK_H + CHAIR_S + 10 + spacing;
-  const roomW = cols * cellW + 20;
-  const roomH = rows * cellH + 30;
+  // spacing applies equally to horizontal AND vertical gaps
+  const deskUnitH = DESK_H + CHAIR_S + 8; // desk + chair + small gap
+  const cellW = DESK_W + spacing;     // horizontal: desk width + spacing
+  const cellH = deskUnitH + spacing;   // vertical: desk+chair unit + spacing
+  const pad = 15;
+  const roomW = cols * cellW - spacing + pad * 2;
+  const roomH = rows * cellH - spacing + pad * 2 + 10;
   const furniture: Furniture[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const dx = ox + 10 + c * cellW;
-      const dy = oy + 20 + r * cellH;
+      const dx = ox + pad + c * cellW;
+      const dy = oy + pad + 10 + r * cellH;
       furniture.push({ id: nextId('d'), type: 'desk', x: dx, y: dy, w: DESK_W, h: DESK_H });
       furniture.push({ id: nextId('m'), type: 'monitor', x: dx + DESK_W / 2 - MONITOR_W / 2, y: dy + 2, w: MONITOR_W, h: MONITOR_H });
-      furniture.push({ id: nextId('c'), type: 'chair', x: dx + DESK_W / 2 - CHAIR_S / 2, y: dy + DESK_H + 5, w: CHAIR_S, h: CHAIR_S });
+      furniture.push({ id: nextId('c'), type: 'chair', x: dx + DESK_W / 2 - CHAIR_S / 2, y: dy + DESK_H + 8, w: CHAIR_S, h: CHAIR_S });
     }
   }
   return {
@@ -84,18 +87,22 @@ function generateLounge(_config: SpaceConfig, ox: number, oy: number): { room: R
 
 function generateCafe(config: SpaceConfig, ox: number, oy: number): { room: Room; furniture: Furniture[] } {
   const { rows, cols, spacing } = config;
-  const cellW = 60 + spacing;
-  const cellH = 60 + spacing;
-  const roomW = cols * cellW + 60;
+  const cellW = 80 + spacing;
+  const cellH = 100 + spacing;
+  const roomW = cols * cellW + 50;
   const roomH = rows * cellH + 40;
   const furniture: Furniture[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const tx = ox + 15 + c * cellW;
-      const ty = oy + 20 + r * cellH;
-      furniture.push({ id: nextId('t'), type: 'table', x: tx, y: ty, w: 45, h: 45 });
-      furniture.push({ id: nextId('c'), type: 'chair', x: tx + 12, y: ty - 18, w: 18, h: 18 });
-      furniture.push({ id: nextId('c'), type: 'chair', x: tx + 12, y: ty + 48, w: 18, h: 18 });
+      const tx = ox + 20 + c * cellW;
+      const ty = oy + 30 + r * cellH;
+      furniture.push({ id: nextId('t'), type: 'table', x: tx, y: ty + 20, w: 45, h: 45 });
+      // Top chairs (with gap)
+      furniture.push({ id: nextId('c'), type: 'chair', x: tx + 4, y: ty, w: 18, h: 18 });
+      furniture.push({ id: nextId('c'), type: 'chair', x: tx + 26, y: ty, w: 18, h: 18 });
+      // Bottom chairs (with gap)
+      furniture.push({ id: nextId('c'), type: 'chair', x: tx + 4, y: ty + 68, w: 18, h: 18 });
+      furniture.push({ id: nextId('c'), type: 'chair', x: tx + 26, y: ty + 68, w: 18, h: 18 });
     }
   }
   furniture.push({ id: nextId('cm'), type: 'coffee-machine', x: ox + roomW - 40, y: oy + 10, w: 28, h: 28 });

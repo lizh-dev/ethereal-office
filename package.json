@@ -8,9 +8,11 @@
     "start": "next start"
   },
   "dependencies": {
+    "konva": "^10.2.3",
     "next": "15.5.14",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-konva": "^19.2.3",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
