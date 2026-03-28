@@ -70,7 +70,7 @@ export default function FloorCanvas() {
         const sorted = [...deskChairs.sort(sortFn), ...otherChairs.sort(sortFn)];
 
         const zones = [{ id: 'office', type: 'desk' as const, name: 'オフィス', x: 0, y: 0, w: 0, h: 0,
-          seats: sorted.map((c: any, i: number) => ({ id: `seat-${i}`, roomId: 'office', x: c.x, y: c.y, w: c.width, h: c.height, occupied: false })),
+          seats: sorted.map((c: any, i: number) => ({ id: `seat-${i}`, roomId: 'office', x: c.x, y: c.y, w: c.width, h: c.height, occupied: false, occupiedBy: undefined as string | undefined })),
         }];
         const store = useOfficeStore.getState();
         const allSeats = zones[0].seats;

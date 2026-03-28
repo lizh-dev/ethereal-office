@@ -89,6 +89,7 @@ function initializeSeats() {
         x: (c.x as number) + ((c.width as number) || 22) / 2,
         y: (c.y as number) + ((c.height as number) || 22) / 2,
         occupied: false,
+        occupiedBy: undefined as string | undefined,
       })),
     };
   });
@@ -197,6 +198,7 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
             w: c.width,
             h: c.height,
             occupied: false,
+            occupiedBy: undefined as string | undefined,
           })),
         }];
 
