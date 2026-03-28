@@ -1,9 +1,15 @@
 import { create } from 'zustand';
-import { FloorPlan, User, ViewMode, EditorMode, Camera, Furniture, Room, FurnitureType, RoomType, Zone, UserAction } from '@/types';
+import { FloorPlan, User, ViewMode, EditorMode, Camera, Furniture, Room, FurnitureType, RoomType, Zone, UserAction, PresenceStatus } from '@/types';
 import { defaultFloorPlan, mockUsers, defaultZones } from '@/data/floorPlan';
 
 interface ChatMessage {
   userId: string;
+  text: string;
+  timestamp: number;
+}
+
+export interface Notification {
+  id: string;
   text: string;
   timestamp: number;
 }
@@ -30,6 +36,23 @@ interface OfficeState {
   zones: Zone[];
   currentAction: UserAction;
   currentSeatId: string | null;
+
+  // Notifications
+  notifications: Notification[];
+  addNotification: (text: string) => void;
+  removeNotification: (id: string) => void;
+
+  // WebSocket
+  wsConnected: boolean;
+  setWsConnected: (connected: boolean) => void;
+  addRemoteUser: (user: User) => void;
+  removeRemoteUser: (userId: string) => void;
+  updateRemoteUserPosition: (userId: string, x: number, y: number) => void;
+  updateRemoteUserSeat: (userId: string, seatId: string, x: number, y: number) => void;
+  updateRemoteUserStand: (userId: string) => void;
+  addChatMessage: (userId: string, text: string, timestamp?: number) => void;
+  updateRemoteUserStatus: (userId: string, status: PresenceStatus) => void;
+  setRemoteUsers: (users: User[]) => void;
 
   setViewMode: (mode: ViewMode) => void;
   setEditorMode: (mode: EditorMode) => void;
@@ -102,6 +125,86 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   currentAction: 'idle',
   currentSeatId: null,
 
+  // Notifications
+  notifications: [],
+  addNotification: (text) => {
+    const id = `notif-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    set((state) => ({
+      notifications: [...state.notifications.slice(-2), { id, text, timestamp: Date.now() }],
+    }));
+    setTimeout(() => {
+      set((state) => ({
+        notifications: state.notifications.filter((n) => n.id !== id),
+      }));
+    }, 5000);
+  },
+  removeNotification: (id) =>
+    set((state) => ({
+      notifications: state.notifications.filter((n) => n.id !== id),
+    })),
+
+  // WebSocket state & actions
+  wsConnected: false,
+  setWsConnected: (connected) => set({ wsConnected: connected }),
+
+  setRemoteUsers: (users) => set({ users }),
+
+  addRemoteUser: (user) =>
+    set((state) => {
+      if (state.users.find((u) => u.id === user.id)) return state;
+      return { users: [...state.users, user] };
+    }),
+
+  removeRemoteUser: (userId) =>
+    set((state) => ({
+      users: state.users.filter((u) => u.id !== userId),
+    })),
+
+  updateRemoteUserPosition: (userId, x, y) =>
+    set((state) => ({
+      users: state.users.map((u) =>
+        u.id === userId ? { ...u, position: { x, y }, targetPosition: { x, y } } : u,
+      ),
+    })),
+
+  updateRemoteUserSeat: (userId, seatId, x, y) =>
+    set((state) => ({
+      users: state.users.map((u) =>
+        u.id === userId ? { ...u, position: { x, y }, targetPosition: { x, y } } : u,
+      ),
+      zones: state.zones.map((zone) => ({
+        ...zone,
+        seats: zone.seats.map((s) =>
+          s.id === seatId ? { ...s, occupied: true, occupiedBy: userId } : s,
+        ),
+      })),
+    })),
+
+  updateRemoteUserStand: (userId) =>
+    set((state) => ({
+      zones: state.zones.map((zone) => ({
+        ...zone,
+        seats: zone.seats.map((s) =>
+          s.occupiedBy === userId ? { ...s, occupied: false, occupiedBy: undefined } : s,
+        ),
+      })),
+    })),
+
+  addChatMessage: (userId, text, timestamp) =>
+    set((state) => ({
+      chatMessages: [
+        ...state.chatMessages.filter((m) => Date.now() - m.timestamp < 30000),
+        { userId, text, timestamp: timestamp || Date.now() },
+      ],
+    })),
+
+  updateRemoteUserStatus: (userId, status) =>
+    set((state) => ({
+      users: state.users.map((u) =>
+        u.id === userId ? { ...u, status } : u,
+      ),
+    })),
+
   setViewMode: (mode) => set({ viewMode: mode }),
   setEditorMode: (mode) => set({ editorMode: mode, selectedFurnitureId: null, selectedRoomId: null }),
   setCamera: (camera) => set((state) => ({ camera: { ...state.camera, ...camera } })),
@@ -116,13 +219,16 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
       currentUser: { ...state.currentUser, status },
     })),
 
-  sendMessage: (text) =>
-    set((state) => ({
+  sendMessage: (text) => {
+    const state = get();
+    state.addNotification(`${state.currentUser.name}: ${text}`);
+    set((s) => ({
       chatMessages: [
-        ...state.chatMessages.filter((m) => Date.now() - m.timestamp < 10000),
-        { userId: state.currentUser.id, text, timestamp: Date.now() },
+        ...s.chatMessages.filter((m) => Date.now() - m.timestamp < 10000),
+        { userId: s.currentUser.id, text, timestamp: Date.now() },
       ],
-    })),
+    }));
+  },
 
   // Seat/Zone actions
   setZones: (zones) => set({ zones }),
@@ -163,6 +269,13 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
           return s;
         }),
       }));
+
+      // Fire notification for meeting rooms
+      if (targetZone.type === 'meeting') {
+        setTimeout(() => {
+          get().addNotification(`${state.currentUser.name}が${targetZone!.name}に参加しました`);
+        }, 0);
+      }
 
       return {
         zones,

@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from './assets';
+import type { User } from '@/types';
 
 const Editor = dynamic(() => import('./ExcalidrawEditor'), {
   ssr: false,
@@ -17,6 +18,14 @@ const STATUS_COLORS: Record<string, string> = {
 const PROXIMITY_DIST = 120; // scene units
 const ACTION_EMOJI: Record<string, string> = {
   working: '💻', meeting: '🤝', break: '☕', away: '💤', idle: '',
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  working: '作業中', meeting: '会議中', break: '休憩中', away: '離席中', idle: '',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  online: 'オンライン', busy: 'ビジー', focusing: '集中モード', offline: 'オフライン',
 };
 
 // Convert Excalidraw scene coords to screen pixel coords
@@ -158,12 +167,27 @@ export default function FloorCanvas() {
   const chatMessages = useOfficeStore((s) => s.chatMessages);
   const sendMessage = useOfficeStore((s) => s.sendMessage);
   const [chatInput, setChatInput] = useState('');
+  const [hoveredUser, setHoveredUser] = useState<{ user: User; screenX: number; screenY: number } | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(true);
 
   const handleSend = () => {
     if (!chatInput.trim()) return;
     sendMessage(chatInput.trim());
     setChatInput('');
   };
+
+  // Find zone/action info for a user
+  const getUserSeatInfo = useCallback((userId: string) => {
+    for (const zone of zones) {
+      const seat = zone.seats.find(s => s.occupiedBy === userId);
+      if (seat) {
+        const actionMap: Record<string, string> = { desk: 'working', meeting: 'meeting', lounge: 'break', cafe: 'break', open: 'idle' };
+        return { zoneName: zone.name, action: actionMap[zone.type] || 'idle' };
+      }
+    }
+    return null;
+  }, [zones]);
 
   const allUsers = [...users, currentUser];
 
@@ -206,6 +230,8 @@ export default function FloorCanvas() {
             return (
               <div
                 key={user.id}
+                onMouseEnter={() => setHoveredUser({ user, screenX: pos.x, screenY: pos.y })}
+                onMouseLeave={() => setHoveredUser(null)}
                 style={{
                   position: 'absolute',
                   left: pos.x - size / 2,
@@ -310,6 +336,122 @@ export default function FloorCanvas() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 2px 8px rgba(79,70,229,0.3)',
             }}>↑</button>
+          </div>
+
+          {/* Avatar Hover Tooltip */}
+          {hoveredUser && (() => {
+            const seatInfo = getUserSeatInfo(hoveredUser.user.id);
+            const isCur = hoveredUser.user.id === currentUser.id;
+            const actionLabel = isCur && currentAction !== 'idle' ? ACTION_LABELS[currentAction] : (seatInfo ? ACTION_LABELS[seatInfo.action] : null);
+            return (
+              <div style={{
+                position: 'absolute',
+                left: hoveredUser.screenX + 24,
+                top: hoveredUser.screenY - 20,
+                zIndex: 100,
+                pointerEvents: 'none',
+                background: '#fff',
+                borderRadius: 10,
+                padding: '10px 14px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08)',
+                minWidth: 160,
+                border: '1px solid #f0f0f0',
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 2 }}>
+                  {hoveredUser.user.name}
+                </div>
+                {hoveredUser.user.role && (
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 6 }}>
+                    {hoveredUser.user.role}
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#374151', marginBottom: seatInfo || actionLabel ? 4 : 0 }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: '50%',
+                    background: STATUS_COLORS[hoveredUser.user.status],
+                    display: 'inline-block', flexShrink: 0,
+                  }} />
+                  {STATUS_LABELS[hoveredUser.user.status]}
+                </div>
+                {actionLabel && (
+                  <div style={{ fontSize: 11, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {ACTION_EMOJI[isCur ? currentAction : (seatInfo?.action || 'idle')]} {actionLabel}
+                  </div>
+                )}
+                {seatInfo && (
+                  <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>
+                    📍 {seatInfo.zoneName}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Quick Actions Bar */}
+          <div style={{
+            position: 'fixed', top: 60, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 50, pointerEvents: 'auto',
+            display: 'flex', alignItems: 'center', gap: 2,
+            background: 'rgba(255,255,255,0.95)', borderRadius: 12,
+            padding: '6px 10px',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.06)',
+            border: '1px solid #f0f0f0',
+          }} onClick={e => e.stopPropagation()}>
+            {/* Status indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 8px 0 4px', borderRight: '1px solid #e5e7eb', marginRight: 4 }}>
+              <span style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: STATUS_COLORS[currentUser.status],
+              }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>
+                {STATUS_LABELS[currentUser.status]}
+              </span>
+            </div>
+
+            {/* Mute toggle */}
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '5px 10px', borderRadius: 8, border: 'none',
+                background: isMuted ? '#FEE2E2' : '#F3F4F6',
+                color: isMuted ? '#DC2626' : '#374151',
+                fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                transition: 'background 0.15s, color 0.15s',
+              }}
+            >
+              {isMuted ? '🔇' : '🎤'} ミュート{isMuted ? '中' : ''}
+            </button>
+
+            {/* Camera toggle */}
+            <button
+              onClick={() => setIsCameraOn(!isCameraOn)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '5px 10px', borderRadius: 8, border: 'none',
+                background: !isCameraOn ? '#FEE2E2' : '#F3F4F6',
+                color: !isCameraOn ? '#DC2626' : '#374151',
+                fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                transition: 'background 0.15s, color 0.15s',
+              }}
+            >
+              {isCameraOn ? '📷' : '📷'} カメラ{!isCameraOn ? 'OFF' : ''}
+            </button>
+
+            {/* Screen share */}
+            <button
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '5px 10px', borderRadius: 8, border: 'none',
+                background: '#F3F4F6', color: '#374151',
+                fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#E5E7EB'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#F3F4F6'; }}
+            >
+              🖥️ 画面共有
+            </button>
           </div>
 
           {/* Empty seat indicators */}
