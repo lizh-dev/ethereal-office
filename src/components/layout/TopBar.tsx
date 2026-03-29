@@ -122,17 +122,6 @@ export default function TopBar() {
         <button onClick={() => setShowQR(true)} title="フロアを共有" className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
           📱 共有
         </button>
-        {editorMode === 'edit' && (
-          <>
-            <button onClick={handleExport} className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
-              📤 エクスポート
-            </button>
-            <button onClick={() => fileInputRef.current?.click()} className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
-              📥 インポート
-            </button>
-            <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
-          </>
-        )}
 
         {/* User avatar - click to change avatar */}
         <button

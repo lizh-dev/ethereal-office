@@ -279,21 +279,32 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
             <span className="text-base">+</span> スペースを追加
           </button>
         )}
-        <div className="flex items-center gap-2 mt-2">
-          <label className="flex items-center gap-1.5 text-xs text-gray-500">
-            <input
-              type="checkbox"
-              checked={showGrid}
-              onChange={(e) => setShowGrid(e.target.checked)}
-              className="rounded"
-            />
-            Grid
-          </label>
+        <div className="flex gap-2 mt-2">
           <button
-            onClick={handleImport}
-            className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+            onClick={() => {
+              if (!excalidrawAPI) return;
+              const store = useOfficeStore.getState();
+              const api = excalidrawAPI;
+              const data = {
+                version: 1,
+                excalidrawScene: { elements: api.getSceneElements(), appState: (() => { const { collaborators, ...rest } = api.getAppState(); return rest; })() },
+                zones: store.zones,
+              };
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = `floor-export.json`; a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="flex-1 text-xs py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors"
           >
-            Import JSON
+            📤 エクスポート
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 text-xs py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors"
+          >
+            📥 インポート
           </button>
           <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileChange} className="hidden" />
         </div>
@@ -305,6 +316,25 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
           🏷️ 座席ラベル
           <span className="text-gray-400 font-normal">（{totalSeats}席検出）</span>
         </h4>
+
+        {zones.length > 0 && (
+          <button
+            onClick={() => {
+              // Auto-assign labels: use zone name as prefix for each zone
+              setZones(zones.map(z => ({
+                ...z,
+                seats: z.seats.map((s, i) => ({
+                  ...s,
+                  id: `${z.name}-${i + 1}`,
+                  label: `${z.name}-${i + 1}`,
+                })),
+              })));
+            }}
+            className="w-full mb-2 text-[10px] py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-medium rounded-lg transition-colors"
+          >
+            🔄 スペース名で一括ラベル設定
+          </button>
+        )}
 
         {zones.length === 0 ? (
           <p className="text-[10px] text-gray-400">
