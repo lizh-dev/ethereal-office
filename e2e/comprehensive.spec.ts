@@ -362,10 +362,10 @@ test.describe('F. エディターモード', () => {
     await page.click('text=スペースを追加');
 
     // ウィザードモーダルが表示
-    await expect(page.getByText('デスクエリア')).toBeVisible();
-    await expect(page.getByText('会議室')).toBeVisible();
-    await expect(page.getByText('ラウンジ')).toBeVisible();
-    await expect(page.getByText('カフェスペース')).toBeVisible();
+    await expect(page.getByRole('button', { name: /デスクエリア/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /会議室/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /ラウンジ/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /カフェスペース/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'スペースを作成' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'キャンセル' })).toBeVisible();
   });

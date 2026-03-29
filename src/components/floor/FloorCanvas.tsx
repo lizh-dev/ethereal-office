@@ -489,23 +489,39 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             </button>
           </div>
 
-          {/* Empty seat indicators */}
-          {zones.flatMap(z => z.seats).filter(s => !s.occupied).map((seat: any, i) => {
+          {/* Seat indicators with labels */}
+          {zones.flatMap(z => z.seats).map((seat: any, i) => {
+            if (seat.occupied && seat.occupiedBy !== currentUser.id) return null;
             const zoom = appState.zoom?.value || 1;
             const sw = (seat.w || 22) * zoom;
             const sh = (seat.h || 22) * zoom;
             const pos = sceneToScreen(seat.x, seat.y, appState);
+            const isEmpty = !seat.occupied;
             return (
-              <div key={`empty-${i}`} title="クリックして座る" style={{
+              <div key={`seat-${seat.id}-${i}`} title={isEmpty ? `${seat.label || seat.id} - クリックして座る` : seat.label || seat.id} style={{
                 position: 'absolute', left: pos.x, top: pos.y, width: sw, height: sh,
-                borderRadius: '50%', border: '2px dashed rgba(99,102,241,0)',
-                cursor: 'pointer', pointerEvents: 'auto', zIndex: 5,
+                borderRadius: '50%', border: isEmpty ? '2px dashed rgba(99,102,241,0)' : 'none',
+                cursor: isEmpty ? 'pointer' : 'default', pointerEvents: isEmpty ? 'auto' : 'none', zIndex: 5,
                 transition: 'border-color 0.2s, background 0.2s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)'; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0)'; e.currentTarget.style.background = 'transparent'; }}
-              onClick={e => { e.stopPropagation(); const ws = (window as unknown as Record<string, any>).__wsSend; if (currentSeatId) { standUp(); ws?.stand?.(); } sitAt(seat.id); moveCurrentUser(seat.x, seat.y); ws?.sit?.(seat.id, seat.x, seat.y); }}
-              />
+              onMouseEnter={isEmpty ? (e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)'; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }) : undefined}
+              onMouseLeave={isEmpty ? (e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0)'; e.currentTarget.style.background = 'transparent'; }) : undefined}
+              onClick={isEmpty ? (e => { e.stopPropagation(); const ws = (window as unknown as Record<string, any>).__wsSend; if (currentSeatId) { standUp(); ws?.stand?.(); } sitAt(seat.id); moveCurrentUser(seat.x, seat.y); ws?.sit?.(seat.id, seat.x, seat.y); }) : undefined}
+              >
+                {/* Seat label */}
+                {seat.label && zoom > 0.4 && (
+                  <div style={{
+                    position: 'absolute', top: sh + 1, left: '50%', transform: 'translateX(-50%)',
+                    whiteSpace: 'nowrap', fontSize: 8, fontWeight: 600,
+                    color: isEmpty ? '#6366F1' : '#9CA3AF',
+                    background: isEmpty ? 'rgba(238,242,255,0.9)' : 'rgba(243,244,246,0.9)',
+                    borderRadius: 3, padding: '0px 3px',
+                    pointerEvents: 'none',
+                  }}>
+                    {seat.label}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

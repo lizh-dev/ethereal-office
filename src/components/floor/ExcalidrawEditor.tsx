@@ -73,57 +73,138 @@ function getDefaultInitialData() {
   };
 }
 
+const ISLAND_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
 function initSeatsFromElements(elements: readonly unknown[]) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const els = elements as any[];
-  const desks = els.filter((el) =>
+
+  // Detect "rooms" = large white rectangles (islands)
+  const rooms = els.filter((el) =>
     el.type === 'rectangle' && !el.isDeleted &&
-    el.backgroundColor === '#e8e3dd' && el.width > 40 && el.width < 120
-  );
+    el.backgroundColor === '#ffffff' && el.width > 150 && el.height > 100
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ).sort((a: any, b: any) => {
+    const dy = a.y - b.y;
+    if (Math.abs(dy) > 50) return dy;
+    return a.x - b.x;
+  });
+
+  // Detect all chairs
   const allChairs = els.filter((el) =>
     el.type === 'ellipse' && !el.isDeleted &&
     el.backgroundColor === '#9ca3af' && el.width <= 30 && el.height <= 30
   );
 
+  // Detect room type from elements inside
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const deskChairs: any[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const otherChairs: any[] = [];
-  for (const chair of allChairs) {
-    const cx = chair.x + chair.width / 2;
-    const cy = chair.y + chair.height / 2;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nearDesk = desks.some((d: any) => {
-      const dx = d.x + d.width / 2;
-      const dy = d.y + d.height / 2;
-      return Math.abs(cx - dx) < 60 && Math.abs(cy - dy) < 60;
-    });
-    if (nearDesk) deskChairs.push(chair);
-    else otherChairs.push(chair);
+  function getRoomType(room: any): 'desk' | 'meeting' | 'lounge' | 'cafe' | 'open' {
+    const desksInside = els.filter((el) =>
+      el.type === 'rectangle' && !el.isDeleted &&
+      el.backgroundColor === '#e8e3dd' &&
+      el.x >= room.x && el.x <= room.x + room.width &&
+      el.y >= room.y && el.y <= room.y + room.height
+    );
+    const sofasInside = els.filter((el) =>
+      el.type === 'rectangle' && !el.isDeleted &&
+      el.backgroundColor === '#c4bab0' &&
+      el.x >= room.x && el.x <= room.x + room.width &&
+      el.y >= room.y && el.y <= room.y + room.height
+    );
+    const tablesInside = els.filter((el) =>
+      el.type === 'ellipse' && !el.isDeleted &&
+      el.backgroundColor === '#ddd8d2' &&
+      el.x >= room.x && el.x <= room.x + room.width &&
+      el.y >= room.y && el.y <= room.y + room.height
+    );
+    if (sofasInside.length > 0) return 'lounge';
+    if (tablesInside.length > 0 && desksInside.length === 0) return 'meeting';
+    if (desksInside.length > 0) return 'desk';
+    return 'open';
   }
 
+  // Get room name from text element inside the room
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sortChairs = (arr: any[]) => arr.sort((a: any, b: any) => {
+  function getRoomName(room: any): string | null {
+    const textEl = els.find((el) =>
+      el.type === 'text' && !el.isDeleted &&
+      el.x >= room.x && el.x <= room.x + room.width &&
+      el.y >= room.y && el.y <= room.y + 40
+    );
+    return textEl?.text || null;
+  }
+
+  // Sort chairs within a room: top-to-bottom, left-to-right
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sortChairs = (arr: any[]) => [...arr].sort((a: any, b: any) => {
     const dy = a.y - b.y;
     if (Math.abs(dy) > 10) return dy;
     return a.x - b.x;
   });
-  const sortedChairs = [...sortChairs(deskChairs), ...sortChairs(otherChairs)];
 
-  const zones = [{
-    id: 'office', type: 'desk' as const, name: 'オフィス',
-    x: 0, y: 0, w: 0, h: 0,
-    seats: sortedChairs.map((c, i) => ({
-      id: `seat-${i}`,
-      roomId: 'office',
-      x: c.x,
-      y: c.y,
-      w: c.width,
-      h: c.height,
-      occupied: false,
-      occupiedBy: undefined as string | undefined,
-    })),
-  }];
+  // Assign chairs to rooms
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const assignedChairs = new Set<any>();
+  const zones = rooms.map((room, ri) => {
+    const chairsInRoom = allChairs.filter((c) => {
+      const cx = c.x + c.width / 2;
+      const cy = c.y + c.height / 2;
+      return cx >= room.x && cx <= room.x + room.width &&
+             cy >= room.y && cy <= room.y + room.height;
+    });
+    chairsInRoom.forEach(c => assignedChairs.add(c));
+
+    const sorted = sortChairs(chairsInRoom);
+    const letter = ISLAND_LETTERS[ri % 26];
+    const roomType = getRoomType(room);
+    const roomName = getRoomName(room);
+    const zoneName = roomName || `${letter}島`;
+
+    return {
+      id: `zone-${ri}`,
+      type: roomType,
+      name: zoneName,
+      x: room.x,
+      y: room.y,
+      w: room.width,
+      h: room.height,
+      seats: sorted.map((c, i) => ({
+        id: `${letter}-${i + 1}`,
+        roomId: `zone-${ri}`,
+        x: c.x,
+        y: c.y,
+        w: c.width,
+        h: c.height,
+        label: `${letter}-${i + 1}`,
+        occupied: false,
+        occupiedBy: undefined as string | undefined,
+      })),
+    };
+  });
+
+  // Unassigned chairs go to a catch-all zone
+  const unassigned = allChairs.filter(c => !assignedChairs.has(c));
+  if (unassigned.length > 0) {
+    const sorted = sortChairs(unassigned);
+    const letter = ISLAND_LETTERS[zones.length % 26];
+    zones.push({
+      id: 'zone-other',
+      type: 'open',
+      name: 'その他',
+      x: 0, y: 0, w: 0, h: 0,
+      seats: sorted.map((c, i) => ({
+        id: `${letter}-${i + 1}`,
+        roomId: 'zone-other',
+        x: c.x,
+        y: c.y,
+        w: c.width,
+        h: c.height,
+        label: `${letter}-${i + 1}`,
+        occupied: false,
+        occupiedBy: undefined as string | undefined,
+      })),
+    });
+  }
 
   useOfficeStore.setState({ zones });
 }

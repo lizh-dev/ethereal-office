@@ -73,6 +73,9 @@ export interface Seat {
   roomId: string;
   x: number;
   y: number;
+  w?: number;
+  h?: number;
+  label?: string; // e.g. "A-1", "B-3"
   occupied: boolean;
   occupiedBy?: string; // userId
 }
