@@ -463,7 +463,31 @@ test.describe('I-2. 検索フィルタ', () => {
     slug = await createFloor(request, '検索テストフロア');
   });
 
-  test('I-2-1: 検索入力でメンバーリストがフィルタされる', async ({ browser }) => {
+  test('I-2-1: フロアビューで検索するとマッチしたユーザーがハイライト', async ({ browser }) => {
+    const ctxA = await browser.newContext();
+    const ctxB = await browser.newContext();
+    const pageA = await ctxA.newPage();
+    const pageB = await ctxB.newPage();
+
+    await joinFloor(pageA, slug, 'ハイライト太郎');
+    await joinFloor(pageB, slug, 'ハイライト花子');
+    await pageA.waitForTimeout(2000);
+
+    // 検索入力
+    await pageA.fill('input[placeholder*="メンバーを検索"]', 'ハイライト花子');
+    await pageA.waitForTimeout(500);
+
+    // 検索マッチしたユーザーのラベルに🔍アイコンが表示される
+    await expect(pageA.getByText('🔍 ハイライト花子')).toBeVisible({ timeout: 3000 });
+
+    // 検索クリア
+    await pageA.fill('input[placeholder*="メンバーを検索"]', '');
+
+    await ctxA.close();
+    await ctxB.close();
+  });
+
+  test('I-2-2: 検索入力でメンバーリストがフィルタされる', async ({ browser }) => {
     const ctxA = await browser.newContext();
     const ctxB = await browser.newContext();
     const pageA = await ctxA.newPage();

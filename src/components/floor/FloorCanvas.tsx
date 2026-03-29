@@ -196,10 +196,17 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
     return null;
   }, [zones]);
 
+  const searchQuery = useOfficeStore((s) => s.searchQuery);
   const allUsers = [...users, currentUser];
 
   return (
     <div ref={ref} style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <style>{`
+        @keyframes search-pulse {
+          0%, 100% { box-shadow: 0 0 8px 2px rgba(245,158,11,0.4); }
+          50% { box-shadow: 0 0 16px 6px rgba(245,158,11,0.7); }
+        }
+      `}</style>
       {/* Excalidraw — always mounted, viewMode toggled */}
       <div style={{ width: '100%', height: `${h}px` }}>
         <Editor viewMode={isViewMode} floorSlug={floorSlug} savedScene={savedScene} />
@@ -233,6 +240,10 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             const isCurrent = user.id === currentUser.id;
             const zoom = appState.zoom?.value || 1;
             const size = Math.max(28, 36 * zoom);
+            const sq = searchQuery.trim().toLowerCase();
+            const isSearching = sq.length > 0;
+            const isMatch = isSearching && user.name.toLowerCase().includes(sq);
+            const isDimmed = isSearching && !isMatch;
 
             return (
               <div
@@ -243,17 +254,20 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                   position: 'absolute',
                   left: pos.x - size / 2,
                   top: pos.y - size / 2,
-                  transition: 'left 0.5s ease, top 0.5s ease',
+                  transition: 'left 0.5s ease, top 0.5s ease, opacity 0.3s ease, filter 0.3s ease',
                   pointerEvents: 'auto',
-                  zIndex: isCurrent ? 20 : 10,
+                  zIndex: isMatch ? 30 : isCurrent ? 20 : 10,
+                  opacity: isDimmed ? 0.3 : 1,
+                  filter: isDimmed ? 'grayscale(0.8)' : 'none',
                 }}
               >
                 {/* Avatar */}
                 <div style={{
                   width: size, height: size, borderRadius: '50%',
-                  border: `${isCurrent ? 3 : 2}px solid ${isCurrent ? '#4F46E5' : STATUS_COLORS[user.status]}`,
+                  border: `${isMatch ? 3 : isCurrent ? 3 : 2}px solid ${isMatch ? '#F59E0B' : isCurrent ? '#4F46E5' : STATUS_COLORS[user.status]}`,
                   overflow: 'hidden', background: '#fff',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  boxShadow: isMatch ? '0 0 12px 4px rgba(245,158,11,0.5)' : '0 2px 8px rgba(0,0,0,0.15)',
+                  animation: isMatch ? 'search-pulse 1.5s ease-in-out infinite' : 'none',
                 }}>
                   <img
                     src={getAvatarUrl(user.avatarSeed || user.name, user.avatarStyle || 'notionists')}
@@ -281,14 +295,17 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                   </div>
                 )}
                 {/* Name */}
-                {zoom > 0.5 && (
+                {(zoom > 0.5 || isMatch) && (
                   <div style={{
                     position: 'absolute', top: size + 2, left: '50%', transform: 'translateX(-50%)',
-                    whiteSpace: 'nowrap', fontSize: 10, fontWeight: 600, color: '#374151',
-                    background: 'rgba(255,255,255,0.9)', borderRadius: 6, padding: '1px 6px',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                    whiteSpace: 'nowrap', fontSize: isMatch ? 11 : 10, fontWeight: isMatch ? 700 : 600,
+                    color: isMatch ? '#92400E' : '#374151',
+                    background: isMatch ? '#FEF3C7' : 'rgba(255,255,255,0.9)',
+                    borderRadius: 6, padding: isMatch ? '2px 8px' : '1px 6px',
+                    boxShadow: isMatch ? '0 2px 8px rgba(245,158,11,0.3)' : '0 1px 3px rgba(0,0,0,0.08)',
+                    border: isMatch ? '1px solid #F59E0B' : 'none',
                   }}>
-                    {user.name.split(' ')[0]}{isCurrent ? ' (You)' : ''}
+                    {isMatch ? '🔍 ' : ''}{user.name.split(' ')[0]}{isCurrent ? ' (You)' : ''}
                   </div>
                 )}
                 {/* Action badge */}
