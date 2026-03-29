@@ -2,14 +2,17 @@
 
 import { useEffect, useRef } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
+import type { WsSend } from '@/contexts/WebSocketContext';
 import type { PresenceStatus } from '@/types';
 
 const IDLE_TIMEOUT = 3 * 60 * 1000; // 3 minutes
 
-export function useIdleDetection() {
+export function useIdleDetection(wsSend: WsSend) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevStatusRef = useRef<PresenceStatus>('online');
   const isIdleRef = useRef(false);
+  const wsSendRef = useRef(wsSend);
+  wsSendRef.current = wsSend;
 
   useEffect(() => {
     const setIdle = () => {
@@ -19,8 +22,7 @@ export function useIdleDetection() {
       prevStatusRef.current = store.currentUser.status;
       isIdleRef.current = true;
       store.setCurrentUserStatus('offline');
-      const wsSend = (window as unknown as Record<string, any>).__wsSend;
-      wsSend?.status?.('offline');
+      wsSendRef.current.status('offline');
     };
 
     const setActive = () => {
@@ -29,8 +31,7 @@ export function useIdleDetection() {
       const store = useOfficeStore.getState();
       const restoreStatus = prevStatusRef.current === 'offline' ? 'online' : prevStatusRef.current;
       store.setCurrentUserStatus(restoreStatus);
-      const wsSend = (window as unknown as Record<string, any>).__wsSend;
-      wsSend?.status?.(restoreStatus);
+      wsSendRef.current.status(restoreStatus);
     };
 
     const resetTimer = () => {

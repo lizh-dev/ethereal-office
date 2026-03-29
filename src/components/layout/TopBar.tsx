@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
+import { useWsSend } from '@/contexts/WebSocketContext';
 import QRCodeModal from '@/components/QRCodeModal';
 import type { PresenceStatus } from '@/types';
 
@@ -23,6 +24,7 @@ const STATUS_OPTIONS: { value: PresenceStatus; label: string; color: string }[] 
 
 export default function TopBar() {
   const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, setStatusMessage, statusMessage, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode } = useOfficeStore();
+  const wsSend = useWsSend();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [statusMsgInput, setStatusMsgInput] = useState(statusMessage || '');
@@ -173,8 +175,7 @@ export default function TopBar() {
                   key={opt.value}
                   onClick={() => {
                     setCurrentUserStatus(opt.value);
-                    const wsSend = (window as unknown as Record<string, any>).__wsSend;
-                    wsSend?.status?.(opt.value, statusMsgInput);
+                    wsSend.status(opt.value, statusMsgInput);
                     setShowStatusMenu(false);
                   }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors text-left"
@@ -199,14 +200,12 @@ export default function TopBar() {
                   onChange={e => setStatusMsgInput(e.target.value)}
                   onBlur={() => {
                     setStatusMessage(statusMsgInput);
-                    const wsSend = (window as unknown as Record<string, any>).__wsSend;
-                    wsSend?.status?.(currentUser.status, statusMsgInput);
+                    wsSend.status(currentUser.status, statusMsgInput);
                   }}
                   onKeyDown={e => {
                     if (e.key === 'Enter') {
                       setStatusMessage(statusMsgInput);
-                      const wsSend = (window as unknown as Record<string, any>).__wsSend;
-                      wsSend?.status?.(currentUser.status, statusMsgInput);
+                      wsSend.status(currentUser.status, statusMsgInput);
                       setShowStatusMenu(false);
                     }
                   }}

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
+import { useWsSend } from '@/contexts/WebSocketContext';
 
 const STATUS_COLORS: Record<string, string> = {
   online: '#4CAF50', busy: '#F44336', focusing: '#FF9800', offline: '#BDBDBD',
@@ -10,6 +11,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function DMPanel() {
   const { activeDMUserId, dmMessages, currentUser, users, setActiveDM, clearDMUnread } = useOfficeStore();
+  const wsSend = useWsSend();
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -33,8 +35,7 @@ export default function DMPanel() {
   const handleSend = () => {
     if (!input.trim()) return;
     const text = input.trim();
-    const wsSend = (window as unknown as Record<string, any>).__wsSend;
-    wsSend?.dm?.(activeDMUserId, text);
+    wsSend.dm(activeDMUserId, text);
     setInput('');
   };
 

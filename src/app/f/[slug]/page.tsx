@@ -14,10 +14,12 @@ import JoinDialog from '@/components/JoinDialog';
 import ChatView from '@/components/views/ChatView';
 import MembersView from '@/components/views/MembersView';
 import ProfileView from '@/components/views/ProfileView';
+import RightPanel from '@/components/layout/RightPanel';
 import DMPanel from '@/components/chat/DMPanel';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useIdleDetection } from '@/hooks/useIdleDetection';
+import { WebSocketProvider } from '@/contexts/WebSocketContext';
 
 const SpaceWizard = dynamic(() => import('@/components/editor/SpaceWizard'), { ssr: false });
 
@@ -109,7 +111,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   }, [loading, notFound, autoJoinChecked, joined]);
 
   const { send, connected } = useWebSocket(wsOptions);
-  useIdleDetection();
+  useIdleDetection(send);
 
   const handleJoin = (name: string, avatarStyle: string, avatarSeed: string) => {
     // Set current user info in store
@@ -162,14 +164,6 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
     }
   }, [currentUser.status, currentUser.statusMessage, joined]);
 
-  // Expose send functions for child components
-  useEffect(() => {
-    (window as unknown as Record<string, unknown>).__wsSend = send;
-    return () => {
-      delete (window as unknown as Record<string, unknown>).__wsSend;
-    };
-  }, [send]);
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -204,55 +198,58 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   }
 
   return (
-    <div className="floor-page flex h-screen overflow-hidden bg-white">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <TopBar />
-        <div className="flex-1 flex min-h-0">
-          {viewMode === 'floor' && (
-            <>
-              <FloorCanvas floorSlug={slug} savedScene={floorData?.excalidrawScene} />
-              {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} floorSlug={slug} />}
-            </>
-          )}
-          {viewMode === 'meetings' && <MembersView />}
-          {viewMode === 'chat' && <ChatView />}
-          {viewMode === 'profile' && <ProfileView />}
-        </div>
-      </div>
-      {showAvatarSelector && <AvatarSelector />}
-      {showSpaceWizard && <SpaceWizard onClose={() => setShowSpaceWizard(false)} />}
-      <NotificationToast />
-      {activeDMUserId && <DMPanel />}
-      {/* Kick notification overlay */}
-      {kickedNotification && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.6)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <div style={{
-            background: '#fff', borderRadius: 16, padding: '32px 40px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-            textAlign: 'center', maxWidth: 360,
-          }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🚫</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#1f2937', marginBottom: 8 }}>
-              フロアオーナーにより退出されました
-            </div>
-            <div style={{ fontSize: 13, color: '#6b7280' }}>
-              2秒後にトップページへ移動します...
-            </div>
+    <WebSocketProvider value={{ send, connected }}>
+      <div className="floor-page flex h-screen overflow-hidden bg-white">
+        <Sidebar />
+        <div className="flex-1 flex flex-col min-w-0">
+          <TopBar />
+          <div className="flex-1 flex min-h-0">
+            {viewMode === 'floor' && (
+              <>
+                <FloorCanvas floorSlug={slug} savedScene={floorData?.excalidrawScene} />
+                {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} floorSlug={slug} />}
+                <RightPanel />
+              </>
+            )}
+            {viewMode === 'meetings' && <MembersView />}
+            {viewMode === 'chat' && <ChatView />}
+            {viewMode === 'profile' && <ProfileView />}
           </div>
         </div>
-      )}
-      {/* WS connection indicator - minimal, only show when disconnected */}
-      {!connected && (
-        <div className="fixed bottom-2 left-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs bg-red-50 border border-red-200 shadow-sm">
-          <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-          <span className="text-red-500 font-medium">接続中...</span>
-        </div>
-      )}
-    </div>
+        {showAvatarSelector && <AvatarSelector />}
+        {showSpaceWizard && <SpaceWizard onClose={() => setShowSpaceWizard(false)} />}
+        <NotificationToast />
+        {activeDMUserId && <DMPanel />}
+        {/* Kick notification overlay */}
+        {kickedNotification && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{
+              background: '#fff', borderRadius: 16, padding: '32px 40px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+              textAlign: 'center', maxWidth: 360,
+            }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🚫</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#1f2937', marginBottom: 8 }}>
+                フロアオーナーにより退出されました
+              </div>
+              <div style={{ fontSize: 13, color: '#6b7280' }}>
+                2秒後にトップページへ移動します...
+              </div>
+            </div>
+          </div>
+        )}
+        {/* WS connection indicator - minimal, only show when disconnected */}
+        {!connected && (
+          <div className="fixed bottom-2 left-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs bg-red-50 border border-red-200 shadow-sm">
+            <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+            <span className="text-red-500 font-medium">接続中...</span>
+          </div>
+        )}
+      </div>
+    </WebSocketProvider>
   );
 }

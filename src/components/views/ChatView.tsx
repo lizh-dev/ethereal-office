@@ -3,9 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
+import { useWsSend } from '@/contexts/WebSocketContext';
 
 export default function ChatView() {
   const { chatMessages, currentUser, users, sendMessage } = useOfficeStore();
+  const wsSend = useWsSend();
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -14,8 +16,7 @@ export default function ChatView() {
   const handleSend = () => {
     if (!input.trim()) return;
     const text = input.trim();
-    const wsSend = (window as unknown as Record<string, any>).__wsSend;
-    if (wsSend?.chat) wsSend.chat(text);
+    wsSend.chat(text);
     setInput('');
   };
 

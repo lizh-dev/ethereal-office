@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
+import { useWsSend } from '@/contexts/WebSocketContext';
 
 const STATUS_COLORS: Record<string, string> = {
   online: '#4CAF50', busy: '#F44336', focusing: '#FF9800', offline: '#BDBDBD',
@@ -13,13 +14,13 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function MembersView() {
   const { currentUser, users, searchQuery, isFloorOwner, dmUnreadCount, setActiveDM } = useOfficeStore();
+  const wsSend = useWsSend();
 
   const [kickTarget, setKickTarget] = useState<{ id: string; name: string } | null>(null);
 
   const doKick = () => {
     if (!kickTarget) return;
-    const wsSend = (window as unknown as Record<string, any>).__wsSend;
-    wsSend?.kick?.(kickTarget.id);
+    wsSend.kick(kickTarget.id);
     setKickTarget(null);
   };
 

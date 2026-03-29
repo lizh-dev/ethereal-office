@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from './assets';
+import { useWsSend } from '@/contexts/WebSocketContext';
 import type { User } from '@/types';
 
 const Editor = dynamic(() => import('./ExcalidrawEditor'), {
@@ -49,6 +50,7 @@ interface FloorCanvasProps {
 export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps = {}) {
   const ref = useRef<HTMLDivElement>(null);
   const [h, setH] = useState(600);
+  const wsSend = useWsSend();
   const editorMode = useOfficeStore((s) => s.editorMode);
   const users = useOfficeStore((s) => s.users);
   const currentUser = useOfficeStore((s) => s.currentUser);
@@ -128,23 +130,22 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
       }
     }
 
-    const wsSend = (window as unknown as Record<string, any>).__wsSend;
     if (closestSeat) {
       if (currentSeatId) {
         standUp();
-        wsSend?.stand?.();
+        wsSend.stand();
       }
       sitAt(closestSeat.id);
       moveCurrentUser(closestSeat.x, closestSeat.y);
-      wsSend?.sit?.(closestSeat.id, closestSeat.x, closestSeat.y);
+      wsSend.sit(closestSeat.id, closestSeat.x, closestSeat.y);
     } else {
       if (currentSeatId) {
         standUp();
-        wsSend?.stand?.();
+        wsSend.stand();
       }
       moveCurrentUser(sceneX, sceneY);
     }
-  }, [isViewMode, excalidrawAPI, moveCurrentUser, zones, sitAt, standUp, currentSeatId, currentUser.id]);
+  }, [isViewMode, excalidrawAPI, moveCurrentUser, zones, sitAt, standUp, currentSeatId, currentUser.id, wsSend]);
 
   useEffect(() => {
     const update = () => { if (ref.current) setH(ref.current.clientHeight); };
@@ -160,13 +161,12 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && currentSeatId && isViewMode) {
         standUp();
-        const wsSend = (window as unknown as Record<string, any>).__wsSend;
-        wsSend?.stand?.();
+        wsSend.stand();
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [currentSeatId, isViewMode, standUp]);
+  }, [currentSeatId, isViewMode, standUp, wsSend]);
 
   const chatMessages = useOfficeStore((s) => s.chatMessages);
   const sendMessage = useOfficeStore((s) => s.sendMessage);
@@ -186,8 +186,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
     if (!chatInput.trim()) return;
     const text = chatInput.trim();
     // Only send via WS — message comes back from server for all users including self
-    const wsSend = (window as unknown as Record<string, any>).__wsSend;
-    if (wsSend?.chat) wsSend.chat(text);
+    wsSend.chat(text);
     setChatInput('');
   };
 
@@ -476,8 +475,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
           }} onClick={e => e.stopPropagation()}>
             {['👋', '👍', '👏', '😂', '❤️', '🎉', '🤔', '☕'].map(emoji => (
               <button key={emoji} onClick={() => {
-                const wsSend = (window as unknown as Record<string, any>).__wsSend;
-                wsSend?.reaction?.(emoji);
+                wsSend.reaction(emoji);
                 // Also show own reaction
                 useOfficeStore.setState(s => ({ reactions: { ...s.reactions, [currentUser.id]: emoji } }));
                 setTimeout(() => useOfficeStore.setState(s => { const { [currentUser.id]: _, ...rest } = s.reactions; return { reactions: rest }; }), 3000);
@@ -512,8 +510,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             >
               <button
                 onClick={() => {
-                  const wsSend = (window as unknown as Record<string, any>).__wsSend;
-                  wsSend?.kick?.(contextMenu.userId);
+                  wsSend.kick(contextMenu.userId);
                   setContextMenu(null);
                 }}
                 style={{
@@ -568,7 +565,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
               }}
               onMouseEnter={isEmpty ? (e => { e.currentTarget.style.border = '2px solid rgba(99,102,241,0.6)'; e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.transform = 'scale(1.15)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(99,102,241,0.3)'; }) : undefined}
               onMouseLeave={isEmpty ? (e => { e.currentTarget.style.border = '2px solid rgba(99,102,241,0.25)'; e.currentTarget.style.background = 'rgba(99,102,241,0.06)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }) : undefined}
-              onClick={isEmpty ? (e => { e.stopPropagation(); const ws = (window as unknown as Record<string, any>).__wsSend; if (currentSeatId) { standUp(); ws?.stand?.(); } sitAt(seat.id); moveCurrentUser(seat.x, seat.y); ws?.sit?.(seat.id, seat.x, seat.y); }) : undefined}
+              onClick={isEmpty ? (e => { e.stopPropagation(); if (currentSeatId) { standUp(); wsSend.stand(); } sitAt(seat.id); moveCurrentUser(seat.x, seat.y); wsSend.sit(seat.id, seat.x, seat.y); }) : undefined}
               >
                 {/* Empty seat icon */}
                 {isEmpty && zoom > 0.3 && (

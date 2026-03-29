@@ -1,11 +1,13 @@
 'use client';
 
 import { useOfficeStore } from '@/store/officeStore';
+import { useWsSend } from '@/contexts/WebSocketContext';
 import { useRef, useState } from 'react';
 
 const ISLAND_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: () => void; floorSlug?: string }) {
+  const wsSend = useWsSend();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     editorMode,
@@ -115,8 +117,7 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
     }
 
     // 2. Notify other users via WS
-    const wsSend = (window as unknown as Record<string, any>).__wsSend;
-    wsSend?.sceneUpdate?.();
+    wsSend.sceneUpdate();
 
     // 3. Switch to view mode first
     setEditorMode('view');

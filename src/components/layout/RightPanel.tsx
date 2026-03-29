@@ -3,6 +3,7 @@
 import { useMemo, useCallback } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
+import { useWsSend } from '@/contexts/WebSocketContext';
 import type { UserAction, User, Zone } from '@/types';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -67,6 +68,7 @@ export default function RightPanel() {
     users, currentUser, zones, currentAction, currentSeatId,
     excalidrawAPI, standUp, sitAt, addNotification, searchQuery,
   } = useOfficeStore();
+  const wsSend = useWsSend();
 
   const allUsers = useMemo(() => [currentUser, ...users], [currentUser, users]);
   const onlineUsers = useMemo(() => {
@@ -171,12 +173,11 @@ export default function RightPanel() {
     const availableSeat = zone.seats.find(s => !s.occupied);
     if (availableSeat) {
       sitAt(availableSeat.id);
-      const wsSend = (window as unknown as Record<string, any>).__wsSend;
-      wsSend?.sit?.(availableSeat.id, availableSeat.x, availableSeat.y);
+      wsSend.sit(availableSeat.id, availableSeat.x, availableSeat.y);
     } else {
       addNotification('空席がありません');
     }
-  }, [sitAt, addNotification]);
+  }, [sitAt, addNotification, wsSend]);
 
   // Current user zone info
   const currentZoneName = userInfo.zoneMap[currentUser.id];
@@ -214,7 +215,7 @@ export default function RightPanel() {
               <div className="flex items-center gap-1 mt-0.5">
                 <span className="text-[9px] text-indigo-500 font-medium">{currentZoneName}</span>
                 <button
-                  onClick={() => { standUp(); const ws = (window as unknown as Record<string, any>).__wsSend; ws?.stand?.(); }}
+                  onClick={() => { standUp(); wsSend.stand(); }}
                   className="text-[8px] px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 transition-colors ml-auto"
                 >
                   立ち上がる

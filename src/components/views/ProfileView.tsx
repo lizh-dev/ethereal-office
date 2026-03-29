@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
+import { useWsSend } from '@/contexts/WebSocketContext';
 
 const AVATAR_STYLES = ['notionists', 'avataaars', 'big-smile', 'adventurer', 'personas', 'lorelei'];
 const AVATAR_SEEDS = ['田中', '佐藤', '鈴木', '高橋', '伊藤', '渡辺', '山本', '中村', '小林', '加藤', '吉田', '山田'];
 
 export default function ProfileView() {
   const { currentUser, setCurrentUserAvatar } = useOfficeStore();
+  const wsSend = useWsSend();
   const [name, setName] = useState(currentUser.name);
   const [avatarStyle, setAvatarStyle] = useState(currentUser.avatarStyle || 'notionists');
   const [avatarSeed, setAvatarSeed] = useState(currentUser.avatarSeed || 'default');
@@ -35,10 +37,7 @@ export default function ProfileView() {
     }));
 
     // Broadcast profile changes to other users via WebSocket
-    const wsSend = (window as unknown as Record<string, any>).__wsSend;
-    if (wsSend?.profileUpdate) {
-      wsSend.profileUpdate(name.trim() || currentUser.name, avatarStyle, avatarSeed);
-    }
+    wsSend.profileUpdate(name.trim() || currentUser.name, avatarStyle, avatarSeed);
 
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
