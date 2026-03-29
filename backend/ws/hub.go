@@ -96,18 +96,14 @@ func (h *Hub) addClient(client *Client) {
 	room := h.getOrCreateRoom(client.room)
 
 	h.mu.Lock()
-	// Check if this user was recently disconnected and restore their state
+	// Check if this user was recently disconnected — restore position only, NOT seat
 	if di, ok := room.recentlyDisconnected[client.info.ID]; ok {
 		if time.Since(di.DisconnectAt) < 60*time.Second {
-			// Restore previous state (position, seat, status)
 			client.info.X = di.Info.X
 			client.info.Y = di.Info.Y
-			client.info.SeatID = di.Info.SeatID
-			client.info.Status = di.Info.Status
-			client.info.StatusMessage = di.Info.StatusMessage
-			client.info.IsMuted = di.Info.IsMuted
-			client.info.IsCamOn = di.Info.IsCamOn
-			log.Printf("[%s] %s reconnected, restored state (seat=%s)", client.room, client.info.Name, client.info.SeatID)
+			// Do NOT restore SeatID — user must re-sit manually
+			client.info.Status = "online"
+			log.Printf("[%s] %s reconnected, position restored", client.room, client.info.Name)
 		}
 		delete(room.recentlyDisconnected, client.info.ID)
 	}
@@ -175,6 +171,14 @@ func (h *Hub) removeClient(client *Client) {
 	}
 	h.mu.Unlock()
 	close(client.send)
+
+	// If user was seated, broadcast stand first
+	if client.info.SeatID != "" {
+		h.broadcastToRoom(client.room, OutgoingMessage{
+			Type:   MsgUserStood,
+			UserID: client.info.ID,
+		}, "")
+	}
 
 	// Broadcast user_left
 	h.broadcastToRoom(client.room, OutgoingMessage{
