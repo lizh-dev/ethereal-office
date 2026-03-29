@@ -204,7 +204,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white">
+    <div className="floor-page flex h-screen overflow-hidden bg-white">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar />

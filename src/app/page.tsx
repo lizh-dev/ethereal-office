@@ -16,9 +16,9 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a1a] overflow-y-auto overflow-x-hidden">
+    <div className="landing-page min-h-screen bg-white">
       {/* Fixed gradient background */}
-      <div className="fixed inset-0 bg-gradient-to-b from-[#0a0a1a] via-[#0f0f2e] to-[#0a0a1a] -z-10" />
+      <div className="fixed inset-0 bg-gradient-to-b from-sky-50 via-white to-sky-50/30 -z-10" />
 
       <HeroSection onCtaClick={scrollToCreate} />
       <ProblemSection />

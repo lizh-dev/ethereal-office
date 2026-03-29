@@ -47,10 +47,10 @@ export default function ProblemSection() {
       <div className="max-w-5xl mx-auto">
         {/* Section header */}
         <div className="text-center mb-16">
-          <p className="text-indigo-400 font-semibold text-sm tracking-wider uppercase mb-3">Problem</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <p className="text-sky-500 font-semibold text-sm tracking-wider uppercase mb-3">Problem</p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
             リモートワークの
-            <span className="text-gray-500">見えない壁</span>
+            <span className="text-gray-400">見えない壁</span>
           </h2>
           <p className="text-gray-500 max-w-xl mx-auto">
             テクノロジーでつながっているはずなのに、なぜか遠い。そんな経験ありませんか？
@@ -62,13 +62,13 @@ export default function ProblemSection() {
           {problems.map((problem, i) => (
             <div
               key={i}
-              className="group relative p-6 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.1] transition-all duration-500"
+              className="group relative p-6 rounded-2xl bg-white border border-gray-100 hover:border-sky-200 hover:shadow-lg hover:shadow-sky-50 transition-all duration-500"
               style={{ transitionDelay: `${i * 100}ms` }}
             >
-              <div className="text-red-400/80 mb-4 group-hover:scale-110 transition-transform duration-300">
+              <div className="text-sky-500 mb-4 group-hover:scale-110 transition-transform duration-300">
                 {problem.icon}
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">{problem.title}</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">{problem.title}</h3>
               <p className="text-sm text-gray-500 leading-relaxed">{problem.description}</p>
             </div>
           ))}
