@@ -126,12 +126,19 @@ export function generateIsometricDemoFloor() {
   // ===== Meeting Room =====
   elements.push(...room('会議室', 440, 30, 310, 220));
 
-  elements.push(fur('fur-table-round', 545, 90));
-  // Chairs facing toward table from each direction
-  elements.push(fur('fur-chair', 565, 55));        // top: facing down toward table
-  elements.push(fur('fur-chair-right', 500, 110));  // left: facing right toward table
-  elements.push(fur('fur-chair-left', 620, 110));   // right: facing left toward table
-  elements.push(fur('fur-chair-up', 565, 160));     // bottom: facing up toward table
+  // Table centered in room
+  const tblW = 65, tblH = 65;
+  const tblX = 440 + (310 - tblW) / 2;  // room center
+  const tblY = 30 + (220 - tblH) / 2;
+  elements.push(fur('fur-table-round', tblX, tblY));
+  // Chairs equidistant from table center
+  const cx = tblX + tblW / 2, cy = tblY + tblH / 2;
+  const dist = 50;  // distance from center to chair center
+  const chW = 32, chH = 50, chWh = 50, chHh = 32;  // vertical / horizontal chair sizes
+  elements.push(fur('fur-chair', cx - chW / 2, cy - dist - chH / 2));        // top
+  elements.push(fur('fur-chair-up', cx - chW / 2, cy + dist - chH / 2));     // bottom
+  elements.push(fur('fur-chair-right', cx - dist - chWh / 2, cy - chHh / 2)); // left
+  elements.push(fur('fur-chair-left', cx + dist - chWh / 2, cy - chHh / 2));  // right
   elements.push(fur('fur-whiteboard', 460, 190));
   elements.push(fur('fur-plant', 710, 40));
 

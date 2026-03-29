@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { convertToExcalidrawElements } from '@excalidraw/excalidraw';
 import { useOfficeStore } from '@/store/officeStore';
+import { FURNITURE_ASSETS } from '@/lib/furnitureAssets';
 
 interface SpaceConfig {
   type: 'desk-area' | 'meeting' | 'lounge' | 'cafe';
@@ -10,7 +10,6 @@ interface SpaceConfig {
   rows: number;
   cols: number;
   spacing: number;
-  direction: 'horizontal' | 'vertical';
   labelPrefix: string;
   labelStart: number;
 }
@@ -22,109 +21,232 @@ const SPACE_TYPES = [
   { id: 'cafe' as const, label: 'カフェスペース', desc: 'テーブル+椅子+コーヒー', icon: '☕' },
 ];
 
-// ── Excalidraw element generators ───────────────────────
+function eid() {
+  return `el-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 function gid() {
   return `g-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RawEl = Record<string, unknown>;
 
-function deskSet(x: number, y: number, groupId: string): RawEl[] {
+function getAsset(id: string) {
+  return FURNITURE_ASSETS.find(a => a.id === id)!;
+}
+
+function furEl(assetId: string, x: number, y: number, scale = 1): RawEl {
+  const asset = getAsset(assetId);
+  return {
+    id: eid(),
+    type: 'image',
+    x,
+    y,
+    width: asset.width * scale,
+    height: asset.height * scale,
+    fileId: assetId,
+    status: 'saved',
+    strokeColor: 'transparent',
+    backgroundColor: 'transparent',
+    fillStyle: 'solid',
+    strokeWidth: 0,
+    roundness: null,
+    opacity: 100,
+  };
+}
+
+function textEl(x: number, y: number, text: string, fontSize = 11): RawEl {
+  return {
+    type: 'text', x, y, text, fontSize, strokeColor: '#94a3b8',
+  };
+}
+
+function roomBox(name: string, x: number, y: number, w: number, h: number): RawEl[] {
   return [
-    { type: 'rectangle', x, y, width: 80, height: 40, backgroundColor: '#e8e3dd', strokeColor: '#d5d0ca', fillStyle: 'solid', roundness: { type: 3 }, groupIds: [groupId], strokeWidth: 1 },
-    { type: 'rectangle', x: x + 28, y: y + 3, width: 24, height: 12, backgroundColor: '#818cf8', strokeColor: '#475569', fillStyle: 'solid', roundness: { type: 3 }, groupIds: [groupId], strokeWidth: 1 },
-    { type: 'ellipse', x: x + 29, y: y + 48, width: 22, height: 22, backgroundColor: '#9ca3af', strokeColor: '#78716c', fillStyle: 'solid', groupIds: [groupId], strokeWidth: 1 },
+    { type: 'rectangle', x, y, width: w, height: h, backgroundColor: '#ffffff', strokeColor: '#e5e5e5', fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1 },
+    { type: 'text', x: x + 12, y: y + 10, text: name, fontSize: 13, strokeColor: '#6b7280' },
   ];
 }
 
-function generateDeskAreaElements(config: SpaceConfig, ox: number, oy: number): RawEl[] {
+// ── Space generators using furniture image assets ──
+
+function generateDeskArea(config: SpaceConfig, ox: number, oy: number): { elements: RawEl[]; chairs: RawEl[] } {
   const { rows, cols, spacing, name } = config;
-  const cellW = 80 + spacing;
-  const cellH = 70 + spacing;
-  const roomW = cols * cellW + 30;
+  const deskW = getAsset('fur-desk').width;
+  const cellW = deskW + spacing;
+  const cellH = 80 + spacing;
+  const roomW = cols * cellW + 40;
   const roomH = rows * cellH + 50;
-  const els: RawEl[] = [
-    { type: 'rectangle', x: ox, y: oy, width: roomW, height: roomH, backgroundColor: '#ffffff', strokeColor: '#e5e5e5', fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1 },
-    { type: 'text', x: ox + 12, y: oy + 10, text: name, fontSize: 13, strokeColor: '#6b7280' },
-  ];
-  for (let r = 0; r < rows; r++)
-    for (let c = 0; c < cols; c++)
-      els.push(...deskSet(ox + 15 + c * cellW, oy + 35 + r * cellH, gid()));
-  return els;
-}
 
-function generateMeetingElements(config: SpaceConfig, ox: number, oy: number): RawEl[] {
-  const seats = config.cols;
-  const els: RawEl[] = [
-    { type: 'rectangle', x: ox, y: oy, width: 220, height: 160, backgroundColor: '#ffffff', strokeColor: '#e5e5e5', fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1 },
-    { type: 'text', x: ox + 12, y: oy + 10, text: config.name, fontSize: 13, strokeColor: '#6b7280' },
-    { type: 'ellipse', x: ox + 45, y: oy + 45, width: 130, height: 65, backgroundColor: '#ddd8d2', strokeColor: '#ccc7c0', fillStyle: 'solid', strokeWidth: 1 },
-  ];
-  for (let i = 0; i < Math.min(seats, 4); i++) {
-    els.push({ type: 'ellipse', x: ox + 58 + i * 32, y: oy + 28, width: 20, height: 20, backgroundColor: '#9ca3af', strokeColor: '#78716c', fillStyle: 'solid', strokeWidth: 1 });
-    els.push({ type: 'ellipse', x: ox + 58 + i * 32, y: oy + 118, width: 20, height: 20, backgroundColor: '#9ca3af', strokeColor: '#78716c', fillStyle: 'solid', strokeWidth: 1 });
-  }
-  return els;
-}
+  const elements: RawEl[] = [...roomBox(name, ox, oy, roomW, roomH)];
+  const chairs: RawEl[] = [];
 
-function generateLoungeElements(config: SpaceConfig, ox: number, oy: number): RawEl[] {
-  return [
-    { type: 'rectangle', x: ox, y: oy, width: 220, height: 170, backgroundColor: '#ffffff', strokeColor: '#e5e5e5', fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1 },
-    { type: 'text', x: ox + 12, y: oy + 10, text: config.name, fontSize: 13, strokeColor: '#6b7280' },
-    { type: 'rectangle', x: ox + 15, y: oy + 35, width: 95, height: 35, backgroundColor: '#c4bab0', strokeColor: '#a8a29e', fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1 },
-    { type: 'rectangle', x: ox + 15, y: oy + 105, width: 95, height: 35, backgroundColor: '#c4bab0', strokeColor: '#a8a29e', fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1 },
-    { type: 'rectangle', x: ox + 30, y: oy + 76, width: 60, height: 24, backgroundColor: '#ddd8d2', strokeColor: '#ccc7c0', fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1 },
-    { type: 'ellipse', x: ox + 150, y: oy + 35, width: 30, height: 30, backgroundColor: '#86ceab', strokeColor: '#5ead88', fillStyle: 'solid', strokeWidth: 1 },
-    { type: 'ellipse', x: ox + 165, y: oy + 115, width: 30, height: 30, backgroundColor: '#86ceab', strokeColor: '#5ead88', fillStyle: 'solid', strokeWidth: 1 },
-  ];
-}
-
-function generateCafeElements(config: SpaceConfig, ox: number, oy: number): RawEl[] {
-  const { rows, cols, spacing, name } = config;
-  const cellW = 80 + spacing;
-  const cellH = 100 + spacing;
-  const roomW = cols * cellW + 50;
-  const roomH = rows * cellH + 40;
-  const els: RawEl[] = [
-    { type: 'rectangle', x: ox, y: oy, width: roomW, height: roomH, backgroundColor: '#ffffff', strokeColor: '#e5e5e5', fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1 },
-    { type: 'text', x: ox + 12, y: oy + 10, text: name, fontSize: 13, strokeColor: '#6b7280' },
-  ];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const tx = ox + 20 + c * cellW;
-      const ty = oy + 30 + r * cellH;
-      const g = gid();
-      els.push({ type: 'rectangle', x: tx, y: ty + 20, width: 45, height: 45, backgroundColor: '#ddd8d2', strokeColor: '#ccc7c0', fillStyle: 'solid', roundness: { type: 3 }, groupIds: [g], strokeWidth: 1 });
-      els.push({ type: 'ellipse', x: tx + 4, y: ty, width: 18, height: 18, backgroundColor: '#9ca3af', strokeColor: '#78716c', fillStyle: 'solid', groupIds: [g], strokeWidth: 1 });
-      els.push({ type: 'ellipse', x: tx + 26, y: ty, width: 18, height: 18, backgroundColor: '#9ca3af', strokeColor: '#78716c', fillStyle: 'solid', groupIds: [g], strokeWidth: 1 });
-      els.push({ type: 'ellipse', x: tx + 4, y: ty + 68, width: 18, height: 18, backgroundColor: '#9ca3af', strokeColor: '#78716c', fillStyle: 'solid', groupIds: [g], strokeWidth: 1 });
-      els.push({ type: 'ellipse', x: tx + 26, y: ty + 68, width: 18, height: 18, backgroundColor: '#9ca3af', strokeColor: '#78716c', fillStyle: 'solid', groupIds: [g], strokeWidth: 1 });
+      const dx = ox + 20 + c * cellW;
+      const dy = oy + 35 + r * cellH;
+      // Desk
+      elements.push(furEl('fur-desk', dx, dy));
+      // Monitor on desk
+      elements.push(furEl('fur-monitor', dx + 30, dy + 5));
+      // Chair below desk (facing up toward desk)
+      const chairEl = furEl('fur-chair-up', dx + 29, dy + 55);
+      elements.push(chairEl);
+      chairs.push(chairEl);
     }
   }
-  // Coffee machine icon (small rectangle)
-  els.push({ type: 'rectangle', x: ox + roomW - 40, y: oy + 10, width: 28, height: 28, backgroundColor: '#a87c5a', strokeColor: '#8b6545', fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1 });
-  return els;
+
+  // Decorations
+  if (cols > 1) {
+    elements.push(furEl('fur-plant', ox + roomW - 45, oy + 35));
+  }
+
+  return { elements, chairs };
 }
 
-// ── Number input that actually works ────────────────────
+function generateMeeting(config: SpaceConfig, ox: number, oy: number): { elements: RawEl[]; chairs: RawEl[] } {
+  const seats = config.cols; // seats per long side
+  const roomW = Math.max(240, seats * 50 + 120);
+  const roomH = 220;
+  const elements: RawEl[] = [...roomBox(config.name, ox, oy, roomW, roomH)];
+  const chairs: RawEl[] = [];
+
+  // Table centered in room
+  const tblW = 65, tblH = 65;
+  const tblX = ox + (roomW - tblW) / 2;
+  const tblY = oy + (roomH - tblH) / 2;
+  elements.push(furEl('fur-table-round', tblX, tblY));
+
+  // Center of table
+  const cx = tblX + tblW / 2;
+  const cy = tblY + tblH / 2;
+  const dist = 55; // distance from table center to chair center
+  const vChairW = 32, vChairH = 50; // vertical chair (up/down)
+  const hChairW = 50, hChairH = 32; // horizontal chair (left/right)
+
+  // Place chairs evenly around the table
+  // Top row (facing down)
+  for (let i = 0; i < Math.min(seats, 3); i++) {
+    const spread = Math.min(seats, 3);
+    const startX = cx - (spread * 35) / 2 + 2;
+    const el = furEl('fur-chair', startX + i * 35, cy - dist - vChairH / 2);
+    elements.push(el);
+    chairs.push(el);
+  }
+  // Bottom row (facing up)
+  for (let i = 0; i < Math.min(seats, 3); i++) {
+    const spread = Math.min(seats, 3);
+    const startX = cx - (spread * 35) / 2 + 2;
+    const el = furEl('fur-chair-up', startX + i * 35, cy + dist - vChairH / 2);
+    elements.push(el);
+    chairs.push(el);
+  }
+  // Left (facing right)
+  if (seats > 3) {
+    const el = furEl('fur-chair-right', cx - dist - hChairW / 2, cy - hChairH / 2);
+    elements.push(el);
+    chairs.push(el);
+  }
+  // Right (facing left)
+  if (seats > 3) {
+    const el = furEl('fur-chair-left', cx + dist - hChairW / 2, cy - hChairH / 2);
+    elements.push(el);
+    chairs.push(el);
+  }
+
+  // Whiteboard + label
+  elements.push(furEl('fur-whiteboard', ox + 10, oy + roomH - 60));
+  elements.push(textEl(ox + 15, oy + roomH - 10, 'ホワイトボード'));
+  elements.push(furEl('fur-plant', ox + roomW - 45, oy + 35));
+
+  return { elements, chairs };
+}
+
+function generateLounge(config: SpaceConfig, ox: number, oy: number): { elements: RawEl[]; chairs: RawEl[] } {
+  const roomW = 280;
+  const roomH = 220;
+  const elements: RawEl[] = [...roomBox(config.name, ox, oy, roomW, roomH)];
+  const chairs: RawEl[] = [];
+
+  // Sofa 1
+  const s1 = furEl('fur-sofa', ox + 20, oy + 40);
+  elements.push(s1);
+  chairs.push(s1);
+
+  // Coffee table + label
+  elements.push(furEl('fur-coffee', ox + 85, oy + 105));
+  elements.push(textEl(ox + 75, oy + 130, 'コーヒー'));
+
+  // Sofa 2
+  const s2 = furEl('fur-sofa', ox + 20, oy + 140);
+  elements.push(s2);
+  chairs.push(s2);
+
+  // Armchair
+  const ac = furEl('fur-armchair', ox + 150, oy + 80);
+  elements.push(ac);
+  chairs.push(ac);
+
+  // Bookshelf + label
+  elements.push(furEl('fur-bookshelf', ox + 150, oy + 140));
+  elements.push(textEl(ox + 160, oy + 198, '本棚'));
+
+  // Plant
+  elements.push(furEl('fur-plant', ox + roomW - 50, oy + 35));
+  elements.push(furEl('fur-plant', ox + 20, oy + roomH - 35));
+
+  return { elements, chairs };
+}
+
+function generateCafe(config: SpaceConfig, ox: number, oy: number): { elements: RawEl[]; chairs: RawEl[] } {
+  const { rows, cols, spacing, name } = config;
+  const cellW = 80 + spacing;
+  const cellH = 90 + spacing;
+  const roomW = cols * cellW + 60;
+  const roomH = rows * cellH + 60;
+  const elements: RawEl[] = [...roomBox(name, ox, oy, roomW, roomH)];
+  const chairs: RawEl[] = [];
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const tx = ox + 30 + c * cellW;
+      const ty = oy + 40 + r * cellH;
+      // Small table
+      elements.push(furEl('fur-table-round', tx, ty + 15, 0.7));
+      // 2 chairs (top and bottom)
+      const c1 = furEl('fur-chair', tx + 15, ty - 10);
+      const c2 = furEl('fur-chair-up', tx + 15, ty + 60);
+      elements.push(c1);
+      elements.push(c2);
+      chairs.push(c1);
+      chairs.push(c2);
+    }
+  }
+
+  // Coffee machine + label
+  elements.push(furEl('fur-coffee', ox + roomW - 35, oy + 35));
+  elements.push(textEl(ox + roomW - 45, oy + 60, 'コーヒー'));
+  elements.push(furEl('fur-plant', ox + roomW - 45, oy + roomH - 45));
+
+  return { elements, chairs };
+}
+
+// ── Number input ──
 function NumInput({ value, onChange, min, max, label }: { value: number; onChange: (v: number) => void; min: number; max: number; label: string }) {
   const [text, setText] = useState(String(value));
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
     setText(raw);
     const n = parseInt(raw, 10);
     if (!isNaN(n) && n >= min && n <= max) onChange(n);
   };
-
   const handleBlur = () => {
     const n = parseInt(text, 10);
     if (isNaN(n) || n < min) { setText(String(min)); onChange(min); }
     else if (n > max) { setText(String(max)); onChange(max); }
     else { setText(String(n)); onChange(n); }
   };
-
   const inc = () => { const n = Math.min(max, value + 1); setText(String(n)); onChange(n); };
   const dec = () => { const n = Math.max(min, value - 1); setText(String(n)); onChange(n); };
 
@@ -133,14 +255,8 @@ function NumInput({ value, onChange, min, max, label }: { value: number; onChang
       <label className="text-[10px] text-gray-500 block mb-1">{label}</label>
       <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
         <button onClick={dec} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-600 text-lg font-light">−</button>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={text}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          className="w-full h-8 text-sm text-center focus:outline-none border-x border-gray-200"
-        />
+        <input type="text" inputMode="numeric" value={text} onChange={handleChange} onBlur={handleBlur}
+          className="w-full h-8 text-sm text-center focus:outline-none border-x border-gray-200" />
         <button onClick={inc} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-600 text-lg font-light">+</button>
       </div>
     </div>
@@ -150,7 +266,7 @@ function NumInput({ value, onChange, min, max, label }: { value: number; onChang
 export default function SpaceWizard({ onClose }: { onClose: () => void }) {
   const excalidrawAPI = useOfficeStore((s) => s.excalidrawAPI);
   const [config, setConfig] = useState<SpaceConfig>({
-    type: 'desk-area', name: 'オープンスペース', rows: 3, cols: 4, spacing: 20, direction: 'horizontal',
+    type: 'desk-area', name: 'オープンスペース', rows: 2, cols: 3, spacing: 20,
     labelPrefix: 'オープンスペース', labelStart: 1,
   });
 
@@ -164,27 +280,26 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
       oy = maxY + 40;
     }
 
-    let rawElements: RawEl[];
+    let result: { elements: RawEl[]; chairs: RawEl[] };
     switch (config.type) {
-      case 'desk-area': rawElements = generateDeskAreaElements(config, ox, oy); break;
-      case 'meeting': rawElements = generateMeetingElements(config, ox, oy); break;
-      case 'lounge': rawElements = generateLoungeElements(config, ox, oy); break;
-      case 'cafe': rawElements = generateCafeElements(config, ox, oy); break;
+      case 'desk-area': result = generateDeskArea(config, ox, oy); break;
+      case 'meeting': result = generateMeeting(config, ox, oy); break;
+      case 'lounge': result = generateLounge(config, ox, oy); break;
+      case 'cafe': result = generateCafe(config, ox, oy); break;
     }
 
-    // Extract seat positions from chair elements (ellipses with #9ca3af)
-    const chairElements = rawElements.filter(el => el.type === 'ellipse' && el.backgroundColor === '#9ca3af');
+    // Build zone with seats from chair elements
     const zoneId = gid();
     const zoneType = config.type === 'desk-area' ? 'desk' : config.type === 'meeting' ? 'meeting' : config.type === 'cafe' ? 'cafe' : 'lounge';
     const prefix = config.labelPrefix.trim() || 'A';
     const start = config.labelStart;
-    const newSeats = chairElements.map((c, i) => {
+    const newSeats = result.chairs.map((c, i) => {
       const label = `${prefix}-${start + i}`;
       return {
         id: label,
         roomId: zoneId,
-        x: (c.x as number) + ((c.width as number) || 22) / 2,
-        y: (c.y as number) + ((c.height as number) || 22) / 2,
+        x: (c.x as number) + ((c.width as number) || 30) / 2,
+        y: (c.y as number) + ((c.height as number) || 30) / 2,
         label,
         occupied: false,
         occupiedBy: undefined as string | undefined,
@@ -194,22 +309,17 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
       id: zoneId,
       type: zoneType as 'desk' | 'meeting' | 'lounge' | 'cafe' | 'open',
       name: config.name,
-      x: ox, y: oy,
-      w: 0, h: 0, // will be computed if needed
+      x: ox, y: oy, w: 0, h: 0,
       seats: newSeats,
     };
 
-    // Save zone/seats to store
     const store = useOfficeStore.getState();
     store.setZones([...store.zones, newZone]);
 
-    // Add Excalidraw elements
     try {
-      const newElements = convertToExcalidrawElements(rawElements as any);
       excalidrawAPI.updateScene({
-        elements: [...excalidrawAPI.getSceneElements(), ...newElements],
+        elements: [...excalidrawAPI.getSceneElements(), ...result.elements],
       });
-      // Scroll to show all content (not just new elements) to avoid extreme zoom
       const allElements = excalidrawAPI.getSceneElements();
       excalidrawAPI.scrollToContent(allElements, { fitToViewport: true, viewportZoomFactor: 0.9 });
     } catch (e) {
@@ -221,9 +331,9 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
 
   const selectedType = SPACE_TYPES.find(t => t.id === config.type)!;
   const seatCount = config.type === 'desk-area' ? config.rows * config.cols
-    : config.type === 'meeting' ? config.cols * 2
+    : config.type === 'meeting' ? Math.min(config.cols * 2 + (config.cols > 3 ? 2 : 0), config.cols * 2 + 2)
     : config.type === 'cafe' ? config.rows * config.cols * 2
-    : 4;
+    : 3; // lounge default
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
@@ -265,8 +375,8 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
             <div>
               <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 block">3. レイアウト</label>
               <div className="grid grid-cols-3 gap-3">
-                <NumInput label="行数" value={config.rows} min={1} max={20} onChange={v => setConfig(c => ({ ...c, rows: v }))} />
-                <NumInput label="列数" value={config.cols} min={1} max={20} onChange={v => setConfig(c => ({ ...c, cols: v }))} />
+                <NumInput label="行数" value={config.rows} min={1} max={10} onChange={v => setConfig(c => ({ ...c, rows: v }))} />
+                <NumInput label="列数" value={config.cols} min={1} max={10} onChange={v => setConfig(c => ({ ...c, cols: v }))} />
                 <NumInput label="間隔 (px)" value={config.spacing} min={5} max={80} onChange={v => setConfig(c => ({ ...c, spacing: v }))} />
               </div>
             </div>
@@ -274,29 +384,22 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
 
           {config.type === 'meeting' && (
             <div>
-              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 block">3. テーブル設定</label>
-              <div className="grid grid-cols-2 gap-3">
-                <NumInput label="長辺の席数" value={config.cols} min={1} max={8} onChange={v => setConfig(c => ({ ...c, cols: v }))} />
-                <NumInput label="短辺の席数" value={config.rows} min={0} max={4} onChange={v => setConfig(c => ({ ...c, rows: v }))} />
-              </div>
+              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 block">3. 席数（片側）</label>
+              <NumInput label="長辺の席数" value={config.cols} min={1} max={6} onChange={v => setConfig(c => ({ ...c, cols: v }))} />
             </div>
           )}
 
-          {/* Label rule */}
+          {/* Label */}
           <div>
             <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
-              {config.type === 'meeting' ? '4' : config.type === 'lounge' ? '3' : '4'}. 座席ラベル
+              {config.type === 'lounge' ? '3' : '4'}. 座席ラベル
             </label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[10px] text-gray-500 block mb-1">プレフィックス</label>
-                <input
-                  type="text"
-                  value={config.labelPrefix}
-                  onChange={e => setConfig(c => ({ ...c, labelPrefix: e.target.value }))}
+                <input type="text" value={config.labelPrefix} onChange={e => setConfig(c => ({ ...c, labelPrefix: e.target.value }))}
                   placeholder="例: A, 営業, MTG"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-300"
-                />
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-300" />
               </div>
               <NumInput label="開始番号" value={config.labelStart} min={1} max={999} onChange={v => setConfig(c => ({ ...c, labelStart: v }))} />
             </div>
