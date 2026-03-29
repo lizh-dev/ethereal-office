@@ -336,52 +336,9 @@ export function useWebRTC(): WebRTCState {
     return unsubscribe;
   }, [acquireLocalStream, createPeerConnection, wsSend, removePeer]);
 
-  // Phase 4: Auto-connect when user sits in a zone with other users
-  useEffect(() => {
-    if (!currentSeatId || !currentUser.id || currentUser.id === 'pending') {
-      // User not seated or not yet assigned an ID -> disconnect all
-      if (peersRef.current.size > 0) {
-        disconnectAll();
-      }
-      return;
-    }
-
-    const zonePeers = getZonePeers(currentUser.id, currentSeatId);
-
-    if (zonePeers.length === 0) {
-      // No peers in the zone -> disconnect all
-      if (peersRef.current.size > 0) {
-        disconnectAll();
-      }
-      return;
-    }
-
-    // Connect to peers in the same zone
-    const setupConnections = async () => {
-      const stream = await acquireLocalStream();
-      if (!stream) return;
-
-      setIsVoiceActive(true);
-
-      // Only connect to peers whose ID is "greater" than ours to avoid duplicate offers
-      // (the user with the smaller ID initiates)
-      for (const peerId of zonePeers) {
-        if (!peersRef.current.has(peerId) && currentUser.id < peerId) {
-          await connectToPeer(peerId);
-        }
-      }
-
-      // Disconnect peers no longer in the zone
-      for (const [id] of peersRef.current) {
-        if (!zonePeers.includes(id)) {
-          removePeer(id);
-        }
-      }
-    };
-
-    setupConnections();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSeatId, currentUser.id]);
+  // Auto-connect is disabled — voice is opt-in only via VoiceControls
+  // Users must explicitly click a "通話開始" button to join voice
+  // This prevents unwanted mic access and cross-zone connections
 
   // Also re-evaluate when remote users change seats (zones update)
   const zones = useOfficeStore((s) => s.zones);
