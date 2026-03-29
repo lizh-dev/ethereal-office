@@ -459,8 +459,8 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
               </div>
               <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 block">4. サイズ</label>
               <div className="grid grid-cols-3 gap-3">
-                <NumInput label={config.deskLayout === 'facing' ? 'ペア行数' : '行数'} value={config.rows} min={1} max={10} onChange={v => setConfig(c => ({ ...c, rows: v }))} />
-                <NumInput label="列数" value={config.cols} min={1} max={10} onChange={v => setConfig(c => ({ ...c, cols: v }))} />
+                <NumInput label={config.deskLayout === 'facing' ? 'ペア行数' : '行数'} value={config.rows} min={1} max={50} onChange={v => setConfig(c => ({ ...c, rows: v }))} />
+                <NumInput label="列数" value={config.cols} min={1} max={50} onChange={v => setConfig(c => ({ ...c, cols: v }))} />
                 <NumInput label="間隔 (px)" value={config.spacing} min={5} max={80} onChange={v => setConfig(c => ({ ...c, spacing: v }))} />
               </div>
             </div>
@@ -470,8 +470,8 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
             <div>
               <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 block">3. レイアウト</label>
               <div className="grid grid-cols-3 gap-3">
-                <NumInput label="行数" value={config.rows} min={1} max={10} onChange={v => setConfig(c => ({ ...c, rows: v }))} />
-                <NumInput label="列数" value={config.cols} min={1} max={10} onChange={v => setConfig(c => ({ ...c, cols: v }))} />
+                <NumInput label="行数" value={config.rows} min={1} max={50} onChange={v => setConfig(c => ({ ...c, rows: v }))} />
+                <NumInput label="列数" value={config.cols} min={1} max={50} onChange={v => setConfig(c => ({ ...c, cols: v }))} />
                 <NumInput label="間隔 (px)" value={config.spacing} min={5} max={80} onChange={v => setConfig(c => ({ ...c, spacing: v }))} />
               </div>
             </div>
