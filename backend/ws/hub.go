@@ -281,5 +281,23 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 			IsMuted: msg.IsMuted,
 			IsCamOn: msg.IsCamOn,
 		}, client.info.ID)
+
+	case MsgProfileUpdate:
+		if msg.Name != "" {
+			client.info.Name = msg.Name
+		}
+		if msg.AvatarStyle != "" {
+			client.info.AvatarStyle = msg.AvatarStyle
+		}
+		if msg.AvatarSeed != "" {
+			client.info.AvatarSeed = msg.AvatarSeed
+		}
+		h.broadcastToRoom(client.room, OutgoingMessage{
+			Type:        MsgUserProfileUpdated,
+			UserID:      client.info.ID,
+			Name:        client.info.Name,
+			AvatarStyle: client.info.AvatarStyle,
+			AvatarSeed:  client.info.AvatarSeed,
+		}, client.info.ID)
 	}
 }

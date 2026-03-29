@@ -16,6 +16,7 @@ interface WsSend {
   reaction: (emoji: string) => void;
   sceneUpdate: () => void;
   kick: (targetUserId: string) => void;
+  profileUpdate: (name: string, avatarStyle: string, avatarSeed: string) => void;
 }
 
 interface UseWebSocketOptions {
@@ -111,11 +112,15 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
               localStorage.setItem('ethereal-user-id', msg.userId);
             } catch { /* ignore */ }
           }
-          setRemoteUsers(
-            (msg.users || [])
-              .filter((u: { id: string }) => u.id !== msg.userId)
-              .map(toUser),
-          );
+          const remoteUsers = (msg.users || [])
+            .filter((u: { id: string }) => u.id !== msg.userId);
+          setRemoteUsers(remoteUsers.map(toUser));
+          // Mark seats occupied for users who are already seated
+          for (const u of remoteUsers) {
+            if (u.seatId) {
+              updateRemoteUserSeat(u.id, u.seatId, u.x ?? 200, u.y ?? 200);
+            }
+          }
           if (msg.chatHistory) {
             for (const chatMsg of msg.chatHistory) {
               addChatMessage(chatMsg.userId, chatMsg.text, chatMsg.timestamp);
@@ -182,6 +187,23 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           // Floor editor saved changes - reload scene
           addNotification('フロアが更新されました。再読み込みします...');
           setTimeout(() => window.location.reload(), 1500);
+          break;
+
+        case 'user_profile_updated':
+          // Remote user changed their name/avatar
+          useOfficeStore.setState((state) => ({
+            users: state.users.map(u =>
+              u.id === msg.userId
+                ? {
+                    ...u,
+                    name: msg.name ?? u.name,
+                    initials: msg.name ? msg.name[0] : u.initials,
+                    avatarStyle: msg.avatarStyle ?? u.avatarStyle,
+                    avatarSeed: msg.avatarSeed ?? u.avatarSeed,
+                  }
+                : u
+            ),
+          }));
           break;
 
         case 'user_reaction':
@@ -276,6 +298,11 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     ),
     kick: useCallback(
       (targetUserId: string) => sendRaw({ type: 'kick', targetUserId }),
+      [sendRaw],
+    ),
+    profileUpdate: useCallback(
+      (name: string, avatarStyle: string, avatarSeed: string) =>
+        sendRaw({ type: 'profile_update', name, avatarStyle, avatarSeed }),
       [sendRaw],
     ),
   };

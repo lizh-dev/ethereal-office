@@ -34,7 +34,12 @@ export default function ProfileView() {
       avatarSeed,
     }));
 
-    // Notify other users via WS (name change by reconnecting would be complex, so just update locally for now)
+    // Broadcast profile changes to other users via WebSocket
+    const wsSend = (window as unknown as Record<string, any>).__wsSend;
+    if (wsSend?.profileUpdate) {
+      wsSend.profileUpdate(name.trim() || currentUser.name, avatarStyle, avatarSeed);
+    }
+
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

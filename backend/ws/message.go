@@ -12,7 +12,8 @@ const (
 	MsgMedia    = "media"
 	MsgReaction    = "reaction"
 	MsgSceneUpdate = "scene_update"
-	MsgKick        = "kick"
+	MsgKick           = "kick"
+	MsgProfileUpdate  = "profile_update"
 )
 
 // Server→Client message types
@@ -28,7 +29,8 @@ const (
 	MsgUserMedia     = "user_media"
 	MsgUserReaction     = "user_reaction"
 	MsgSceneUpdated     = "scene_updated"
-	MsgKicked           = "kicked"
+	MsgKicked             = "kicked"
+	MsgUserProfileUpdated = "user_profile_updated"
 )
 
 type IncomingMessage struct {
@@ -42,6 +44,9 @@ type IncomingMessage struct {
 	IsCamOn  *bool   `json:"isCameraOn,omitempty"`
 	Emoji        string  `json:"emoji,omitempty"`
 	TargetUserID string  `json:"targetUserId,omitempty"`
+	Name         string  `json:"name,omitempty"`
+	AvatarStyle  string  `json:"avatarStyle,omitempty"`
+	AvatarSeed   string  `json:"avatarSeed,omitempty"`
 }
 
 type UserInfo struct {
@@ -77,6 +82,9 @@ type OutgoingMessage struct {
 	IsMuted     *bool         `json:"isMuted,omitempty"`
 	IsCamOn     *bool         `json:"isCameraOn,omitempty"`
 	Emoji       string        `json:"emoji,omitempty"`
+	Name        string        `json:"name,omitempty"`
+	AvatarStyle string        `json:"avatarStyle,omitempty"`
+	AvatarSeed  string        `json:"avatarSeed,omitempty"`
 }
 
 func MarshalMessage(msg OutgoingMessage) []byte {
