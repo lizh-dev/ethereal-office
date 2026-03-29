@@ -34,6 +34,7 @@ interface WsSend {
   callRequest: (targetUserId: string) => void;
   callAccept: (targetUserId: string) => void;
   callDecline: (targetUserId: string) => void;
+  callEnd: (targetUserId: string) => void;
 }
 
 interface UseWebSocketOptions {
@@ -312,6 +313,13 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           }, 3000);
           break;
 
+        case 'call_end_received':
+          // Dispatch to WebRTC hook to disconnect
+          for (const handler of rtcSignalListeners) {
+            handler({ type: 'call_end', userId: msg.userId, sdp: '', candidate: '' });
+          }
+          break;
+
         case 'rtc_offer':
         case 'rtc_answer':
         case 'rtc_candidate':
@@ -438,6 +446,10 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     ),
     callDecline: useCallback(
       (targetUserId: string) => sendRaw({ type: 'call_decline', targetUserId }),
+      [sendRaw],
+    ),
+    callEnd: useCallback(
+      (targetUserId: string) => sendRaw({ type: 'call_end', targetUserId }),
       [sendRaw],
     ),
   };

@@ -273,6 +273,12 @@ export function useWebRTC(): WebRTCState {
     const unsubscribe = onRTCSignal(async (msg) => {
       if (isCleaningUpRef.current) return;
 
+      if (msg.type === 'call_end') {
+        // Other party ended the call — disconnect immediately
+        removePeer(msg.userId);
+        return;
+      }
+
       if (msg.type === 'rtc_offer' && msg.sdp) {
         // Someone is offering to connect to us
         const stream = await acquireLocalStream();
@@ -374,8 +380,12 @@ export function useWebRTC(): WebRTCState {
 
   // Leave voice
   const leaveVoice = useCallback(() => {
+    // Notify all peers that we're leaving
+    for (const [peerId] of peersRef.current) {
+      wsSend.callEnd(peerId);
+    }
     disconnectAll();
-  }, [disconnectAll]);
+  }, [disconnectAll, wsSend]);
 
   // Join voice — connect to users in the same zone only
   const joinVoice = useCallback(async () => {

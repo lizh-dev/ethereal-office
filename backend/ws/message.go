@@ -22,6 +22,7 @@ const (
 	MsgCallRequest   = "call_request"
 	MsgCallAccept    = "call_accept"
 	MsgCallDecline   = "call_decline"
+	MsgCallEnd       = "call_end"
 )
 
 // Server→Client message types
@@ -47,6 +48,7 @@ const (
 	MsgCallRequestReceived   = "call_request_received"
 	MsgCallAcceptReceived    = "call_accept_received"
 	MsgCallDeclineReceived   = "call_decline_received"
+	MsgCallEndReceived       = "call_end_received"
 )
 
 type IncomingMessage struct {

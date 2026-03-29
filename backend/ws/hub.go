@@ -599,6 +599,31 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 		}
 		log.Printf("[%s] call declined by %s for %s", client.room, client.info.Name, target.info.Name)
 
+	case MsgCallEnd:
+		if msg.TargetUserID == "" {
+			return
+		}
+		h.mu.RLock()
+		endRoom := h.rooms[client.room]
+		h.mu.RUnlock()
+		if endRoom == nil {
+			return
+		}
+		h.mu.RLock()
+		endTarget, endOk := endRoom.clients[msg.TargetUserID]
+		h.mu.RUnlock()
+		if !endOk {
+			return
+		}
+		endData := MarshalMessage(OutgoingMessage{
+			Type:   MsgCallEndReceived,
+			UserID: client.info.ID,
+		})
+		select {
+		case endTarget.send <- endData:
+		default:
+		}
+
 	case MsgWhisper:
 		if msg.Text == "" {
 			return
