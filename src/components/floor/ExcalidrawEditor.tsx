@@ -76,6 +76,12 @@ function getDefaultInitialData() {
 
 const ISLAND_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
+// Chair asset IDs for seat detection
+const CHAIR_FILE_IDS = new Set(['fur-chair', 'fur-chair-up', 'fur-chair-left', 'fur-chair-right']);
+const SOFA_FILE_IDS = new Set(['fur-sofa', 'fur-armchair']);
+const DESK_FILE_IDS = new Set(['fur-desk']);
+const TABLE_FILE_IDS = new Set(['fur-table-round', 'fur-table-rect']);
+
 function initSeatsFromElements(elements: readonly unknown[]) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const els = elements as any[];
@@ -91,36 +97,40 @@ function initSeatsFromElements(elements: readonly unknown[]) {
     return a.x - b.x;
   });
 
-  // Detect all chairs = small ellipses (any color, width/height <= 30)
-  // Exclude plants (green tones) and large decorative ellipses
+  // Detect all chairs: image elements with chair fileIds OR old-style ellipses
   const plantColors = ['#86ceab', '#5ead88', '#4ade80', '#22c55e', '#16a34a'];
-  const allChairs = els.filter((el) =>
-    el.type === 'ellipse' && !el.isDeleted &&
-    el.width <= 30 && el.height <= 30 &&
-    !plantColors.includes(el.backgroundColor)
-  );
+  const allChairs = els.filter((el) => {
+    if (el.isDeleted) return false;
+    // New image-based chairs/sofas
+    if (el.type === 'image' && (CHAIR_FILE_IDS.has(el.fileId) || SOFA_FILE_IDS.has(el.fileId))) return true;
+    // Legacy ellipse-based chairs
+    if (el.type === 'ellipse' && el.width <= 30 && el.height <= 30 && !plantColors.includes(el.backgroundColor)) return true;
+    return false;
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function isInside(el: any, room: any) {
+    const cx = el.x + (el.width || 0) / 2;
+    const cy = el.y + (el.height || 0) / 2;
+    return cx >= room.x && cx <= room.x + room.width && cy >= room.y && cy <= room.y + room.height;
+  }
 
   // Detect room type from elements inside
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function getRoomType(room: any): 'desk' | 'meeting' | 'lounge' | 'cafe' | 'open' {
-    const desksInside = els.filter((el) =>
-      el.type === 'rectangle' && !el.isDeleted &&
-      el.backgroundColor === '#e8e3dd' &&
-      el.x >= room.x && el.x <= room.x + room.width &&
-      el.y >= room.y && el.y <= room.y + room.height
-    );
-    const sofasInside = els.filter((el) =>
-      el.type === 'rectangle' && !el.isDeleted &&
-      el.backgroundColor === '#c4bab0' &&
-      el.x >= room.x && el.x <= room.x + room.width &&
-      el.y >= room.y && el.y <= room.y + room.height
-    );
-    const tablesInside = els.filter((el) =>
-      el.type === 'ellipse' && !el.isDeleted &&
-      el.backgroundColor === '#ddd8d2' &&
-      el.x >= room.x && el.x <= room.x + room.width &&
-      el.y >= room.y && el.y <= room.y + room.height
-    );
+    // Check for image-based furniture first
+    const hasDesk = els.some(el => el.type === 'image' && DESK_FILE_IDS.has(el.fileId) && isInside(el, room));
+    const hasSofa = els.some(el => el.type === 'image' && SOFA_FILE_IDS.has(el.fileId) && isInside(el, room));
+    const hasTable = els.some(el => el.type === 'image' && TABLE_FILE_IDS.has(el.fileId) && isInside(el, room));
+
+    if (hasSofa) return 'lounge';
+    if (hasTable && !hasDesk) return 'meeting';
+    if (hasDesk) return 'desk';
+
+    // Fallback: legacy primitive detection
+    const desksInside = els.filter(el => el.type === 'rectangle' && !el.isDeleted && el.backgroundColor === '#e8e3dd' && isInside(el, room));
+    const sofasInside = els.filter(el => el.type === 'rectangle' && !el.isDeleted && el.backgroundColor === '#c4bab0' && isInside(el, room));
+    const tablesInside = els.filter(el => el.type === 'ellipse' && !el.isDeleted && el.backgroundColor === '#ddd8d2' && isInside(el, room));
     if (sofasInside.length > 0) return 'lounge';
     if (tablesInside.length > 0 && desksInside.length === 0) return 'meeting';
     if (desksInside.length > 0) return 'desk';
@@ -306,18 +316,31 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const scene = savedScene as any;
       if (Array.isArray(scene.elements) && scene.elements.length > 0) {
-        // Check for isometric marker (new floor with isometric template)
+        // Check for isometric marker (new floor created with image-based template)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const hasMarker = scene.elements.some((el: any) => el.type === '__isometric_marker__');
         if (hasMarker) {
-          const isoElements = generateIsometricDemoFloor();
+          const rawElements = generateIsometricDemoFloor();
+          // Image elements pass through as-is; primitives need conversion
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const imageEls = rawElements.filter((el: any) => el.type === 'image');
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const primitiveEls = rawElements.filter((el: any) => el.type !== 'image');
+          let converted: ReturnType<typeof convertToExcalidrawElements> = [];
+          try {
+            if (primitiveEls.length > 0) {
+              converted = convertToExcalidrawElements(primitiveEls as Parameters<typeof convertToExcalidrawElements>[0]);
+            }
+          } catch (e) {
+            console.error('Failed to convert primitive elements:', e);
+          }
           return {
-            elements: isoElements,
+            elements: [...converted, ...imageEls],
             appState: { viewBackgroundColor: '#f0f9ff', gridSize: 20 },
             scrollToContent: true,
-            files: {},
           };
         }
+        // Normal saved scene (from DB)
         return {
           elements: scene.elements,
           appState: scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
@@ -325,7 +348,7 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         };
       }
     }
-    // New floor: use default template
+    // No saved scene: use default template (all primitives, always safe)
     return getDefaultInitialData();
   }, [savedScene]);
 
