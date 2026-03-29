@@ -182,6 +182,16 @@ export function useWebRTC(): WebRTCState {
         next.delete(remoteUserId);
         return next;
       });
+      // If no peers left, end voice session automatically
+      if (peersRef.current.size === 0) {
+        if (localStreamRef.current) {
+          for (const track of localStreamRef.current.getTracks()) track.stop();
+          localStreamRef.current = null;
+        }
+        setIsVoiceActive(false);
+        setIsMuted(true);
+        setRemoteStreams(new Map());
+      }
     },
     [syncRemoteStreams],
   );
