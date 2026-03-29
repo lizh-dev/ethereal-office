@@ -22,7 +22,14 @@ export default function MembersView() {
   }, [currentUser, users, searchQuery]);
 
   const onlineUsers = allUsers.filter(u => u.status !== 'offline');
-  const offlineUsers = allUsers.filter(u => u.status === 'offline');
+  // Deduplicate offline users by name (stale connections may leave duplicates)
+  const offlineRaw = allUsers.filter(u => u.status === 'offline');
+  const offlineNames = new Set<string>();
+  const offlineUsers = offlineRaw.filter(u => {
+    if (offlineNames.has(u.name)) return false;
+    offlineNames.add(u.name);
+    return true;
+  });
 
   return (
     <div className="flex-1 flex flex-col bg-gray-50 min-w-0">

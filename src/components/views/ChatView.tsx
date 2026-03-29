@@ -28,7 +28,7 @@ export default function ChatView() {
       {/* Header */}
       <div className="h-12 bg-white border-b border-gray-200 flex items-center px-4">
         <h2 className="text-sm font-semibold text-gray-700">💬 チャット</h2>
-        <span className="ml-2 text-xs text-gray-400">{allUsers.length}人がオンライン</span>
+        <span className="ml-2 text-xs text-gray-400">{allUsers.filter(u => u.status !== 'offline').length}人がオンライン</span>
       </div>
 
       {/* Messages */}

@@ -217,9 +217,12 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
             <>✅ 保存して閲覧モードへ</>
           )}
         </button>
-        <p className="text-[10px] text-indigo-400 text-center mt-1.5">
-          座席が自動検出されラベルが反映されます
-        </p>
+        <button
+          onClick={() => setEditorMode('view')}
+          className="w-full mt-2 py-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          キャンセル（保存せず閲覧モードへ）
+        </button>
       </div>
 
       <div className="p-4 border-b border-gray-200">

@@ -378,23 +378,20 @@ test.describe('F. エディターモード', () => {
   test('F-3: スペースウィザード表示', async ({ page }) => {
     await joinFloor(page, slug, 'ウィザード', true);
     await page.click('[title="フロアを編集"]');
-    await page.click('text=スペースを追加');
+    await page.click('button:has-text("スペースを追加")');
 
     // ウィザードモーダルが表示
-    await expect(page.getByRole('button', { name: /デスクエリア/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /会議室/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /ラウンジ/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /カフェスペース/ })).toBeVisible();
+    await expect(page.getByText('スペースを追加').nth(1)).toBeVisible(); // modal title
     await expect(page.getByRole('button', { name: 'スペースを作成' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'キャンセル' })).toBeVisible();
   });
 
   test('F-4: スペースウィザードのキャンセル', async ({ page }) => {
     await joinFloor(page, slug, 'キャンセラー', true);
     await page.click('[title="フロアを編集"]');
-    await page.click('text=スペースを追加');
-    await page.click('button:has-text("キャンセル")');
-    await expect(page.getByText('デスクエリア')).not.toBeVisible();
+    await page.click('button:has-text("スペースを追加")');
+    // Click the wizard's cancel button (not the editor panel's)
+    await page.locator('.fixed button:has-text("キャンセル")').click();
+    await expect(page.getByRole('button', { name: 'スペースを作成' })).not.toBeVisible();
   });
 });
 

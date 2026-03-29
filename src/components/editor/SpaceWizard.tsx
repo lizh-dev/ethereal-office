@@ -209,7 +209,9 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
       excalidrawAPI.updateScene({
         elements: [...excalidrawAPI.getSceneElements(), ...newElements],
       });
-      excalidrawAPI.scrollToContent(newElements, { fitToViewport: true, viewportZoomFactor: 0.8 });
+      // Scroll to show all content (not just new elements) to avoid extreme zoom
+      const allElements = excalidrawAPI.getSceneElements();
+      excalidrawAPI.scrollToContent(allElements, { fitToViewport: true, viewportZoomFactor: 0.9 });
     } catch (e) {
       console.error('Failed to create space:', e);
     }
