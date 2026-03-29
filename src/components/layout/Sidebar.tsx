@@ -64,13 +64,16 @@ export default function Sidebar() {
   return (
     <>
       <aside className="w-[60px] bg-white border-r border-gray-200 flex flex-col items-center h-full py-3">
-        {/* Logo - link to home */}
+        {/* Home link */}
         <Link
           href="/"
-          className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm mb-4 shadow-md hover:scale-105 transition-transform"
+          className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 hover:text-sky-500 hover:border-sky-200 hover:bg-sky-50 mb-4 transition-all"
           title="ホームに戻る"
         >
-          SO
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
         </Link>
 
         {/* Nav */}
