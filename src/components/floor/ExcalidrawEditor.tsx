@@ -98,7 +98,7 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
   const floorSlugRef = useRef(floorSlug);
   floorSlugRef.current = floorSlug;
 
-  // Pre-load furniture image files as data URLs (for Excalidraw's files parameter)
+  // Always pre-load furniture image files (needed for SpaceWizard on any floor)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [furnitureFiles, setFurnitureFiles] = useState<Record<string, any> | null>(null);
 
@@ -173,9 +173,14 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       const lib = getFurnitureLibrary();
       api.updateLibrary({ libraryItems: lib.libraryItems, merge: true, openLibraryMenu: false });
 
-      // Ensure furniture files are registered (for SpaceWizard dynamic adds)
+      // Register furniture files for SpaceWizard image elements
       if (furnitureFiles) {
         api.addFiles(Object.values(furnitureFiles));
+      } else {
+        // Files not loaded yet - load and register
+        preloadFurnitureFiles().then(files => {
+          api.addFiles(Object.values(files));
+        }).catch(console.error);
       }
 
       // Initialize seats and auto-save isometric template on first load
