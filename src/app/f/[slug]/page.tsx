@@ -14,7 +14,6 @@ import JoinDialog from '@/components/JoinDialog';
 import ChatView from '@/components/views/ChatView';
 import MembersView from '@/components/views/MembersView';
 import ProfileView from '@/components/views/ProfileView';
-import RightPanel from '@/components/layout/RightPanel';
 import DMPanel from '@/components/chat/DMPanel';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -208,7 +207,6 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
               <>
                 <FloorCanvas floorSlug={slug} savedScene={floorData?.excalidrawScene} />
                 {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} floorSlug={slug} />}
-                <RightPanel />
               </>
             )}
             {viewMode === 'meetings' && <MembersView />}

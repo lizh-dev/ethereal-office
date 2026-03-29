@@ -331,8 +331,9 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
   }, []);
 
   return (
-    <div style={{ width: '100%', height: '100%' }} className={viewMode ? 'excalidraw-view-mode' : ''}>
+    <div style={{ width: '100%', height: '100%' }} className={viewMode ? 'excalidraw-view-mode' : 'excalidraw-edit-mode'}>
       <style>{`
+        /* View mode: hide everything except canvas */
         .excalidraw-view-mode .excalidraw .App-menu,
         .excalidraw-view-mode .excalidraw .layer-ui__wrapper__top-right,
         .excalidraw-view-mode .excalidraw .layer-ui__wrapper__footer-left,
@@ -342,6 +343,11 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         .excalidraw-view-mode .excalidraw [class*="context-menu"],
         .excalidraw-view-mode .excalidraw .popover,
         .excalidraw-view-mode .excalidraw [class*="popover"] {
+          display: none !important;
+        }
+        /* Edit mode: hide file menu but keep drawing toolbar */
+        .excalidraw-edit-mode .excalidraw .App-menu,
+        .excalidraw-edit-mode .excalidraw .layer-ui__wrapper__top-right {
           display: none !important;
         }
       `}</style>
@@ -354,7 +360,13 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         viewModeEnabled={viewMode}
         onChange={handleChange}
         UIOptions={{
-          canvasActions: { loadScene: false, saveToActiveFile: false, toggleTheme: false },
+          canvasActions: {
+            loadScene: false,
+            saveToActiveFile: false,
+            toggleTheme: false,
+            export: false,
+            saveAsImage: false,
+          },
         }}
       />
     </div>
