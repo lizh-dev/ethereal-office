@@ -88,7 +88,7 @@ export default function LandingPage() {
             onClick={() => setShowScanner(true)}
             className="mt-3 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
           >
-            📷 QRコードで入室
+            📁 QRコード画像で入室
           </button>
         </div>
 
