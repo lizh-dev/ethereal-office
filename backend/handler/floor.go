@@ -8,12 +8,14 @@ import (
 
 	"github.com/ethereal-office/backend/db"
 	"github.com/ethereal-office/backend/model"
+	"gorm.io/datatypes"
 )
 
 type CreateFloorRequest struct {
-	Name        string `json:"name"`
-	CreatorName string `json:"creatorName,omitempty"`
-	Password    string `json:"password,omitempty"`
+	Name            string          `json:"name"`
+	CreatorName     string          `json:"creatorName,omitempty"`
+	Password        string          `json:"password,omitempty"`
+	ExcalidrawScene json.RawMessage `json:"excalidrawScene,omitempty"`
 }
 
 type UpdateFloorRequest struct {
@@ -61,6 +63,9 @@ func CreateFloor(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Password != "" {
 		floor.Password = &req.Password
+	}
+	if req.ExcalidrawScene != nil {
+		floor.ExcalidrawScene = datatypes.JSON(req.ExcalidrawScene)
 	}
 
 	if err := db.DB.Create(&floor).Error; err != nil {

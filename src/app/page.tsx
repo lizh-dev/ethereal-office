@@ -2,14 +2,23 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getTemplateElements } from '@/lib/templates';
 
 export default function LandingPage() {
   const router = useRouter();
   const [floorName, setFloorName] = useState('');
   const [creatorName, setCreatorName] = useState('');
   const [password, setPassword] = useState('');
+  const [template, setTemplate] = useState('default');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+
+  const templates = [
+    { id: 'default', name: 'スタンダード', desc: 'デスク+会議室+ラウンジ', icon: '🏢' },
+    { id: 'small', name: '小規模チーム', desc: 'デスク8席+会議室1つ', icon: '🏠' },
+    { id: 'meeting', name: '会議室中心', desc: '会議室3つ+フリースペース', icon: '🤝' },
+    { id: 'empty', name: '空のフロア', desc: '自由にデザイン', icon: '📐' },
+  ];
 
   const handleCreate = async () => {
     if (!floorName.trim()) {
@@ -28,6 +37,10 @@ export default function LandingPage() {
           name: floorName.trim(),
           creatorName: creatorName.trim() || undefined,
           password: password.trim() || undefined,
+          excalidrawScene: template !== 'empty' ? {
+            elements: getTemplateElements(template),
+            appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
+          } : undefined,
         }),
       });
 
@@ -59,6 +72,30 @@ export default function LandingPage() {
           <h2 className="text-xl font-semibold text-gray-800 mb-6">新しいフロアを作成</h2>
 
           <div className="space-y-4">
+            {/* Template selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">テンプレート</label>
+              <div className="grid grid-cols-2 gap-2">
+                {templates.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTemplate(t.id)}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      template === t.id ? 'border-indigo-300 bg-indigo-50' : 'border-gray-100 hover:border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{t.icon}</span>
+                      <div>
+                        <div className="text-xs font-semibold text-gray-800">{t.name}</div>
+                        <div className="text-[10px] text-gray-500">{t.desc}</div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 フロア名 <span className="text-red-400">*</span>
