@@ -184,6 +184,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
       console.log('[WS] Disconnected, will reconnect...');
       setConnected(false);
       setWsConnected(false);
+      setRemoteUsers([]); // Clear stale users on disconnect
       wsRef.current = null;
       reconnectTimerRef.current = setTimeout(connect, RECONNECT_INTERVAL);
     };

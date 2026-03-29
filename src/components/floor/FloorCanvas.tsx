@@ -176,8 +176,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
   const handleSend = () => {
     if (!chatInput.trim()) return;
     const text = chatInput.trim();
-    sendMessage(text);
-    // Send via WebSocket to other users
+    // Only send via WS — message comes back from server for all users including self
     const wsSend = (window as unknown as Record<string, any>).__wsSend;
     if (wsSend?.chat) wsSend.chat(text);
     setChatInput('');

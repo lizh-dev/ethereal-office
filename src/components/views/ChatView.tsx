@@ -14,7 +14,6 @@ export default function ChatView() {
   const handleSend = () => {
     if (!input.trim()) return;
     const text = input.trim();
-    sendMessage(text);
     const wsSend = (window as unknown as Record<string, any>).__wsSend;
     if (wsSend?.chat) wsSend.chat(text);
     setInput('');
