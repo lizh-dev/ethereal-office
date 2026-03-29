@@ -156,16 +156,30 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
   const currentAction = useOfficeStore((s) => s.currentAction);
 
-  // Keyboard: Esc = stand up
+  // Keyboard: Esc = stand up, Space = pan mode
+  const [isPanning, setIsPanning] = useState(false);
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && currentSeatId && isViewMode) {
         standUp();
         wsSend.stand();
       }
+      if (e.key === ' ' && !e.repeat && isViewMode) {
+        e.preventDefault();
+        setIsPanning(true);
+      }
     };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === ' ') {
+        setIsPanning(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
   }, [currentSeatId, isViewMode, standUp, wsSend]);
 
   const chatMessages = useOfficeStore((s) => s.chatMessages);
@@ -228,6 +242,31 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
       {isViewMode && appState && (
         <div
           onMouseDown={(e) => {
+            if (isPanning) {
+              // Space+drag = pan the canvas
+              e.preventDefault();
+              const startX = e.clientX;
+              const startY = e.clientY;
+              const api = excalidrawAPI;
+              if (!api) return;
+              const startState = api.getAppState();
+              const startScrollX = startState.scrollX || 0;
+              const startScrollY = startState.scrollY || 0;
+              const handleMove = (moveE: MouseEvent) => {
+                const zoom = startState.zoom?.value || 1;
+                const dx = (moveE.clientX - startX) / zoom;
+                const dy = (moveE.clientY - startY) / zoom;
+                api.updateScene({ appState: { ...api.getAppState(), scrollX: startScrollX + dx, scrollY: startScrollY + dy } });
+              };
+              const handleUp = () => {
+                window.removeEventListener('mousemove', handleMove);
+                window.removeEventListener('mouseup', handleUp);
+              };
+              window.addEventListener('mousemove', handleMove);
+              window.addEventListener('mouseup', handleUp);
+              return;
+            }
+            // Normal click = move avatar
             const startX = e.clientX;
             const startY = e.clientY;
             const handleUp = (upE: MouseEvent) => {
@@ -252,7 +291,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
               }));
             }
           }}
-          style={{ position: 'absolute', inset: 0, zIndex: 2, cursor: 'crosshair', pointerEvents: 'auto' }}
+          style={{ position: 'absolute', inset: 0, zIndex: 2, cursor: isPanning ? 'grab' : 'crosshair', pointerEvents: 'auto' }}
         />
       )}
 

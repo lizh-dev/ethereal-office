@@ -117,7 +117,7 @@ export function generateIsometricDemoFloor() {
 
   // Desk dimensions: 90x51, Chair(up): 32x50, Monitor: 30x29
   const deskH = 51;
-  const chairGap = 25; // gap between desk bottom and chair top
+  const chairGap = 10; // gap between desk bottom and chair top
   const rowGap = 40;   // gap between rows
 
   // ===== Workspace (4 desk+chair sets in 2 rows) =====

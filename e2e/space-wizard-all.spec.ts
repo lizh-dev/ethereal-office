@@ -48,8 +48,10 @@ for (const spaceType of ['デスクエリア', '会議室', 'ラウンジ', 'カ
     await wizard.locator(`text=${spaceType}`).first().click();
     await page.waitForTimeout(300);
 
-    // Click create
-    await page.click('button:has-text("スペースを作成")');
+    // Scroll wizard to bottom and click create
+    const createBtn = wizard.locator('button:has-text("スペースを作成")');
+    await createBtn.scrollIntoViewIfNeeded();
+    await createBtn.click();
     await page.waitForTimeout(3000);
 
     // Check no critical errors

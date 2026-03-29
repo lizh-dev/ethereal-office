@@ -5,6 +5,8 @@ import { convertToExcalidrawElements } from '@excalidraw/excalidraw';
 import { useOfficeStore } from '@/store/officeStore';
 import { FURNITURE_ASSETS } from '@/lib/furnitureAssets';
 
+type DeskLayout = 'single' | 'facing';
+
 interface SpaceConfig {
   type: 'desk-area' | 'meeting' | 'lounge' | 'cafe';
   name: string;
@@ -13,6 +15,7 @@ interface SpaceConfig {
   spacing: number;
   labelPrefix: string;
   labelStart: number;
+  deskLayout: DeskLayout;
 }
 
 const SPACE_TYPES = [
@@ -73,34 +76,81 @@ function roomBox(name: string, x: number, y: number, w: number, h: number): RawE
 // ── Space generators using furniture image assets ──
 
 function generateDeskArea(config: SpaceConfig, ox: number, oy: number): { elements: RawEl[]; chairs: RawEl[] } {
-  const { rows, cols, spacing, name } = config;
-  const deskW = getAsset('fur-desk').width;  // 90
-  const deskH = getAsset('fur-desk').height; // 51
+  const { rows, cols, spacing, name, deskLayout } = config;
+  const deskW = getAsset('fur-desk').width;   // 90
+  const deskH = getAsset('fur-desk').height;  // 51
   const chairH = getAsset('fur-chair-up').height; // 50
-  const chairGap = 25; // gap between desk bottom and chair top
+  const monW = getAsset('fur-monitor').width;  // 30
+  const monH = getAsset('fur-monitor').height; // 29
+  const chairGap = 10; // gap between desk edge and chair
   const cellW = deskW + spacing;
-  const cellH = deskH + chairGap + chairH + spacing;
-  const roomW = cols * cellW + 40;
-  const roomH = rows * cellH + 50;
 
-  const elements: RawEl[] = [...roomBox(name, ox, oy, roomW, roomH)];
+  const elements: RawEl[] = [];
   const chairs: RawEl[] = [];
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const dx = ox + 20 + c * cellW;
-      const dy = oy + 35 + r * cellH;
-      elements.push(furEl('fur-desk', dx, dy));
-      elements.push(furEl('fur-monitor', dx + 30, dy + 5));
-      const chairEl = furEl('fur-chair-up', dx + 29, dy + deskH + chairGap);
-      elements.push(chairEl);
-      chairs.push(chairEl);
-    }
-  }
+  if (deskLayout === 'facing') {
+    // 対面配置: 2つのデスクが向かい合い、椅子が上下に
+    // 1ペアの高さ = chair + gap + desk + deskGap + desk + gap + chair
+    const deskGap = 0; // facing desks touch each other
+    const pairH = chairH + chairGap + deskH + deskGap + deskH + chairGap + chairH;
+    const cellH = pairH + spacing;
+    const pairRows = rows; // rows = number of facing pairs
+    const roomW = cols * cellW + 40;
+    const roomH = pairRows * cellH + 50;
+    elements.push(...roomBox(name, ox, oy, roomW, roomH));
 
-  // Decorations
-  if (cols > 1) {
-    elements.push(furEl('fur-plant', ox + roomW - 45, oy + 35));
+    for (let r = 0; r < pairRows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const dx = ox + 20 + c * cellW;
+        const baseY = oy + 35 + r * cellH;
+
+        // Top person: chair(down) → desk(monitor at top) → gap
+        const topChairY = baseY;
+        const topDeskY = topChairY + chairH + chairGap;
+        const topChairEl = furEl('fur-chair', dx + 29, topChairY);
+        elements.push(topChairEl);
+        chairs.push(topChairEl);
+        elements.push(furEl('fur-desk', dx, topDeskY));
+        // Monitor near the top person (top edge of desk)
+        elements.push(furEl('fur-monitor', dx + (deskW - monW) / 2, topDeskY + 3));
+
+        // Bottom person: gap → desk(monitor at bottom) → chair(up)
+        const bottomDeskY = topDeskY + deskH + deskGap;
+        const bottomChairY = bottomDeskY + deskH + chairGap;
+        elements.push(furEl('fur-desk', dx, bottomDeskY));
+        // Monitor near the bottom person (bottom edge of desk)
+        elements.push(furEl('fur-monitor', dx + (deskW - monW) / 2, bottomDeskY + deskH - monH - 3));
+        const bottomChairEl = furEl('fur-chair-up', dx + 29, bottomChairY);
+        elements.push(bottomChairEl);
+        chairs.push(bottomChairEl);
+      }
+    }
+
+    if (cols > 1) {
+      elements.push(furEl('fur-plant', ox + roomW - 45, oy + 35));
+    }
+  } else {
+    // 片面配置 (single): デスク + 下に椅子
+    const cellH = deskH + chairGap + chairH + spacing;
+    const roomW = cols * cellW + 40;
+    const roomH = rows * cellH + 50;
+    elements.push(...roomBox(name, ox, oy, roomW, roomH));
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const dx = ox + 20 + c * cellW;
+        const dy = oy + 35 + r * cellH;
+        elements.push(furEl('fur-desk', dx, dy));
+        elements.push(furEl('fur-monitor', dx + (deskW - monW) / 2, dy + 5));
+        const chairEl = furEl('fur-chair-up', dx + 29, dy + deskH + chairGap);
+        elements.push(chairEl);
+        chairs.push(chairEl);
+      }
+    }
+
+    if (cols > 1) {
+      elements.push(furEl('fur-plant', ox + roomW - 45, oy + 35));
+    }
   }
 
   return { elements, chairs };
@@ -198,8 +248,16 @@ function generateLounge(config: SpaceConfig, ox: number, oy: number): { elements
 
 function generateCafe(config: SpaceConfig, ox: number, oy: number): { elements: RawEl[]; chairs: RawEl[] } {
   const { rows, cols, spacing, name } = config;
-  const cellW = 80 + spacing;
-  const cellH = 90 + spacing;
+  // Small round table (0.7 scale): ~46x32
+  const tblScale = 0.7;
+  const tblW = Math.round(getAsset('fur-table-round').width * tblScale);
+  const tblH = Math.round(getAsset('fur-table-round').height * tblScale);
+  const chW = 32, chH = 50; // chair down/up dimensions
+  const gap = 8;
+  // Cell: chair(down) + gap + table + gap + chair(up)
+  const setH = chH + gap + tblH + gap + chH;
+  const cellW = Math.max(tblW, chW) + spacing + 20;
+  const cellH = setH + spacing;
   const roomW = cols * cellW + 60;
   const roomH = rows * cellH + 60;
   const elements: RawEl[] = [...roomBox(name, ox, oy, roomW, roomH)];
@@ -207,16 +265,20 @@ function generateCafe(config: SpaceConfig, ox: number, oy: number): { elements: 
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const tx = ox + 30 + c * cellW;
-      const ty = oy + 40 + r * cellH;
-      // Small table
-      elements.push(furEl('fur-table-round', tx, ty + 15, 0.7));
-      // 2 chairs (top and bottom)
-      const c1 = furEl('fur-chair', tx + 15, ty - 10);
-      const c2 = furEl('fur-chair-up', tx + 15, ty + 60);
+      const cx = ox + 30 + c * cellW + cellW / 2; // center X of this set
+      const baseY = oy + 40 + r * cellH;
+
+      // Chair top (facing down toward table)
+      const c1 = furEl('fur-chair', cx - chW / 2, baseY);
       elements.push(c1);
-      elements.push(c2);
       chairs.push(c1);
+
+      // Table centered
+      elements.push(furEl('fur-table-round', cx - tblW / 2, baseY + chH + gap, tblScale));
+
+      // Chair bottom (facing up toward table)
+      const c2 = furEl('fur-chair-up', cx - chW / 2, baseY + chH + gap + tblH + gap);
+      elements.push(c2);
       chairs.push(c2);
     }
   }
@@ -264,7 +326,7 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
   const excalidrawAPI = useOfficeStore((s) => s.excalidrawAPI);
   const [config, setConfig] = useState<SpaceConfig>({
     type: 'desk-area', name: 'オープンスペース', rows: 2, cols: 3, spacing: 20,
-    labelPrefix: 'オープンスペース', labelStart: 1,
+    labelPrefix: 'オープンスペース', labelStart: 1, deskLayout: 'facing',
   });
 
   const handleGenerate = () => {
@@ -332,14 +394,15 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
   };
 
   const selectedType = SPACE_TYPES.find(t => t.id === config.type)!;
-  const seatCount = config.type === 'desk-area' ? config.rows * config.cols
+  const seatCount = config.type === 'desk-area'
+    ? (config.deskLayout === 'facing' ? config.rows * config.cols * 2 : config.rows * config.cols)
     : config.type === 'meeting' ? Math.min(config.cols * 2 + (config.cols > 3 ? 2 : 0), config.cols * 2 + 2)
     : config.type === 'cafe' ? config.rows * config.cols * 2
-    : 3; // lounge default
+    : 3;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-[480px] overflow-hidden animate-float-in">
+      <div className="bg-white rounded-2xl shadow-2xl w-[480px] max-h-[90vh] overflow-y-auto animate-float-in">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-sm font-bold text-gray-800">スペースを追加</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">&times;</button>
@@ -373,7 +436,35 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Layout */}
-          {(config.type === 'desk-area' || config.type === 'cafe') && (
+          {config.type === 'desk-area' && (
+            <div>
+              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 block">3. 配置パターン</label>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button
+                  onClick={() => setConfig(c => ({ ...c, deskLayout: 'facing' }))}
+                  className={`p-3 rounded-xl border text-left transition-all ${config.deskLayout === 'facing' ? 'border-indigo-300 bg-indigo-50' : 'border-gray-100 hover:border-gray-200'}`}
+                >
+                  <div className="text-[12px] font-semibold text-gray-800">↕ 対面配置</div>
+                  <div className="text-[10px] text-gray-500 mt-1">2人が向かい合って座る</div>
+                </button>
+                <button
+                  onClick={() => setConfig(c => ({ ...c, deskLayout: 'single' }))}
+                  className={`p-3 rounded-xl border text-left transition-all ${config.deskLayout === 'single' ? 'border-indigo-300 bg-indigo-50' : 'border-gray-100 hover:border-gray-200'}`}
+                >
+                  <div className="text-[12px] font-semibold text-gray-800">↓ 片面配置</div>
+                  <div className="text-[10px] text-gray-500 mt-1">全員が同じ方向を向く</div>
+                </button>
+              </div>
+              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 block">4. サイズ</label>
+              <div className="grid grid-cols-3 gap-3">
+                <NumInput label={config.deskLayout === 'facing' ? 'ペア行数' : '行数'} value={config.rows} min={1} max={10} onChange={v => setConfig(c => ({ ...c, rows: v }))} />
+                <NumInput label="列数" value={config.cols} min={1} max={10} onChange={v => setConfig(c => ({ ...c, cols: v }))} />
+                <NumInput label="間隔 (px)" value={config.spacing} min={5} max={80} onChange={v => setConfig(c => ({ ...c, spacing: v }))} />
+              </div>
+            </div>
+          )}
+
+          {config.type === 'cafe' && (
             <div>
               <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 block">3. レイアウト</label>
               <div className="grid grid-cols-3 gap-3">
@@ -394,7 +485,7 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
           {/* Label */}
           <div>
             <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
-              {config.type === 'lounge' ? '3' : '4'}. 座席ラベル
+              {config.type === 'desk-area' ? '5' : config.type === 'lounge' ? '3' : '4'}. 座席ラベル
             </label>
             <div className="grid grid-cols-2 gap-3">
               <div>
