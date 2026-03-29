@@ -44,15 +44,22 @@ body:has(.landing-page) {
 
 /* ===== Landing Page animations ===== */
 
-/* Scroll reveal */
+/* Scroll reveal - starts hidden, revealed by IntersectionObserver */
 .scroll-reveal {
   opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 .scroll-revealed {
   opacity: 1;
   transform: translateY(0);
+}
+/* Fallback: auto-reveal after 1.5s in case observer fails */
+@keyframes force-reveal {
+  to { opacity: 1; transform: translateY(0); }
+}
+.scroll-reveal {
+  animation: force-reveal 0s ease-out 1.5s forwards;
 }
 
 /* Background blob animations */

@@ -13,7 +13,7 @@ export default function Footer() {
                 <path d="M3 9h18M9 21V9" />
               </svg>
             </div>
-            <span className="text-gray-800 font-semibold">Ethereal Office</span>
+            <span className="text-gray-800 font-semibold">SmartOffice</span>
           </div>
 
           {/* Links */}
@@ -32,7 +32,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="mt-8 text-center text-xs text-gray-400">
-          &copy; {new Date().getFullYear()} Ethereal Office. All rights reserved.
+          &copy; {new Date().getFullYear()} 株式会社スマートビット All rights reserved.
         </div>
       </div>
     </footer>

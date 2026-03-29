@@ -47,7 +47,7 @@ export default function TopBar() {
     const api = store.excalidrawAPI;
     const exportData = {
       version: 1,
-      name: 'Ethereal Office Floor Export',
+      name: 'SmartOffice Floor Export',
       excalidrawScene: api ? {
         elements: api.getSceneElements(),
         appState: (() => { const { collaborators, ...rest } = api.getAppState(); return rest; })(),
@@ -95,7 +95,7 @@ export default function TopBar() {
     <header className="h-[50px] bg-white border-b border-gray-200 flex items-center justify-between px-4">
       <div className="flex items-center gap-4">
         <span className="text-base font-bold text-gray-800 flex items-center gap-2">
-          <span className="text-blue-600">W</span> WorkMap
+          <span className="text-blue-600">S</span> SmartOffice
         </span>
         {editorMode === 'edit' && (
           <span className="text-[11px] px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full font-medium border border-amber-200">
