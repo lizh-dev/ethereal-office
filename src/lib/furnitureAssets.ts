@@ -12,10 +12,10 @@ export interface FurnitureAsset {
 
 export const FURNITURE_ASSETS: FurnitureAsset[] = [
   { id: 'fur-desk', name: 'デスク', src: '/assets/furniture-topdown/desk.png', width: 90, height: 51, isSeat: false },
-  { id: 'fur-chair', name: 'チェア(下向き)', src: '/assets/furniture-topdown/chair-down.png', width: 32, height: 50, isSeat: true },
-  { id: 'fur-chair-up', name: 'チェア(上向き)', src: '/assets/furniture-topdown/chair-up.png', width: 32, height: 50, isSeat: true },
-  { id: 'fur-chair-left', name: 'チェア(左向き)', src: '/assets/furniture-topdown/chair-left.png', width: 50, height: 32, isSeat: true },
-  { id: 'fur-chair-right', name: 'チェア(右向き)', src: '/assets/furniture-topdown/chair-right.png', width: 50, height: 32, isSeat: true },
+  { id: 'fur-chair', name: 'チェア(下向き)', src: '/assets/furniture-topdown/chair-down.png', width: 22, height: 35, isSeat: true },
+  { id: 'fur-chair-up', name: 'チェア(上向き)', src: '/assets/furniture-topdown/chair-up.png', width: 22, height: 35, isSeat: true },
+  { id: 'fur-chair-left', name: 'チェア(左向き)', src: '/assets/furniture-topdown/chair-left.png', width: 35, height: 22, isSeat: true },
+  { id: 'fur-chair-right', name: 'チェア(右向き)', src: '/assets/furniture-topdown/chair-right.png', width: 35, height: 22, isSeat: true },
   { id: 'fur-table-round', name: '丸テーブル', src: '/assets/furniture-topdown/table-round.png', width: 65, height: 65, isSeat: false },
   { id: 'fur-table-rect', name: '長テーブル', src: '/assets/furniture-topdown/table-rect.png', width: 90, height: 62, isSeat: false },
   { id: 'fur-sofa', name: 'ソファ', src: '/assets/furniture-topdown/sofa.png', width: 55, height: 54, isSeat: true },
@@ -115,30 +115,29 @@ export function generateIsometricDemoFloor() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elements: any[] = [];
 
-  // Desk dimensions: 90x51, Chair(up): 32x50, Monitor: 30x29
-  const deskH = 51;
-  const chairGap = 10; // gap between desk bottom and chair top
-  const rowGap = 40;   // gap between rows
+  // Desk: 90x51, Chair(up): 22x35, Monitor: 30x29
+  const deskW = 90, deskH = 51, chairW = 22, chairH = 35, monW = 30;
+  const chairGap = 8;
+  const rowGap = 30;
 
   // ===== Workspace (4 desk+chair sets in 2 rows) =====
-  const ws = { x: 30, y: 30, w: 420, h: 380 };
+  const ws = { x: 30, y: 30, w: 380, h: 330 };
   elements.push(...room('ワークスペース', ws.x, ws.y, ws.w, ws.h));
 
-  // Row 1
-  const r1y = ws.y + 40;
-  elements.push(fur('fur-desk', 55, r1y));
-  elements.push(fur('fur-monitor', 85, r1y + 5));
-  elements.push(fur('fur-chair-up', 84, r1y + deskH + chairGap));
+  // Helper: desk set at position, chair centered below desk
+  function deskSet(dx: number, dy: number) {
+    elements.push(fur('fur-desk', dx, dy));
+    elements.push(fur('fur-monitor', dx + (deskW - monW) / 2, dy + 5));
+    elements.push(fur('fur-chair-up', dx + (deskW - chairW) / 2, dy + deskH + chairGap));
+  }
 
-  elements.push(fur('fur-desk', 240, r1y));
-  elements.push(fur('fur-monitor', 270, r1y + 5));
-  elements.push(fur('fur-chair-up', 269, r1y + deskH + chairGap));
+  const r1y = ws.y + 35;
+  deskSet(55, r1y);
+  deskSet(210, r1y);
 
-  // Row 2
-  const r2y = r1y + deskH + chairGap + 50 + rowGap;
-  elements.push(fur('fur-desk', 55, r2y));
-  elements.push(fur('fur-monitor', 85, r2y + 5));
-  elements.push(fur('fur-chair-up', 84, r2y + deskH + chairGap));
+  const r2y = r1y + deskH + chairGap + chairH + rowGap;
+  deskSet(55, r2y);
+  deskSet(210, r2y);
 
   elements.push(fur('fur-desk', 240, r2y));
   elements.push(fur('fur-monitor', 270, r2y + 5));
@@ -158,13 +157,12 @@ export function generateIsometricDemoFloor() {
   const tblY = mr.y + (mr.h - tblH) / 2;
   elements.push(fur('fur-table-round', tblX, tblY));
 
-  // Chairs at generous distance from table edges
-  const gap = 15;
-  const chW = 32, chH = 50, chWh = 50, chHh = 32;
-  elements.push(fur('fur-chair', tblX + (tblW - chW) / 2, tblY - chH - gap));           // top
-  elements.push(fur('fur-chair-up', tblX + (tblW - chW) / 2, tblY + tblH + gap));       // bottom
-  elements.push(fur('fur-chair-right', tblX - chWh - gap, tblY + (tblH - chHh) / 2));   // left
-  elements.push(fur('fur-chair-left', tblX + tblW + gap, tblY + (tblH - chHh) / 2));    // right
+  // Chairs centered on each side of table with gap
+  const mtgGap = 10;
+  elements.push(fur('fur-chair', tblX + (tblW - chairW) / 2, tblY - chairH - mtgGap));           // top
+  elements.push(fur('fur-chair-up', tblX + (tblW - chairW) / 2, tblY + tblH + mtgGap));          // bottom
+  elements.push(fur('fur-chair-right', tblX - 35 - mtgGap, tblY + (tblH - 22) / 2));             // left (35x22)
+  elements.push(fur('fur-chair-left', tblX + tblW + mtgGap, tblY + (tblH - 22) / 2));            // right (35x22)
 
   elements.push(fur('fur-whiteboard', mr.x + 15, mr.y + mr.h - 60));
   elements.push(textEl(mr.x + 20, mr.y + mr.h - 8, 'ホワイトボード'));

@@ -152,17 +152,16 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
 
         // Normal saved scene — pass through as-is (already converted from DB)
         const cleanElements = scene.elements.filter((el: { type: string }) => el.type !== '__isometric_marker__');
-        if (cleanElements.length > 0) {
-          return {
-            elements: cleanElements,
-            appState: scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
-            scrollToContent: true,
-            files: furnitureFiles || {},
-          };
-        }
+        return {
+          elements: cleanElements,
+          appState: scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
+          scrollToContent: true,
+          files: furnitureFiles || {},
+        };
       }
     }
-    return getDefaultInitialData();
+    // No saved scene at all — shouldn't happen, but fallback to empty
+    return { elements: [], appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 }, scrollToContent: true };
   }, [savedScene, furnitureFiles]);
 
   const handleAPI = useCallback(
@@ -179,18 +178,31 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         api.addFiles(Object.values(furnitureFiles));
       }
 
-      // Initialize seats — only if zones are not already loaded from DB
+      // Initialize seats and auto-save isometric template on first load
       setTimeout(() => {
-        const existingZones = useOfficeStore.getState().zones;
-        if (existingZones.length > 0) {
-          // Zones already loaded from DB, skip re-detection
-          return;
-        }
         const elements = api.getSceneElements();
-        if (elements && elements.length > 0) {
+        if (!elements || elements.length === 0) return;
+
+        const existingZones = useOfficeStore.getState().zones;
+        if (existingZones.length === 0) {
           initSeatsFromElements(elements);
         }
-      }, 800);
+
+        // Auto-save isometric template to DB on first load (so it persists)
+        if (hasImageFurniture && floorSlugRef.current) {
+          const appState = api.getAppState();
+          const { collaborators, ...cleanAppState } = appState;
+          const updatedZones = useOfficeStore.getState().zones;
+          const tokens = JSON.parse(localStorage.getItem('ethereal-edit-tokens') || '{}');
+          const editToken = tokens[floorSlugRef.current] || '';
+          const ownerPw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(`ethereal-owner-pw-${floorSlugRef.current}`) || '' : '';
+          fetch(`/api/floors/${floorSlugRef.current}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-Edit-Token': editToken, 'X-Owner-Password': ownerPw },
+            body: JSON.stringify({ excalidrawScene: { elements, appState: cleanAppState }, zones: updatedZones }),
+          }).catch(() => {});
+        }
+      }, 1200);
     },
     [setExcalidrawAPI, furnitureFiles],
   );

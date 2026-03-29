@@ -159,8 +159,8 @@ function generateDeskArea(config: SpaceConfig, ox: number, oy: number): { elemen
 function generateMeeting(config: SpaceConfig, ox: number, oy: number): { elements: RawEl[]; chairs: RawEl[] } {
   const seats = config.cols; // seats per long side
   const tblW = 65, tblH = 65;
-  const vChairW = 32, vChairH = 50;
-  const hChairW = 50, hChairH = 32;
+  const vChairW = 22, vChairH = 35;
+  const hChairW = 35, hChairH = 22;
   const gap = 15; // gap between table edge and chair edge
   const roomW = Math.max(280, seats * 40 + tblW + hChairW * 2 + gap * 2 + 80);
   const roomH = tblH + vChairH * 2 + gap * 2 + 80;
