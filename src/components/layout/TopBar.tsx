@@ -115,8 +115,8 @@ export default function TopBar() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button onClick={() => setShowQR(true)} title="QRコードで共有" className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
-          📱 QR共有
+        <button onClick={() => setShowQR(true)} title="フロアを共有" className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
+          📱 共有
         </button>
         {editorMode === 'edit' && (
           <>
