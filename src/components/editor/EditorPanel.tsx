@@ -252,12 +252,15 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
   const totalSeats = zones.reduce((sum, z) => sum + z.seats.length, 0);
 
   return (
-    <div className="w-[280px] bg-white border-l border-gray-200 flex flex-col h-full overflow-y-auto">
+    <div className="w-[280px] bg-white border-l border-gray-200 flex flex-col h-full overflow-y-auto"
+      onKeyDown={(e) => { if (e.key === ' ') e.stopPropagation(); }}
+    >
       {/* Save & Exit button - prominent at top */}
       <div className="p-3 bg-indigo-50 border-b border-indigo-100">
         <button
           onClick={handleSaveAndView}
           disabled={saving}
+          tabIndex={-1}
           className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
         >
           {saving ? (
