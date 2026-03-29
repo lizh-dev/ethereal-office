@@ -36,10 +36,11 @@ function sceneToScreen(sceneX: number, sceneY: number, appState: any): { x: numb
   const zoom = appState.zoom?.value || 1;
   const scrollX = appState.scrollX || 0;
   const scrollY = appState.scrollY || 0;
-  // Do NOT add offsetLeft/offsetTop — the overlay div is already positioned at the same origin as Excalidraw
+  const offsetLeft = appState.offsetLeft || 0;
+  const offsetTop = appState.offsetTop || 0;
   return {
-    x: (sceneX + scrollX) * zoom,
-    y: (sceneY + scrollY) * zoom,
+    x: (sceneX + scrollX) * zoom + offsetLeft,
+    y: (sceneY + scrollY) * zoom + offsetTop,
   };
 }
 
