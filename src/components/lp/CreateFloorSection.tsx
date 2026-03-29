@@ -35,6 +35,7 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
   }, []);
 
   const templates = [
+    { id: 'isometric', name: 'アイソメトリック', desc: 'リッチな3D風オフィス（NEW）', icon: '✨' },
     { id: 'default', name: 'スタンダード', desc: 'デスク+会議室+ラウンジ', icon: '🏢' },
     { id: 'small', name: '小規模チーム', desc: 'デスク8席+会議室1つ', icon: '🏠' },
     { id: 'meeting', name: '会議室中心', desc: '会議室3つ+フリースペース', icon: '🤝' },

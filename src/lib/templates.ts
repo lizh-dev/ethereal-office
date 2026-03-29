@@ -90,6 +90,10 @@ export function getTemplateElements(templateId: string): RawEl[] {
       return els;
     }
 
+    case 'isometric':
+      // Isometric template uses image elements - handled specially in ExcalidrawEditor
+      return [{ type: '__isometric_marker__' as unknown as string }];
+
     case 'empty':
     default:
       return [];

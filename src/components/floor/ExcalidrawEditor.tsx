@@ -5,6 +5,7 @@ import '@excalidraw/excalidraw/index.css';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getFurnitureLibrary } from './furnitureLibrary';
+import { registerFurnitureFiles, generateIsometricDemoFloor } from '@/lib/furnitureAssets';
 
 const DEBOUNCE_MS = 2000;
 
@@ -255,6 +256,20 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
   const floorSlugRef = useRef(floorSlug);
   floorSlugRef.current = floorSlug;
 
+  const isIsometric = useMemo(() => {
+    if (savedScene && typeof savedScene === 'object') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const scene = savedScene as any;
+      if (!Array.isArray(scene.elements)) return false;
+      // Check for isometric marker (new template) or existing image elements
+      return scene.elements.some(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (el: any) => el.type === '__isometric_marker__' || (el.type === 'image' && el.fileId?.startsWith('fur-'))
+      );
+    }
+    return false;
+  }, [savedScene]);
+
   const handleAPI = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (api: any) => {
@@ -264,6 +279,11 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       const lib = getFurnitureLibrary();
       api.updateLibrary({ libraryItems: lib.libraryItems, merge: true, openLibraryMenu: false });
 
+      // If the scene has isometric furniture images, register the image files
+      if (isIsometric) {
+        registerFurnitureFiles(api).catch(console.error);
+      }
+
       // Initialize seats from rendered elements
       setTimeout(() => {
         const elements = api.getSceneElements();
@@ -272,7 +292,7 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         }
       }, 800);
     },
-    [setExcalidrawAPI],
+    [setExcalidrawAPI, isIsometric],
   );
 
   const initialData = useMemo(() => {
@@ -281,6 +301,18 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const scene = savedScene as any;
       if (Array.isArray(scene.elements) && scene.elements.length > 0) {
+        // Check for isometric marker (new floor with isometric template)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const hasMarker = scene.elements.some((el: any) => el.type === '__isometric_marker__');
+        if (hasMarker) {
+          const isoElements = generateIsometricDemoFloor();
+          return {
+            elements: isoElements,
+            appState: { viewBackgroundColor: '#f0f9ff', gridSize: 20 },
+            scrollToContent: true,
+            files: {},
+          };
+        }
         return {
           elements: scene.elements,
           appState: scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
