@@ -224,17 +224,15 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
         <Editor viewMode={isViewMode} floorSlug={floorSlug} savedScene={savedScene} />
       </div>
 
-      {/* Click-to-move layer */}
+      {/* Click-to-move layer — passes wheel/scroll to Excalidraw for zoom/pan */}
       {isViewMode && appState && (
         <div
           onMouseDown={(e) => {
-            // Only handle simple clicks (not drag/pan)
             const startX = e.clientX;
             const startY = e.clientY;
             const handleUp = (upE: MouseEvent) => {
               const dx = Math.abs(upE.clientX - startX);
               const dy = Math.abs(upE.clientY - startY);
-              // If moved less than 5px, treat as click
               if (dx < 5 && dy < 5) {
                 handleCanvasClick(e as unknown as React.MouseEvent);
               }
@@ -242,8 +240,76 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             };
             window.addEventListener('mouseup', handleUp);
           }}
+          onWheel={(e) => {
+            // Pass wheel events through to Excalidraw for zoom/pan
+            const canvas = ref.current?.querySelector('.excalidraw canvas') as HTMLElement;
+            if (canvas) {
+              canvas.dispatchEvent(new WheelEvent('wheel', {
+                deltaX: e.deltaX, deltaY: e.deltaY, deltaMode: e.deltaMode,
+                clientX: e.clientX, clientY: e.clientY,
+                ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey,
+                bubbles: true, cancelable: true,
+              }));
+            }
+          }}
           style={{ position: 'absolute', inset: 0, zIndex: 2, cursor: 'crosshair', pointerEvents: 'auto' }}
         />
+      )}
+
+      {/* Zoom controls */}
+      {isViewMode && appState && (
+        <div style={{
+          position: 'absolute', bottom: 12, right: 12, zIndex: 60,
+          display: 'flex', flexDirection: 'column', gap: 4,
+          pointerEvents: 'auto',
+        }}>
+          <button
+            onClick={() => {
+              const api = excalidrawAPI;
+              if (!api) return;
+              const st = api.getAppState();
+              const newZoom = Math.min((st.zoom?.value || 1) * 1.3, 5);
+              api.updateScene({ appState: { ...st, zoom: { value: newZoom } } });
+            }}
+            style={{
+              width: 36, height: 36, borderRadius: 10, border: '1px solid #e5e7eb',
+              background: 'rgba(255,255,255,0.95)', cursor: 'pointer',
+              fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.08)', color: '#374151',
+            }}
+            title="拡大"
+          >+</button>
+          <button
+            onClick={() => {
+              const api = excalidrawAPI;
+              if (!api) return;
+              const st = api.getAppState();
+              const newZoom = Math.max((st.zoom?.value || 1) / 1.3, 0.1);
+              api.updateScene({ appState: { ...st, zoom: { value: newZoom } } });
+            }}
+            style={{
+              width: 36, height: 36, borderRadius: 10, border: '1px solid #e5e7eb',
+              background: 'rgba(255,255,255,0.95)', cursor: 'pointer',
+              fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.08)', color: '#374151',
+            }}
+            title="縮小"
+          >−</button>
+          <button
+            onClick={() => {
+              const api = excalidrawAPI;
+              if (!api) return;
+              api.scrollToContent(api.getSceneElements(), { fitToViewport: true, viewportZoomFactor: 0.9 });
+            }}
+            style={{
+              width: 36, height: 36, borderRadius: 10, border: '1px solid #e5e7eb',
+              background: 'rgba(255,255,255,0.95)', cursor: 'pointer',
+              fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.08)', color: '#374151', fontWeight: 600,
+            }}
+            title="全体表示"
+          >⊞</button>
+        </div>
       )}
 
       {/* Avatar overlay in view mode */}
