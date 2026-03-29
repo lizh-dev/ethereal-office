@@ -15,6 +15,9 @@
 /test-results
 /playwright-report
 
+# temp assets
+/tmp-assets
+
 # next.js
 /.next/
 /out/
