@@ -298,11 +298,8 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
     return false;
   }, [savedScene]);
 
-  // Stash image elements for deferred addition after API init
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const deferredImageEls = useRef<any[]>([]);
-
-  // Build initialData — NEVER include image elements (Excalidraw crashes on them)
+  // Build initialData — convert ALL elements (including images) through convertToExcalidrawElements
+  // and include pre-loaded files
   const initialData = useMemo(() => {
     if (savedScene && typeof savedScene === 'object') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -313,41 +310,37 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
           scene.elements.some((el: any) => el.type === '__isometric_marker__');
 
         if (isIsoTemplate) {
+          // Generate all elements and convert them ALL (including images)
           const rawElements = generateIsometricDemoFloor();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          deferredImageEls.current = rawElements.filter((el: any) => el.type === 'image');
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const primitiveEls = rawElements.filter((el: any) => el.type !== 'image');
-          let converted: ReturnType<typeof convertToExcalidrawElements> = [];
           try {
-            if (primitiveEls.length > 0) {
-              converted = convertToExcalidrawElements(primitiveEls as Parameters<typeof convertToExcalidrawElements>[0]);
-            }
-          } catch { /* ignore */ }
-          return {
-            elements: converted,
-            appState: { viewBackgroundColor: '#f0f9ff', gridSize: 20 },
-            scrollToContent: true,
-          };
+            const allConverted = convertToExcalidrawElements(
+              rawElements as Parameters<typeof convertToExcalidrawElements>[0]
+            );
+            return {
+              elements: allConverted,
+              appState: { viewBackgroundColor: '#f0f9ff', gridSize: 20 },
+              scrollToContent: true,
+              files: furnitureFiles || {},
+            };
+          } catch (e) {
+            console.error('Failed to convert isometric elements:', e);
+          }
         }
 
-        // Normal saved scene — strip out image elements for deferred add
-        const nonImageEls = scene.elements.filter((el: { type: string }) =>
-          el.type !== '__isometric_marker__' && el.type !== 'image'
-        );
-        deferredImageEls.current = scene.elements.filter((el: { type: string }) => el.type === 'image');
-
-        if (nonImageEls.length > 0 || deferredImageEls.current.length > 0) {
+        // Normal saved scene — pass through as-is (already converted from DB)
+        const cleanElements = scene.elements.filter((el: { type: string }) => el.type !== '__isometric_marker__');
+        if (cleanElements.length > 0) {
           return {
-            elements: nonImageEls,
+            elements: cleanElements,
             appState: scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
             scrollToContent: true,
+            files: furnitureFiles || {},
           };
         }
       }
     }
     return getDefaultInitialData();
-  }, [savedScene]);
+  }, [savedScene, furnitureFiles]);
 
   const handleAPI = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -358,31 +351,9 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       const lib = getFurnitureLibrary();
       api.updateLibrary({ libraryItems: lib.libraryItems, merge: true, openLibraryMenu: false });
 
-      // Register furniture files, then add deferred image elements
+      // Ensure furniture files are registered (for SpaceWizard dynamic adds)
       if (furnitureFiles) {
         api.addFiles(Object.values(furnitureFiles));
-        // Add deferred image elements after files are registered
-        if (deferredImageEls.current.length > 0) {
-          setTimeout(() => {
-            const currentEls = api.getSceneElements();
-            api.updateScene({ elements: [...currentEls, ...deferredImageEls.current] });
-            deferredImageEls.current = [];
-            setTimeout(() => initSeatsFromElements(api.getSceneElements()), 300);
-          }, 300);
-        }
-      } else {
-        // Pre-load files then register
-        preloadFurnitureFiles().then(files => {
-          api.addFiles(Object.values(files));
-          if (deferredImageEls.current.length > 0) {
-            setTimeout(() => {
-              const currentEls = api.getSceneElements();
-              api.updateScene({ elements: [...currentEls, ...deferredImageEls.current] });
-              deferredImageEls.current = [];
-              setTimeout(() => initSeatsFromElements(api.getSceneElements()), 300);
-            }, 300);
-          }
-        });
       }
 
       // Initialize seats
@@ -411,6 +382,13 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
+
+  // Wait for furniture files before rendering if this floor uses images
+  if (hasImageFurniture && !furnitureFiles) {
+    return <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span className="text-gray-400 text-sm">読み込み中...</span>
+    </div>;
+  }
 
 
   return (

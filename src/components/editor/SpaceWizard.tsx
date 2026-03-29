@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { convertToExcalidrawElements } from '@excalidraw/excalidraw';
 import { useOfficeStore } from '@/store/officeStore';
 import { FURNITURE_ASSETS } from '@/lib/furnitureAssets';
 
@@ -317,8 +318,13 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
     store.setZones([...store.zones, newZone]);
 
     try {
+      // Convert all elements (including images) through Excalidraw's converter
+      // to ensure all required fields (seed, version, scale, etc.) are filled
+      const convertedElements = convertToExcalidrawElements(
+        result.elements as Parameters<typeof convertToExcalidrawElements>[0]
+      );
       excalidrawAPI.updateScene({
-        elements: [...excalidrawAPI.getSceneElements(), ...result.elements],
+        elements: [...excalidrawAPI.getSceneElements(), ...convertedElements],
       });
       const allElements = excalidrawAPI.getSceneElements();
       excalidrawAPI.scrollToContent(allElements, { fitToViewport: true, viewportZoomFactor: 0.9 });
