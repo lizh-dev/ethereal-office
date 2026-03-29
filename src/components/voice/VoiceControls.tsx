@@ -77,7 +77,13 @@ export default function VoiceControls({ webrtc }: VoiceControlsProps) {
           boxShadow: peerCount > 0 ? '0 0 4px #4ADE80' : '0 0 4px #FBBF24',
         }} />
         <span className="text-[11px] text-gray-300 font-medium">
-          {peerCount > 0 ? `${currentZoneName} · ${peerCount}人と通話中` : `${currentZoneName} · 接続中...`}
+          {peerCount > 0
+            ? currentZoneName
+              ? `${currentZoneName} · ${peerCount}人と通話中`
+              : `${peerCount}人と通話中`
+            : currentZoneName
+              ? `${currentZoneName} · 接続中...`
+              : '接続中...'}
         </span>
       </div>
 

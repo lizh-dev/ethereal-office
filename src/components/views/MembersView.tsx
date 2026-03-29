@@ -13,7 +13,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function MembersView() {
-  const { currentUser, users, searchQuery, isFloorOwner, dmUnreadCount, setActiveDM } = useOfficeStore();
+  const { currentUser, users, searchQuery, isFloorOwner, dmUnreadCount, setActiveDM, callRequestStatus, callTargetUserId } = useOfficeStore();
   const wsSend = useWsSend();
 
   const [kickTarget, setKickTarget] = useState<{ id: string; name: string } | null>(null);
@@ -22,6 +22,20 @@ export default function MembersView() {
     if (!kickTarget) return;
     wsSend.kick(kickTarget.id);
     setKickTarget(null);
+  };
+
+  const handleCallRequest = (userId: string) => {
+    wsSend.callRequest(userId);
+    useOfficeStore.getState().setCallTargetUserId(userId);
+    useOfficeStore.getState().setCallRequestStatus('pending');
+    // Auto-clear pending status after 30 seconds (timeout)
+    setTimeout(() => {
+      const state = useOfficeStore.getState();
+      if (state.callRequestStatus === 'pending' && state.callTargetUserId === userId) {
+        useOfficeStore.getState().clearCallRequest();
+        useOfficeStore.getState().addNotification('通話リクエストがタイムアウトしました');
+      }
+    }, 30000);
   };
 
   const allUsers = useMemo(() => {
@@ -79,6 +93,22 @@ export default function MembersView() {
                     {user.statusMessage || STATUS_LABELS[user.status] || user.status}
                   </div>
                 </div>
+                {user.id !== currentUser.id && (
+                  callRequestStatus === 'pending' && callTargetUserId === user.id ? (
+                    <span className="text-[11px] text-orange-500 font-medium flex-shrink-0 animate-pulse">
+                      発信中...
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleCallRequest(user.id)}
+                      className="text-[14px] p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors flex-shrink-0"
+                      title={`${user.name} に通話リクエスト`}
+                      disabled={callRequestStatus === 'pending'}
+                    >
+                      📞
+                    </button>
+                  )
+                )}
                 {user.id !== currentUser.id && (
                   <button
                     onClick={() => setActiveDM(user.id)}

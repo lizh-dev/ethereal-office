@@ -31,6 +31,9 @@ interface WsSend {
   rtcAnswer: (targetUserId: string, sdp: string) => void;
   rtcCandidate: (targetUserId: string, candidate: string) => void;
   whisper: (text: string) => void;
+  callRequest: (targetUserId: string) => void;
+  callAccept: (targetUserId: string) => void;
+  callDecline: (targetUserId: string) => void;
 }
 
 interface UseWebSocketOptions {
@@ -288,6 +291,26 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           }, 3000);
           break;
 
+        case 'call_request_received':
+          useOfficeStore.getState().setIncomingCallRequest({
+            fromUserId: msg.userId,
+            fromUserName: msg.name || 'Unknown',
+          });
+          break;
+
+        case 'call_accept_received':
+          useOfficeStore.getState().setCallRequestStatus('accepted');
+          break;
+
+        case 'call_decline_received':
+          useOfficeStore.getState().setCallRequestStatus('declined');
+          addNotification('通話リクエストが拒否されました');
+          // Auto-clear after a short delay
+          setTimeout(() => {
+            useOfficeStore.getState().clearCallRequest();
+          }, 3000);
+          break;
+
         case 'rtc_offer':
         case 'rtc_answer':
         case 'rtc_candidate':
@@ -402,6 +425,18 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     ),
     whisper: useCallback(
       (text: string) => sendRaw({ type: 'whisper', text }),
+      [sendRaw],
+    ),
+    callRequest: useCallback(
+      (targetUserId: string) => sendRaw({ type: 'call_request', targetUserId }),
+      [sendRaw],
+    ),
+    callAccept: useCallback(
+      (targetUserId: string) => sendRaw({ type: 'call_accept', targetUserId }),
+      [sendRaw],
+    ),
+    callDecline: useCallback(
+      (targetUserId: string) => sendRaw({ type: 'call_decline', targetUserId }),
       [sendRaw],
     ),
   };

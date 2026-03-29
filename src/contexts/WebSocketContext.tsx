@@ -18,6 +18,9 @@ export interface WsSend {
   rtcAnswer: (targetUserId: string, sdp: string) => void;
   rtcCandidate: (targetUserId: string, candidate: string) => void;
   whisper: (text: string) => void;
+  callRequest: (targetUserId: string) => void;
+  callAccept: (targetUserId: string) => void;
+  callDecline: (targetUserId: string) => void;
 }
 
 const WebSocketContext = createContext<{ send: WsSend; connected: boolean } | null>(null);

@@ -82,6 +82,15 @@ interface OfficeState {
   kickedNotification: boolean;
   setKickedNotification: (v: boolean) => void;
 
+  // Call request
+  incomingCallRequest: { fromUserId: string; fromUserName: string } | null;
+  callRequestStatus: 'idle' | 'pending' | 'accepted' | 'declined';
+  callTargetUserId: string | null;
+  setIncomingCallRequest: (req: { fromUserId: string; fromUserName: string } | null) => void;
+  setCallRequestStatus: (status: 'idle' | 'pending' | 'accepted' | 'declined') => void;
+  setCallTargetUserId: (userId: string | null) => void;
+  clearCallRequest: () => void;
+
   // Whisper (proximity chat)
   whisperMessages: WhisperMessage[];
   addWhisperMessage: (msg: WhisperMessage) => void;
@@ -229,6 +238,15 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   // Kick notification overlay
   kickedNotification: false,
   setKickedNotification: (v) => set({ kickedNotification: v }),
+
+  // Call request
+  incomingCallRequest: null,
+  callRequestStatus: 'idle',
+  callTargetUserId: null,
+  setIncomingCallRequest: (req) => set({ incomingCallRequest: req }),
+  setCallRequestStatus: (status) => set({ callRequestStatus: status }),
+  setCallTargetUserId: (userId) => set({ callTargetUserId: userId }),
+  clearCallRequest: () => set({ incomingCallRequest: null, callRequestStatus: 'idle', callTargetUserId: null }),
 
   // Whisper (proximity chat)
   whisperMessages: [],

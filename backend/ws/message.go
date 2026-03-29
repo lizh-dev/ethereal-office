@@ -19,6 +19,9 @@ const (
 	MsgRTCAnswer     = "rtc_answer"
 	MsgRTCCandidate  = "rtc_candidate"
 	MsgWhisper       = "whisper"
+	MsgCallRequest   = "call_request"
+	MsgCallAccept    = "call_accept"
+	MsgCallDecline   = "call_decline"
 )
 
 // Server→Client message types
@@ -37,10 +40,13 @@ const (
 	MsgKicked             = "kicked"
 	MsgUserProfileUpdated = "user_profile_updated"
 	MsgDMReceived         = "dm_received"
-	MsgRTCOfferRelay      = "rtc_offer"
-	MsgRTCAnswerRelay     = "rtc_answer"
-	MsgRTCCandidateRelay  = "rtc_candidate"
-	MsgUserWhisper        = "user_whisper"
+	MsgRTCOfferRelay         = "rtc_offer"
+	MsgRTCAnswerRelay        = "rtc_answer"
+	MsgRTCCandidateRelay     = "rtc_candidate"
+	MsgUserWhisper           = "user_whisper"
+	MsgCallRequestReceived   = "call_request_received"
+	MsgCallAcceptReceived    = "call_accept_received"
+	MsgCallDeclineReceived   = "call_decline_received"
 )
 
 type IncomingMessage struct {

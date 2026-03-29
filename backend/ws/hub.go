@@ -520,6 +520,85 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 		}
 		log.Printf("[%s] DM from %s to %s", client.room, client.info.Name, target.info.Name)
 
+	case MsgCallRequest:
+		if msg.TargetUserID == "" {
+			return
+		}
+		h.mu.RLock()
+		room := h.rooms[client.room]
+		h.mu.RUnlock()
+		if room == nil {
+			return
+		}
+		h.mu.RLock()
+		target, ok := room.clients[msg.TargetUserID]
+		h.mu.RUnlock()
+		if !ok {
+			return
+		}
+		data := MarshalMessage(OutgoingMessage{
+			Type:   MsgCallRequestReceived,
+			UserID: client.info.ID,
+			Name:   client.info.Name,
+		})
+		select {
+		case target.send <- data:
+		default:
+		}
+		log.Printf("[%s] call request from %s to %s", client.room, client.info.Name, target.info.Name)
+
+	case MsgCallAccept:
+		if msg.TargetUserID == "" {
+			return
+		}
+		h.mu.RLock()
+		room := h.rooms[client.room]
+		h.mu.RUnlock()
+		if room == nil {
+			return
+		}
+		h.mu.RLock()
+		target, ok := room.clients[msg.TargetUserID]
+		h.mu.RUnlock()
+		if !ok {
+			return
+		}
+		data := MarshalMessage(OutgoingMessage{
+			Type:   MsgCallAcceptReceived,
+			UserID: client.info.ID,
+		})
+		select {
+		case target.send <- data:
+		default:
+		}
+		log.Printf("[%s] call accepted by %s for %s", client.room, client.info.Name, target.info.Name)
+
+	case MsgCallDecline:
+		if msg.TargetUserID == "" {
+			return
+		}
+		h.mu.RLock()
+		room := h.rooms[client.room]
+		h.mu.RUnlock()
+		if room == nil {
+			return
+		}
+		h.mu.RLock()
+		target, ok := room.clients[msg.TargetUserID]
+		h.mu.RUnlock()
+		if !ok {
+			return
+		}
+		data := MarshalMessage(OutgoingMessage{
+			Type:   MsgCallDeclineReceived,
+			UserID: client.info.ID,
+		})
+		select {
+		case target.send <- data:
+		default:
+		}
+		log.Printf("[%s] call declined by %s for %s", client.room, client.info.Name, target.info.Name)
+
 	case MsgWhisper:
 		if msg.Text == "" {
 			return

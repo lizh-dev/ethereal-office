@@ -23,6 +23,7 @@ export interface WebRTCState {
   toggleMute: () => void;
   leaveVoice: () => void;
   joinVoice: () => void;
+  joinVoiceWith: (targetUserId: string) => void;
   canJoinVoice: boolean;
   currentZoneName: string;
 }
@@ -382,6 +383,18 @@ export function useWebRTC(): WebRTCState {
     }
   }, [currentUser.id, currentSeatId, acquireLocalStream, connectToPeer]);
 
+  // Join voice with a specific user (1:1 call, not zone-based)
+  const joinVoiceWith = useCallback(async (targetUserId: string) => {
+    if (!currentUser.id || currentUser.id === 'pending') return;
+
+    await acquireLocalStream();
+    setIsVoiceActive(true);
+
+    if (!peersRef.current.has(targetUserId) && currentUser.id < targetUserId) {
+      await connectToPeer(targetUserId);
+    }
+  }, [currentUser.id, acquireLocalStream, connectToPeer]);
+
   // Can join voice: seated + same zone has other users
   const zones = useOfficeStore((s) => s.zones);
   const canJoinVoice = !!currentSeatId && currentUser.id !== 'pending' &&
@@ -405,6 +418,7 @@ export function useWebRTC(): WebRTCState {
     toggleMute,
     leaveVoice,
     joinVoice,
+    joinVoiceWith,
     canJoinVoice,
     currentZoneName,
   };
