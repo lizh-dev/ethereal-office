@@ -718,6 +718,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
               {/* Call */}
               <button
                 onClick={() => {
+                  console.log('[CallRequest] Sending to:', contextMenu.userId, contextMenu.userName);
                   wsSend.callRequest(contextMenu.userId);
                   useOfficeStore.getState().setCallRequestStatus('pending');
                   useOfficeStore.getState().setCallTargetUserId(contextMenu.userId);
@@ -732,6 +733,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
               {/* DM */}
               <button
                 onClick={() => {
+                  console.log('[DM] Opening DM with:', contextMenu.userId, contextMenu.userName);
                   useOfficeStore.getState().setActiveDM(contextMenu.userId);
                   setContextMenu(null);
                 }}

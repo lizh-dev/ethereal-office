@@ -292,6 +292,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           break;
 
         case 'call_request_received':
+          console.log('[WS] Received call_request from', msg.userId, msg.name);
           useOfficeStore.getState().setIncomingCallRequest({
             fromUserId: msg.userId,
             fromUserName: msg.name || 'Unknown',
@@ -428,7 +429,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
       [sendRaw],
     ),
     callRequest: useCallback(
-      (targetUserId: string) => sendRaw({ type: 'call_request', targetUserId }),
+      (targetUserId: string) => { console.log('[WS] Sending call_request to', targetUserId); sendRaw({ type: 'call_request', targetUserId }); },
       [sendRaw],
     ),
     callAccept: useCallback(
