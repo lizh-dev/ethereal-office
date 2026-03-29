@@ -85,9 +85,11 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
       })
       .then((data) => {
         setFloorData(data);
-        // Restore zones from DB if available
+        // Restore zones from DB, or clear stale zones from previous floor
         if (data.zones && Array.isArray(data.zones) && data.zones.length > 0) {
           useOfficeStore.getState().setZones(data.zones);
+        } else {
+          useOfficeStore.getState().setZones([]);
         }
         setLoading(false);
       })

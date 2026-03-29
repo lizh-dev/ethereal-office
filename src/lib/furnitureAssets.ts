@@ -110,82 +110,15 @@ function room(name: string, x: number, y: number, w: number, h: number) {
   ];
 }
 
-// Generate demo floor with Gemini top-down assets
+// Generate starter floor — room frames only, user adds furniture via SpaceWizard
 export function generateIsometricDemoFloor() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elements: any[] = [];
 
-  // Desk: 90x51, Chair(up): 22x35, Monitor: 30x29
-  const deskW = 90, deskH = 51, chairW = 22, chairH = 35, monW = 30;
-  const chairGap = 8;
-  const rowGap = 30;
-
-  // ===== Workspace (4 desk+chair sets in 2 rows) =====
-  const ws = { x: 30, y: 30, w: 380, h: 330 };
-  elements.push(...room('ワークスペース', ws.x, ws.y, ws.w, ws.h));
-
-  // Helper: desk set at position, chair centered below desk
-  function deskSet(dx: number, dy: number) {
-    elements.push(fur('fur-desk', dx, dy));
-    elements.push(fur('fur-monitor', dx + (deskW - monW) / 2, dy + 5));
-    elements.push(fur('fur-chair-up', dx + (deskW - chairW) / 2, dy + deskH + chairGap));
-  }
-
-  const r1y = ws.y + 35;
-  deskSet(55, r1y);
-  deskSet(210, r1y);
-
-  const r2y = r1y + deskH + chairGap + chairH + rowGap;
-  deskSet(55, r2y);
-  deskSet(210, r2y);
-
-  elements.push(fur('fur-desk', 240, r2y));
-  elements.push(fur('fur-monitor', 270, r2y + 5));
-  elements.push(fur('fur-chair-up', 269, r2y + deskH + chairGap));
-
-  // Decorations
-  elements.push(fur('fur-plant', 185, r1y));
-  elements.push(fur('fur-plant', ws.x + ws.w - 45, ws.y + 10));
-
-  // ===== Meeting Room =====
-  const mr = { x: 480, y: 30, w: 320, h: 250 };
-  elements.push(...room('会議室', mr.x, mr.y, mr.w, mr.h));
-
-  // Table centered
-  const tblW = 65, tblH = 65;
-  const tblX = mr.x + (mr.w - tblW) / 2;
-  const tblY = mr.y + (mr.h - tblH) / 2;
-  elements.push(fur('fur-table-round', tblX, tblY));
-
-  // Chairs centered on each side of table with gap
-  const mtgGap = 10;
-  elements.push(fur('fur-chair', tblX + (tblW - chairW) / 2, tblY - chairH - mtgGap));           // top
-  elements.push(fur('fur-chair-up', tblX + (tblW - chairW) / 2, tblY + tblH + mtgGap));          // bottom
-  elements.push(fur('fur-chair-right', tblX - 35 - mtgGap, tblY + (tblH - 22) / 2));             // left (35x22)
-  elements.push(fur('fur-chair-left', tblX + tblW + mtgGap, tblY + (tblH - 22) / 2));            // right (35x22)
-
-  elements.push(fur('fur-whiteboard', mr.x + 15, mr.y + mr.h - 60));
-  elements.push(textEl(mr.x + 20, mr.y + mr.h - 8, 'ホワイトボード'));
-  elements.push(fur('fur-plant', mr.x + mr.w - 45, mr.y + 10));
-
-  // ===== Lounge =====
-  const lg = { x: 480, y: 310, w: 320, h: 240 };
-  elements.push(...room('ラウンジ', lg.x, lg.y, lg.w, lg.h));
-
-  elements.push(fur('fur-sofa', lg.x + 30, lg.y + 50));
-  elements.push(fur('fur-sofa', lg.x + 30, lg.y + 150));
-  elements.push(fur('fur-armchair', lg.x + 180, lg.y + 80));
-  elements.push(fur('fur-armchair', lg.x + 180, lg.y + 150));
-  elements.push(fur('fur-bookshelf', lg.x + 120, lg.y + 40));
-  elements.push(textEl(lg.x + 130, lg.y + 98, '本棚'));
-  elements.push(fur('fur-coffee', lg.x + 250, lg.y + 40));
-  elements.push(textEl(lg.x + 240, lg.y + 65, 'コーヒー'));
-  elements.push(fur('fur-plant', lg.x + lg.w - 45, lg.y + 10));
-  elements.push(fur('fur-plant', lg.x + 20, lg.y + lg.h - 40));
+  // 3 empty room frames for the user to fill
+  elements.push(...room('ワークスペース', 30, 30, 400, 300));
+  elements.push(...room('会議室', 460, 30, 280, 250));
+  elements.push(...room('ラウンジ', 460, 310, 280, 240));
 
   return elements;
-}
-
-function textEl(x: number, y: number, text: string) {
-  return { type: 'text', x, y, text, fontSize: 10, strokeColor: '#94a3b8' };
 }
