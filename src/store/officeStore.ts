@@ -295,6 +295,13 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   removeRemoteUser: (userId) =>
     set((state) => ({
       users: state.users.filter((u) => u.id !== userId),
+      // Release any seats occupied by this user
+      zones: state.zones.map((zone) => ({
+        ...zone,
+        seats: zone.seats.map((s) =>
+          s.occupiedBy === userId ? { ...s, occupied: false, occupiedBy: undefined } : s,
+        ),
+      })),
     })),
 
   updateRemoteUserPosition: (userId, x, y) =>
