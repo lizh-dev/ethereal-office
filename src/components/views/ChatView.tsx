@@ -41,19 +41,22 @@ export default function ChatView() {
           chatMessages.map((msg, i) => {
             const user = allUsers.find(u => u.id === msg.userId);
             const isMe = msg.userId === currentUser.id;
+            const displayName = user?.name || (isMe ? currentUser.name : 'ゲスト');
+            const displaySeed = user?.avatarSeed || (isMe ? currentUser.avatarSeed : undefined) || 'default';
+            const displayStyle = user?.avatarStyle || (isMe ? currentUser.avatarStyle : undefined) || 'notionists';
             const time = new Date(msg.timestamp);
             const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
 
             return (
               <div key={`${msg.timestamp}-${i}`} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''}`}>
                 <img
-                  src={getAvatarUrl(user?.avatarSeed || 'default', user?.avatarStyle || 'notionists')}
+                  src={getAvatarUrl(displaySeed, displayStyle)}
                   alt=""
                   className="w-8 h-8 rounded-full border border-gray-200 flex-shrink-0"
                 />
                 <div className={`max-w-[70%] ${isMe ? 'items-end' : 'items-start'}`}>
                   <div className={`flex items-baseline gap-2 mb-0.5 ${isMe ? 'flex-row-reverse' : ''}`}>
-                    <span className="text-xs font-medium text-gray-600">{user?.name || '???'}</span>
+                    <span className="text-xs font-medium text-gray-600">{displayName}</span>
                     <span className="text-[10px] text-gray-400">{timeStr}</span>
                   </div>
                   <div className={`px-3 py-2 rounded-2xl text-sm ${

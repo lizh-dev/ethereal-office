@@ -44,6 +44,10 @@ interface OfficeState {
   // Reactions (userId -> emoji, auto-clears)
   reactions: Record<string, string>;
 
+  // Chat unread tracking
+  unreadChatCount: number;
+  markChatRead: () => void;
+
   // Permissions
   isFloorOwner: boolean;
   setIsFloorOwner: (v: boolean) => void;
@@ -133,6 +137,10 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   // Reactions
   reactions: {},
 
+  // Chat unread
+  unreadChatCount: 0,
+  markChatRead: () => set({ unreadChatCount: 0 }),
+
   // Permissions
   isFloorOwner: false,
   setIsFloorOwner: (v) => set({ isFloorOwner: v }),
@@ -214,9 +222,10 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   addChatMessage: (userId, text, timestamp) =>
     set((state) => ({
       chatMessages: [
-        ...state.chatMessages.filter((m) => Date.now() - m.timestamp < 30000),
+        ...state.chatMessages,
         { userId, text, timestamp: timestamp || Date.now() },
       ],
+      unreadChatCount: state.viewMode === 'chat' ? state.unreadChatCount : state.unreadChatCount + 1,
     })),
 
   updateRemoteUserStatus: (userId, status) =>

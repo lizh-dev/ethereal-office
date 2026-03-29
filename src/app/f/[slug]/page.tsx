@@ -214,14 +214,13 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
       {showAvatarSelector && <AvatarSelector />}
       {showSpaceWizard && <SpaceWizard onClose={() => setShowSpaceWizard(false)} />}
       <NotificationToast />
-      {/* WS connection indicator */}
-      <div
-        className="fixed bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-full text-xs bg-white/80 backdrop-blur shadow-sm border border-gray-200"
-        title={connected ? 'WebSocket connected' : 'WebSocket disconnected'}
-      >
-        <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-400'}`} />
-        <span className="text-gray-500">{connected ? 'Online' : 'Offline'}</span>
-      </div>
+      {/* WS connection indicator - minimal, only show when disconnected */}
+      {!connected && (
+        <div className="fixed bottom-2 left-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs bg-red-50 border border-red-200 shadow-sm">
+          <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+          <span className="text-red-500 font-medium">接続中...</span>
+        </div>
+      )}
     </div>
   );
 }

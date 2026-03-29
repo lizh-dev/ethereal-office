@@ -11,9 +11,12 @@ const navItems: { mode: ViewMode; label: string; icon: string }[] = [
 ];
 
 export default function Sidebar() {
-  const { viewMode, setViewMode, editorMode, setEditorMode, chatMessages, isFloorOwner } = useOfficeStore();
+  const { viewMode, setViewMode, editorMode, setEditorMode, unreadChatCount, markChatRead, isFloorOwner } = useOfficeStore();
 
-  const unreadCount = chatMessages.length;
+  const handleNavClick = (mode: ViewMode) => {
+    setViewMode(mode);
+    if (mode === 'chat') markChatRead();
+  };
 
   return (
     <aside className="w-[60px] bg-white border-r border-gray-200 flex flex-col items-center h-full py-3">
@@ -27,7 +30,7 @@ export default function Sidebar() {
         {navItems.map((item) => (
           <button
             key={item.mode}
-            onClick={() => setViewMode(item.mode)}
+            onClick={() => handleNavClick(item.mode)}
             className={`relative w-11 h-11 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all text-[18px] ${
               viewMode === item.mode
                 ? 'bg-blue-50 text-blue-600'
@@ -37,9 +40,9 @@ export default function Sidebar() {
           >
             <span>{item.icon}</span>
             <span className="text-[7px] font-semibold tracking-wide">{item.label}</span>
-            {item.mode === 'chat' && unreadCount > 0 && viewMode !== 'chat' && (
+            {item.mode === 'chat' && unreadChatCount > 0 && viewMode !== 'chat' && (
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center border border-white">
-                {unreadCount > 9 ? '9+' : unreadCount}
+                {unreadChatCount > 9 ? '9+' : unreadChatCount}
               </span>
             )}
           </button>
