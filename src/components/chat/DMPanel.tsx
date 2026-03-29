@@ -43,21 +43,7 @@ export default function DMPanel() {
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        right: 16,
-        bottom: 16,
-        width: 360,
-        height: 480,
-        zIndex: 1000,
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#fff',
-        borderRadius: 16,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1)',
-        border: '1px solid #e5e7eb',
-        overflow: 'hidden',
-      }}
+      className="fixed right-0 bottom-14 md:right-4 md:bottom-4 w-full md:w-[360px] h-[calc(100%-50px-56px)] md:h-[480px] z-[1000] flex flex-col bg-white md:rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.18),0_2px_8px_rgba(0,0,0,0.1)] border border-gray-200 overflow-hidden"
     >
       {/* Header */}
       <div style={{

@@ -34,6 +34,19 @@ body:has(.landing-page) {
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb { background-color: #D1D5DB; border-radius: 2px; }
 
+/* ===== Mobile safe area for bottom tab bar ===== */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Prevent overscroll on mobile when in floor page */
+@media (max-width: 767px) {
+  body:has(.floor-page) {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* ===== Existing animations ===== */
 
 @keyframes float-in {

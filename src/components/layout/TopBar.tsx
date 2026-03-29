@@ -95,19 +95,21 @@ export default function TopBar() {
   };
 
   return (
-    <header className="h-[50px] bg-white border-b border-gray-200 flex items-center justify-between px-4">
-      <div className="flex items-center gap-4">
-        <Link href="/" className="text-base font-bold text-gray-800 flex items-center gap-2 hover:text-sky-600 transition-colors" title="ホームに戻る">
-          <span className="text-sky-500">S</span> SmartOffice
+    <header className="h-[50px] bg-white border-b border-gray-200 flex items-center justify-between px-3 md:px-4">
+      <div className="flex items-center gap-2 md:gap-4">
+        <Link href="/" className="text-base font-bold text-gray-800 flex items-center gap-1.5 md:gap-2 hover:text-sky-600 transition-colors" title="ホームに戻る">
+          <span className="text-sky-500">S</span>
+          <span className="hidden md:inline">SmartOffice</span>
         </Link>
         {editorMode === 'edit' && (
-          <span className="text-[11px] px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full font-medium border border-amber-200">
-            ✏️ 編集モード
+          <span className="text-[11px] px-2 md:px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full font-medium border border-amber-200">
+            ✏️ <span className="hidden sm:inline">編集モード</span><span className="sm:hidden">編集</span>
           </span>
         )}
       </div>
 
-      <div className="flex-1 max-w-md mx-6">
+      {/* Search - hidden on mobile */}
+      <div className="hidden md:block flex-1 max-w-md mx-6">
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
           <input type="text" placeholder="メンバーを検索..."
@@ -118,23 +120,25 @@ export default function TopBar() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <button onClick={() => setShowQR(true)} title="フロアを共有" className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
-          📱 共有
+      <div className="flex items-center gap-2 md:gap-3">
+        {/* Share button - icon only on mobile */}
+        <button onClick={() => setShowQR(true)} title="フロアを共有" className="text-[11px] px-2 md:px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
+          <span className="md:hidden">📱</span>
+          <span className="hidden md:inline">📱 共有</span>
         </button>
 
         {/* User avatar - click to change avatar */}
         <button
           onClick={() => setShowAvatarSelector(true)}
-          className="pl-3 border-l border-gray-200 hover:bg-gray-50 rounded-lg pr-1 py-1 transition-colors"
+          className="pl-2 md:pl-3 border-l border-gray-200 hover:bg-gray-50 rounded-lg pr-1 py-1 transition-colors"
         >
           <div className="relative">
             <img
               src={getAvatarUrl(currentUser.avatarSeed || currentUser.name, currentUser.avatarStyle || 'notionists')}
-              alt="" className="w-9 h-9 rounded-full bg-gray-100 border-2"
+              alt="" className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gray-100 border-2"
               style={{ borderColor: STATUS_COLORS[currentUser.status] }}
             />
-            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white" style={{ background: STATUS_COLORS[currentUser.status] }} />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 md:w-3.5 md:h-3.5 rounded-full border-2 border-white" style={{ background: STATUS_COLORS[currentUser.status] }} />
           </div>
         </button>
 
@@ -142,13 +146,13 @@ export default function TopBar() {
         <div ref={statusMenuRef} className="relative">
           <button
             onClick={() => setShowStatusMenu(!showStatusMenu)}
-            className="flex items-center gap-1.5 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
+            className="flex items-center gap-1.5 hover:bg-gray-50 rounded-lg px-1.5 md:px-2 py-1 transition-colors"
           >
             <div className="text-left">
-              <div className="text-[12px] font-semibold text-gray-800">{currentUser.name}</div>
+              <div className="text-[11px] md:text-[12px] font-semibold text-gray-800 max-w-[60px] md:max-w-none truncate">{currentUser.name}</div>
               <div className="text-[10px] font-medium flex items-center gap-1" style={{ color: STATUS_COLORS[currentUser.status] }}>
                 <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: STATUS_COLORS[currentUser.status] }} />
-                {statusMessage ? statusMessage : STATUS_LABELS[currentUser.status]}
+                <span className="hidden sm:inline">{statusMessage ? statusMessage : STATUS_LABELS[currentUser.status]}</span>
               </div>
             </div>
             <span className="text-gray-400 text-xs ml-0.5">▾</span>

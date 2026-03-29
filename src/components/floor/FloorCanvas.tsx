@@ -332,9 +332,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
           api.updateScene({ appState: { ...api.getAppState(), zoom: { value: v } } });
         };
         return (
-        <div style={{
-          position: 'absolute', bottom: 12, right: 12, zIndex: 60,
-          display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center',
+        <div className="absolute bottom-[68px] md:bottom-3 right-3 z-[60] flex flex-col gap-1 items-center" style={{
           pointerEvents: 'auto',
         }}>
           {/* Zoom percentage */}
@@ -366,8 +364,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
       {/* Help overlay */}
       {showHelp && isViewMode && (
-        <div style={{
-          position: 'absolute', bottom: 56, right: 12, zIndex: 60,
+        <div className="absolute bottom-[120px] md:bottom-14 right-3 z-[60]" style={{
           background: 'rgba(255,255,255,0.97)', borderRadius: 14,
           boxShadow: '0 4px 20px rgba(0,0,0,0.12)', border: '1px solid #e5e7eb',
           padding: '14px 18px', width: 240, pointerEvents: 'auto',
@@ -572,9 +569,8 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
           )}
 
           {/* Chat + Stamp bar */}
-          <div style={{
-            position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)',
-            zIndex: 50, pointerEvents: 'auto',
+          <div className="fixed bottom-[72px] md:bottom-4 left-1/2 -translate-x-1/2 z-50" style={{
+            pointerEvents: 'auto',
           }} onClick={e => e.stopPropagation()}>
             {/* Stamp palette (above input, toggleable) */}
             {showStamps && (
@@ -613,8 +609,9 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                 onChange={e => setChatInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
                 placeholder="メッセージを入力..."
+                className="w-[180px] sm:w-[260px]"
                 style={{
-                  width: 260, padding: '8px 14px', borderRadius: 20,
+                  padding: '8px 14px', borderRadius: 20,
                   border: '1px solid #e5e5e5', fontSize: 13, outline: 'none',
                   background: 'rgba(255,255,255,0.95)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 }}

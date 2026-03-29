@@ -84,7 +84,8 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="w-[60px] bg-white border-r border-gray-200 flex flex-col items-center h-full py-3">
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-[60px] bg-white border-r border-gray-200 flex-col items-center h-full py-3">
         {/* Home link */}
         <Link
           href="/"
@@ -134,6 +135,40 @@ export default function Sidebar() {
           <span className="text-lg">{isFloorOwner ? '✏️' : '🔒'}</span>
         </button>
       </aside>
+
+      {/* Mobile bottom tab bar */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-gray-200 flex items-center justify-around z-50 safe-area-bottom">
+        {navItems.map((item) => (
+          <button
+            key={item.mode}
+            onClick={() => handleNavClick(item.mode)}
+            className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
+              viewMode === item.mode
+                ? 'text-blue-600'
+                : 'text-gray-400'
+            }`}
+          >
+            <span className="text-[18px]">{item.icon}</span>
+            <span className="text-[9px] font-semibold">{item.label}</span>
+            {item.mode === 'chat' && unreadChatCount > 0 && viewMode !== 'chat' && (
+              <span className="absolute top-1 right-1/4 w-4 h-4 bg-red-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center">
+                {unreadChatCount > 9 ? '9+' : unreadChatCount}
+              </span>
+            )}
+          </button>
+        ))}
+        <button
+          onClick={handleEditClick}
+          className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
+            editorMode === 'edit'
+              ? 'text-amber-600'
+              : 'text-gray-400'
+          }`}
+        >
+          <span className="text-[18px]">{editorMode === 'edit' ? '✏️' : (isFloorOwner ? '✏️' : '🔒')}</span>
+          <span className="text-[9px] font-semibold">編集</span>
+        </button>
+      </nav>
 
       {/* Owner password modal */}
       {showPwModal && (

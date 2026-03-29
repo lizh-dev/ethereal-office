@@ -220,7 +220,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
         {/* Edit button hint tooltip */}
         {showEditHint && (
           <div
-            className="fixed z-[60] animate-float-in"
+            className="fixed z-[60] animate-float-in hidden md:block"
             style={{ left: 70, bottom: 60 }}
             onClick={() => setShowEditHint(false)}
           >
@@ -234,7 +234,20 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
             <div className="absolute -left-2 bottom-4 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-sky-500" />
           </div>
         )}
-        <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile edit hint - appears above bottom tab bar */}
+        {showEditHint && (
+          <div
+            className="fixed z-[60] animate-float-in md:hidden left-4 right-4 bottom-16"
+            onClick={() => setShowEditHint(false)}
+          >
+            <div className="bg-sky-500 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer justify-center">
+              <div>
+                <div className="text-center">下の「編集」タブからフロアを編集できます</div>
+              </div>
+            </div>
+          </div>
+        )}
+        <div className="flex-1 flex flex-col min-w-0 pb-14 md:pb-0">
           <TopBar />
           <div className="flex-1 flex min-h-0">
             {viewMode === 'floor' && (
@@ -313,7 +326,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
         )}
         {/* WS connection indicator - minimal, only show when disconnected */}
         {!connected && (
-          <div className="fixed bottom-2 left-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs bg-red-50 border border-red-200 shadow-sm">
+          <div className="fixed bottom-16 md:bottom-2 left-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs bg-red-50 border border-red-200 shadow-sm z-50">
             <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
             <span className="text-red-500 font-medium">接続中...</span>
           </div>

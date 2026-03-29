@@ -252,7 +252,7 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
   const totalSeats = zones.reduce((sum, z) => sum + z.seats.length, 0);
 
   return (
-    <div className="w-[280px] bg-white border-l border-gray-200 flex flex-col h-full overflow-y-auto"
+    <div className="w-full md:w-[280px] bg-white border-l border-gray-200 flex flex-col h-full overflow-y-auto"
       onKeyDown={(e) => { if (e.key === ' ') e.stopPropagation(); }}
     >
       {/* Save & Exit button - prominent at top */}

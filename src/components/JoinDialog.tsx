@@ -66,8 +66,8 @@ export default function JoinDialog({ floorName, floorSlug, hasPassword, onJoin }
   const avatarUrl = `https://api.dicebear.com/9.x/${avatarStyle}/svg?seed=${encodeURIComponent(avatarSeed)}&radius=50`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 my-4">
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-1">{floorName}</h2>
           <p className="text-gray-500 text-sm">フロアに参加するには名前を入力してください</p>
