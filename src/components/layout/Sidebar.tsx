@@ -25,7 +25,8 @@ export default function Sidebar() {
 
   const handleEditClick = () => {
     if (editorMode === 'edit') {
-      setEditorMode('view');
+      // Reload to discard unsaved Excalidraw changes
+      window.location.reload();
       return;
     }
     if (isFloorOwner) {

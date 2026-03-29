@@ -262,10 +262,13 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
           )}
         </button>
         <button
-          onClick={() => setEditorMode('view')}
+          onClick={() => {
+            // Reload page to discard unsaved Excalidraw changes
+            window.location.reload();
+          }}
           className="w-full mt-2 py-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          キャンセル（保存せず閲覧モードへ）
+          キャンセル（変更を破棄）
         </button>
       </div>
 
