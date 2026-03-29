@@ -58,20 +58,29 @@ function loungeArea(name: string, ox: number, oy: number) {
 }
 
 function getDefaultInitialData() {
-  const spaces = [
-    openSpace('オープンスペース', 3, 4, 25, 50, 50),
-    meetingRoom('会議室 A', 3, 520, 50),
-    meetingRoom('会議室 B', 2, 520, 260),
-    openSpace('エンジニアリング', 2, 3, 25, 50, 400),
-    loungeArea('ラウンジ', 520, 470),
-  ];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const elements = convertToExcalidrawElements(spaces.flat() as any);
-  return {
-    elements,
-    appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
-    scrollToContent: true,
-  };
+  try {
+    const spaces = [
+      openSpace('オープンスペース', 3, 4, 25, 50, 50),
+      meetingRoom('会議室 A', 3, 520, 50),
+      meetingRoom('会議室 B', 2, 520, 260),
+      openSpace('エンジニアリング', 2, 3, 25, 50, 400),
+      loungeArea('ラウンジ', 520, 470),
+    ];
+    const flat = spaces.flat();
+    if (!flat || flat.length === 0) {
+      return { elements: [], appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 }, scrollToContent: true };
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const elements = convertToExcalidrawElements(flat as any);
+    return {
+      elements: elements || [],
+      appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
+      scrollToContent: true,
+    };
+  } catch (e) {
+    console.error('Failed to create default initial data:', e);
+    return { elements: [], appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 }, scrollToContent: true };
+  }
 }
 
 const ISLAND_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -270,12 +279,12 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
     if (savedScene && typeof savedScene === 'object') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const scene = savedScene as any;
-      if (!Array.isArray(scene.elements)) return false;
-      // Check for isometric marker (new template) or existing image elements
-      return scene.elements.some(
+      // Check appState.templateId or existing image elements with fur- prefix
+      if (scene.appState?.templateId === 'isometric') return true;
+      if (Array.isArray(scene.elements)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (el: any) => el.type === '__isometric_marker__' || (el.type === 'image' && el.fileId?.startsWith('fur-'))
-      );
+        return scene.elements.some((el: any) => el.type === 'image' && el.fileId?.startsWith('fur-'));
+      }
     }
     return false;
   }, [savedScene]);
@@ -315,11 +324,11 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
     if (savedScene && typeof savedScene === 'object') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const scene = savedScene as any;
-      if (Array.isArray(scene.elements) && scene.elements.length > 0) {
-        // Check for isometric marker (new floor created with image-based template)
+      if (Array.isArray(scene.elements)) {
+        // Check for isometric template (via appState or legacy marker)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const hasMarker = scene.elements.some((el: any) => el.type === '__isometric_marker__');
-        if (hasMarker) {
+        const isIsoTemplate = scene.appState?.templateId === 'isometric' || scene.elements.some((el: any) => el.type === '__isometric_marker__');
+        if (isIsoTemplate && scene.elements.filter((el: { type: string }) => el.type !== '__isometric_marker__').length === 0) {
           const rawElements = generateIsometricDemoFloor();
           // Image elements pass through as-is; primitives need conversion
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -340,12 +349,15 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
             scrollToContent: true,
           };
         }
-        // Normal saved scene (from DB)
-        return {
-          elements: scene.elements,
-          appState: scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
-          scrollToContent: true,
-        };
+        // Normal saved scene (from DB) — filter out any stale markers
+        const cleanElements = scene.elements.filter((el: { type: string }) => el.type !== '__isometric_marker__');
+        if (cleanElements.length > 0) {
+          return {
+            elements: cleanElements,
+            appState: scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
+            scrollToContent: true,
+          };
+        }
       }
     }
     // No saved scene: use default template (all primitives, always safe)
@@ -393,7 +405,7 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       `}</style>
       <Excalidraw
         excalidrawAPI={handleAPI}
-        initialData={initialData}
+        initialData={initialData?.elements ? initialData : { elements: [], appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 }, scrollToContent: true }}
         gridModeEnabled={true}
         theme="light"
         langCode="ja-JP"

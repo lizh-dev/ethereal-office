@@ -62,7 +62,11 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
           ownerPassword: ownerPassword.trim() || undefined,
           excalidrawScene: template !== 'empty' ? {
             elements: getTemplateElements(template),
-            appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
+            appState: {
+              viewBackgroundColor: template === 'isometric' ? '#f0f9ff' : '#f5f5f5',
+              gridSize: 20,
+              ...(template === 'isometric' ? { templateId: 'isometric' } : {}),
+            },
           } : undefined,
         }),
       });

@@ -91,8 +91,8 @@ export function getTemplateElements(templateId: string): RawEl[] {
     }
 
     case 'isometric':
-      // Isometric template uses image elements - handled specially in ExcalidrawEditor
-      return [{ type: '__isometric_marker__' as unknown as string }];
+      // Return empty - ExcalidrawEditor detects isometric via appState marker
+      return [];
 
     case 'empty':
     default:
