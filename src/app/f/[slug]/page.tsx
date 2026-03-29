@@ -9,7 +9,7 @@ import FloorCanvas from '@/components/floor/FloorCanvas';
 import EditorPanel from '@/components/editor/EditorPanel';
 import AvatarSelector from '@/components/profile/AvatarSelector';
 import NotificationToast from '@/components/layout/NotificationToast';
-import RightPanel from '@/components/layout/RightPanel';
+
 import JoinDialog from '@/components/JoinDialog';
 import ChatView from '@/components/views/ChatView';
 import MembersView from '@/components/views/MembersView';
@@ -213,7 +213,6 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
             <>
               <FloorCanvas floorSlug={slug} savedScene={floorData?.excalidrawScene} />
               {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} floorSlug={slug} />}
-              <RightPanel />
             </>
           )}
           {viewMode === 'meetings' && <MembersView />}
