@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 30" width="50" height="30">
+  <!-- Table shadow -->
+  <rect x="4" y="4" width="44" height="24" rx="4" fill="#00000008"/>
+  <!-- Table top -->
+  <rect x="2" y="2" width="46" height="26" rx="4" fill="#ddd8d2" stroke="#bbb5ac" stroke-width="1.2"/>
+  <!-- Magazine/book -->
+  <rect x="8" y="8" width="12" height="8" rx="1" fill="#e8e3dd" stroke="#ccc7c0" stroke-width="0.5" transform="rotate(-5,14,12)"/>
+</svg>

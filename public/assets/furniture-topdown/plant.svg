@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">
+  <!-- Pot -->
+  <ellipse cx="14" cy="20" rx="8" ry="5" fill="#c4785a" stroke="#a86040" stroke-width="1"/>
+  <!-- Soil -->
+  <ellipse cx="14" cy="18" rx="6" ry="3" fill="#8B6B4A"/>
+  <!-- Leaves -->
+  <ellipse cx="14" cy="12" rx="7" ry="6" fill="#5cb85c" stroke="#4a9a4a" stroke-width="0.8"/>
+  <ellipse cx="10" cy="10" rx="4" ry="5" fill="#6ecf6e" opacity="0.8" transform="rotate(-20,10,10)"/>
+  <ellipse cx="18" cy="10" rx="4" ry="5" fill="#4fb84f" opacity="0.8" transform="rotate(20,18,10)"/>
+  <ellipse cx="14" cy="8" rx="3" ry="5" fill="#7bd97b" opacity="0.7"/>
+</svg>
