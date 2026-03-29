@@ -60,27 +60,32 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
   const isFloorOwner = useOfficeStore((s) => s.isFloorOwner);
   const isViewMode = !isFloorOwner || editorMode !== 'edit';
 
-  const storeAppState = useOfficeStore((s) => s.excalidrawAppState);
-  // Poll Excalidraw API for real-time appState (avoids store/render delay during pan/zoom)
-  const [liveAppState, setLiveAppState] = useState(storeAppState);
+  const appState = useOfficeStore((s) => s.excalidrawAppState);
+
+  // Force re-render at 30fps during view mode so avatars track pan/zoom smoothly
+  const [, forceUpdate] = useState(0);
   useEffect(() => {
-    if (!isViewMode || !excalidrawAPI) {
-      setLiveAppState(storeAppState);
-      return;
-    }
+    if (!isViewMode || !excalidrawAPI) return;
     let running = true;
-    const poll = () => {
+    let frame = 0;
+    const tick = () => {
       if (!running) return;
-      try {
-        const st = excalidrawAPI.getAppState();
-        if (st) setLiveAppState(st);
-      } catch { /* ignore */ }
-      requestAnimationFrame(poll);
+      frame++;
+      // Update appState in store directly from API every 2 frames (~30fps)
+      if (frame % 2 === 0) {
+        try {
+          const st = excalidrawAPI.getAppState();
+          if (st) {
+            useOfficeStore.getState().setExcalidrawAppState(st);
+          }
+        } catch { /* ignore */ }
+      }
+      forceUpdate(f => f + 1);
+      requestAnimationFrame(tick);
     };
-    requestAnimationFrame(poll);
+    requestAnimationFrame(tick);
     return () => { running = false; };
-  }, [isViewMode, excalidrawAPI, storeAppState]);
-  const appState = liveAppState;
+  }, [isViewMode, excalidrawAPI]);
   const setZones = useOfficeStore((s) => s.setZones);
   const prevModeRef = useRef(editorMode);
 
