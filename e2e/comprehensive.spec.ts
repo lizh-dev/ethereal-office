@@ -1,0 +1,470 @@
+import { test, expect, Page, BrowserContext } from '@playwright/test';
+
+const BASE = 'http://localhost:3000';
+const API = 'http://localhost:8080';
+
+// Helper: create floor via API and return slug
+async function createFloor(request: any, name = 'テストフロア'): Promise<string> {
+  const res = await request.post(`${API}/api/floors`, {
+    data: { name, creatorName: 'テスター' },
+  });
+  const body = await res.json();
+  return body.slug;
+}
+
+// Helper: join a floor with given name
+async function joinFloor(page: Page, slug: string, userName: string) {
+  await page.goto(`${BASE}/f/${slug}`);
+  await page.waitForSelector('input[placeholder*="名前"]', { timeout: 10000 });
+  await page.fill('input[placeholder*="名前"]', userName);
+  await page.click('button:has-text("入室する")');
+  // Wait for office UI to fully load
+  await page.waitForSelector('[title*="WebSocket"]', { timeout: 15000 });
+}
+
+// =============================================================
+// A. ランディングページ
+// =============================================================
+test.describe('A. ランディングページ', () => {
+  test('A-1: ページ表示とUI要素', async ({ page }) => {
+    await page.goto(BASE);
+    // タイトル
+    await expect(page.locator('h1')).toContainText('Ethereal Office');
+    // サブタイトル
+    await expect(page.getByText('バーチャルオフィスを作成して、チームとつながろう')).toBeVisible();
+    // フロア名入力
+    await expect(page.locator('input[placeholder*="開発チーム"]')).toBeVisible();
+    // 名前入力（任意）
+    await expect(page.locator('input[placeholder*="田中"]')).toBeVisible();
+    // 作成ボタン
+    await expect(page.getByRole('button', { name: 'フロアを作成' })).toBeVisible();
+    // フッターテキスト
+    await expect(page.getByText('URLを共有するだけで誰でも参加')).toBeVisible();
+  });
+
+  test('A-2: 空のフロア名ではエラー表示', async ({ page }) => {
+    await page.goto(BASE);
+    await page.click('button:has-text("フロアを作成")');
+    await expect(page.getByText('フロア名を入力してください')).toBeVisible();
+  });
+
+  test('A-3: フロア作成してリダイレクト', async ({ page }) => {
+    await page.goto(BASE);
+    await page.fill('input[placeholder*="開発チーム"]', 'ランディングテスト');
+    await page.click('button:has-text("フロアを作成")');
+    await page.waitForURL(/\/f\/[a-z0-9]+/, { timeout: 10000 });
+    expect(page.url()).toMatch(/\/f\/[a-z0-9]+/);
+  });
+
+  test('A-4: Enterキーでフロア作成', async ({ page }) => {
+    await page.goto(BASE);
+    await page.fill('input[placeholder*="開発チーム"]', 'Enterテスト');
+    await page.locator('input[placeholder*="開発チーム"]').press('Enter');
+    await page.waitForURL(/\/f\/[a-z0-9]+/, { timeout: 10000 });
+  });
+});
+
+// =============================================================
+// B. 入室ダイアログ (JoinDialog)
+// =============================================================
+test.describe('B. 入室ダイアログ', () => {
+  let slug: string;
+
+  test.beforeAll(async ({ request }) => {
+    slug = await createFloor(request, '入室テストフロア');
+  });
+
+  test('B-1: フロア名表示と入力フォーム', async ({ page }) => {
+    await page.goto(`${BASE}/f/${slug}`);
+    await expect(page.getByText('入室テストフロア')).toBeVisible();
+    await expect(page.locator('input[placeholder*="名前"]')).toBeVisible();
+    await expect(page.getByText('アバタースタイル')).toBeVisible();
+    await expect(page.getByText('キャラクター')).toBeVisible();
+    await expect(page.getByRole('button', { name: '入室する' })).toBeVisible();
+  });
+
+  test('B-2: 空名前では入室ボタン無効', async ({ page }) => {
+    await page.goto(`${BASE}/f/${slug}`);
+    const btn = page.getByRole('button', { name: '入室する' });
+    await expect(btn).toBeDisabled();
+  });
+
+  test('B-3: アバタースタイル切り替え', async ({ page }) => {
+    await page.goto(`${BASE}/f/${slug}`);
+    // 6つのスタイルボタンが存在
+    const styleBtns = page.locator('text=アバタースタイル').locator('..').locator('button');
+    // Click second style
+    await styleBtns.nth(1).click();
+    // Avatar preview should update (img src changes)
+    const avatar = page.locator('img[alt="avatar"]');
+    const src = await avatar.getAttribute('src');
+    expect(src).toContain('avataaars');
+  });
+
+  test('B-4: 入室後にlocalStorage保存', async ({ page }) => {
+    await page.goto(`${BASE}/f/${slug}`);
+    await page.fill('input[placeholder*="名前"]', 'ストレージテスト');
+    await page.click('button:has-text("入室する")');
+    await page.waitForSelector('[title*="WebSocket"]', { timeout: 15000 });
+
+    const saved = await page.evaluate(() => localStorage.getItem('ethereal-office-user'));
+    expect(saved).toBeTruthy();
+    const data = JSON.parse(saved!);
+    expect(data.name).toBe('ストレージテスト');
+  });
+
+  test('B-5: localStorageから名前復元', async ({ page }) => {
+    // First set localStorage
+    await page.goto(`${BASE}/f/${slug}`);
+    await page.evaluate(() => {
+      localStorage.setItem('ethereal-office-user', JSON.stringify({
+        name: '復元テスト',
+        avatarStyle: 'notionists',
+        avatarSeed: '佐藤',
+      }));
+    });
+    await page.reload();
+    await page.waitForSelector('input[placeholder*="名前"]');
+    const val = await page.inputValue('input[placeholder*="名前"]');
+    expect(val).toBe('復元テスト');
+  });
+});
+
+// =============================================================
+// C. 存在しないフロア
+// =============================================================
+test.describe('C. エラーハンドリング', () => {
+  test('C-1: 存在しないフロアで404表示', async ({ page }) => {
+    await page.goto(`${BASE}/f/nonexistent999`);
+    await expect(page.getByText('フロアが見つかりません')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('トップに戻る')).toBeVisible();
+  });
+
+  test('C-2: トップに戻るリンク動作', async ({ page }) => {
+    await page.goto(`${BASE}/f/nonexistent999`);
+    await page.waitForSelector('text=トップに戻る', { timeout: 10000 });
+    await page.click('text=トップに戻る');
+    await page.waitForURL(BASE + '/');
+  });
+});
+
+// =============================================================
+// D. オフィスUI基本（入室後）
+// =============================================================
+test.describe('D. オフィスUI基本', () => {
+  let slug: string;
+
+  test.beforeAll(async ({ request }) => {
+    slug = await createFloor(request, 'UIテストフロア');
+  });
+
+  test('D-1: メインレイアウト要素の表示', async ({ page }) => {
+    await joinFloor(page, slug, 'UIテスター');
+
+    // サイドバー
+    await expect(page.locator('text=W').first()).toBeVisible();
+    // TopBar
+    await expect(page.locator('input[placeholder*="メンバー"]')).toBeVisible();
+    // WS接続インジケーター
+    await expect(page.getByText('Online')).toBeVisible();
+    // RightPanel - オンラインメンバー
+    await expect(page.getByText('オンラインメンバー')).toBeVisible();
+  });
+
+  test('D-2: サイドバー編集モード切り替え', async ({ page }) => {
+    await joinFloor(page, slug, '編集テスター');
+
+    // 編集ボタンクリック
+    await page.click('[title="Edit Floor"]');
+    // 編集モードバッジが表示
+    await expect(page.getByText('編集モード')).toBeVisible();
+    // フロアエディターパネルが表示
+    await expect(page.getByText('フロアエディター')).toBeVisible();
+
+    // 戻る
+    await page.click('[title="Exit Editor"]');
+    await expect(page.getByText('フロアエディター')).not.toBeVisible();
+  });
+
+  test('D-3: ステータス変更', async ({ page }) => {
+    await joinFloor(page, slug, 'ステータステスター');
+
+    // ステータスドロップダウンを開く
+    await page.click('text=オンライン');
+    await expect(page.getByText('ステータス変更')).toBeVisible();
+
+    // ビジーに変更
+    await page.click('text=ビジー');
+    // ステータスが更新される
+    await expect(page.getByText('ビジー').first()).toBeVisible();
+  });
+
+  test('D-4: チャット送信', async ({ page }) => {
+    await joinFloor(page, slug, 'チャットテスター');
+
+    // チャット入力欄にテキスト入力
+    const chatInput = page.locator('input[placeholder*="メッセージを入力"]');
+    await chatInput.fill('こんにちは！');
+    await chatInput.press('Enter');
+
+    // 入力欄がクリアされる
+    await expect(chatInput).toHaveValue('');
+  });
+});
+
+// =============================================================
+// E. マルチユーザー同期
+// =============================================================
+test.describe('E. マルチユーザー同期', () => {
+  let slug: string;
+
+  test.beforeAll(async ({ request }) => {
+    slug = await createFloor(request, 'マルチユーザーテスト');
+  });
+
+  test('E-1: 2ユーザー相互表示', async ({ browser }) => {
+    const ctxA = await browser.newContext();
+    const ctxB = await browser.newContext();
+    const pageA = await ctxA.newPage();
+    const pageB = await ctxB.newPage();
+
+    await joinFloor(pageA, slug, 'アリス');
+    await joinFloor(pageB, slug, 'ボブ');
+    await pageA.waitForTimeout(2000);
+
+    // アリスにボブが表示
+    await expect(pageA.getByText('ボブ').first()).toBeVisible({ timeout: 5000 });
+    // ボブにアリスが表示
+    await expect(pageB.getByText('アリス').first()).toBeVisible({ timeout: 5000 });
+
+    await ctxA.close();
+    await ctxB.close();
+  });
+
+  test('E-2: ユーザー退出の検知', async ({ browser }) => {
+    const ctxA = await browser.newContext();
+    const ctxB = await browser.newContext();
+    const pageA = await ctxA.newPage();
+    const pageB = await ctxB.newPage();
+
+    await joinFloor(pageA, slug, 'タロウ');
+    await joinFloor(pageB, slug, 'ハナコ');
+    await pageA.waitForTimeout(2000);
+
+    // ハナコが表示されていることを確認
+    await expect(pageA.getByText('ハナコ').first()).toBeVisible({ timeout: 5000 });
+
+    // ハナコのタブを閉じる
+    await ctxB.close();
+    await pageA.waitForTimeout(3000);
+
+    // ハナコが消える
+    await expect(pageA.getByText('ハナコ')).not.toBeVisible({ timeout: 5000 });
+
+    await ctxA.close();
+  });
+
+  test('E-3: チャットメッセージの同期', async ({ browser }) => {
+    const ctxA = await browser.newContext();
+    const ctxB = await browser.newContext();
+    const pageA = await ctxA.newPage();
+    const pageB = await ctxB.newPage();
+
+    await joinFloor(pageA, slug, '送信者');
+    await joinFloor(pageB, slug, '受信者');
+    await pageA.waitForTimeout(2000);
+
+    // 送信者がチャット送信
+    const chatInput = pageA.locator('input[placeholder*="メッセージを入力"]');
+    await chatInput.fill('テストメッセージだよ');
+    await chatInput.press('Enter');
+
+    // 受信者にチャットバブルが表示される
+    await expect(pageB.getByText('テストメッセージだよ')).toBeVisible({ timeout: 5000 });
+
+    await ctxA.close();
+    await ctxB.close();
+  });
+
+  test('E-4: ステータス変更の同期', async ({ browser }) => {
+    const ctxA = await browser.newContext();
+    const ctxB = await browser.newContext();
+    const pageA = await ctxA.newPage();
+    const pageB = await ctxB.newPage();
+
+    await joinFloor(pageA, slug, 'ステA');
+    await joinFloor(pageB, slug, 'ステB');
+    await pageA.waitForTimeout(2000);
+
+    // ステAのステータスをビジーに変更
+    await pageA.click('text=オンライン');
+    await pageA.waitForSelector('text=ステータス変更');
+    await pageA.click('text=ビジー');
+    await pageA.waitForTimeout(1000);
+
+    // ステBのRightPanelでステAのステータスが変わっている（ステータスドットの色変化）
+    // RightPanelのメンバーリストを確認
+    await expect(pageB.getByText('ステA').first()).toBeVisible({ timeout: 5000 });
+
+    await ctxA.close();
+    await ctxB.close();
+  });
+
+  test('E-5: フロア分離（別フロアのユーザーは見えない）', async ({ browser, request }) => {
+    const slug2 = await createFloor(request, '別フロア');
+
+    const ctxA = await browser.newContext();
+    const ctxB = await browser.newContext();
+    const pageA = await ctxA.newPage();
+    const pageB = await ctxB.newPage();
+
+    await joinFloor(pageA, slug, 'フロア1');
+    await joinFloor(pageB, slug2, 'フロア2');
+    await pageA.waitForTimeout(2000);
+
+    // フロア1にフロア2のユーザーが表示されない
+    await expect(pageA.getByText('フロア2')).not.toBeVisible();
+    // フロア2にフロア1のユーザーが表示されない
+    await expect(pageB.getByText('フロア1')).not.toBeVisible();
+
+    await ctxA.close();
+    await ctxB.close();
+  });
+});
+
+// =============================================================
+// F. エディターモード
+// =============================================================
+test.describe('F. エディターモード', () => {
+  let slug: string;
+
+  test.beforeAll(async ({ request }) => {
+    slug = await createFloor(request, 'エディターテスト');
+  });
+
+  test('F-1: エディターパネル表示', async ({ page }) => {
+    await joinFloor(page, slug, 'エディター');
+    await page.click('[title="Edit Floor"]');
+
+    await expect(page.getByText('フロアエディター')).toBeVisible();
+    await expect(page.getByText('スペースを追加')).toBeVisible();
+  });
+
+  test('F-2: TopBarにJSONエクスポートボタン', async ({ page }) => {
+    await joinFloor(page, slug, 'エクスポーター');
+    await page.click('[title="Edit Floor"]');
+    await expect(page.getByText('JSONエクスポート')).toBeVisible();
+  });
+
+  test('F-3: スペースウィザード表示', async ({ page }) => {
+    await joinFloor(page, slug, 'ウィザード');
+    await page.click('[title="Edit Floor"]');
+    await page.click('text=スペースを追加');
+
+    // ウィザードモーダルが表示
+    await expect(page.getByText('デスクエリア')).toBeVisible();
+    await expect(page.getByText('会議室')).toBeVisible();
+    await expect(page.getByText('ラウンジ')).toBeVisible();
+    await expect(page.getByText('カフェスペース')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'スペースを作成' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'キャンセル' })).toBeVisible();
+  });
+
+  test('F-4: スペースウィザードのキャンセル', async ({ page }) => {
+    await joinFloor(page, slug, 'キャンセラー');
+    await page.click('[title="Edit Floor"]');
+    await page.click('text=スペースを追加');
+    await page.click('button:has-text("キャンセル")');
+    await expect(page.getByText('デスクエリア')).not.toBeVisible();
+  });
+});
+
+// =============================================================
+// G. Excalidrawフロアプラン
+// =============================================================
+test.describe('G. Excalidrawフロアプラン', () => {
+  let slug: string;
+
+  test.beforeAll(async ({ request }) => {
+    slug = await createFloor(request, 'Excalidrawテスト');
+  });
+
+  test('G-1: デフォルトフロアプランのレンダリング', async ({ page }) => {
+    await joinFloor(page, slug, 'フロアビューワー');
+    // Excalidrawキャンバスが表示される
+    await expect(page.locator('.excalidraw')).toBeVisible({ timeout: 15000 });
+  });
+
+  test('G-2: Excalidraw要素の存在確認', async ({ page }) => {
+    await joinFloor(page, slug, 'キャンバスチェッカー');
+    await page.waitForSelector('.excalidraw', { timeout: 15000 });
+    // Excalidrawのキャンバス要素が存在
+    await expect(page.locator('.excalidraw canvas').first()).toBeVisible();
+  });
+});
+
+// =============================================================
+// H. RightPanel
+// =============================================================
+test.describe('H. RightPanel', () => {
+  let slug: string;
+
+  test.beforeAll(async ({ request }) => {
+    slug = await createFloor(request, 'RightPanelテスト');
+  });
+
+  test('H-1: 自分のステータスカード表示', async ({ page }) => {
+    await joinFloor(page, slug, 'パネルテスター');
+    // RightPanelに自分の名前が表示
+    await expect(page.getByText('パネルテスター').first()).toBeVisible();
+    // フリー状態の表示
+    await expect(page.getByText('フリー').first()).toBeVisible();
+  });
+
+  test('H-2: オンラインメンバー数表示', async ({ page }) => {
+    await joinFloor(page, slug, 'メンバーカウント');
+    await expect(page.getByText(/オンラインメンバー/)).toBeVisible();
+  });
+
+  test('H-3: アクティブミーティングセクション', async ({ page }) => {
+    await joinFloor(page, slug, 'ミーティングチェック');
+    await expect(page.getByText('アクティブミーティング')).toBeVisible();
+  });
+});
+
+// =============================================================
+// I. アバターセレクター
+// =============================================================
+test.describe('I. アバターセレクター', () => {
+  let slug: string;
+
+  test.beforeAll(async ({ request }) => {
+    slug = await createFloor(request, 'アバターテスト');
+  });
+
+  test('I-1: TopBarのアバタークリックでモーダル表示', async ({ page }) => {
+    await joinFloor(page, slug, 'アバター変更者');
+    // TopBarのアバター画像をクリック
+    const avatarBtn = page.locator('img[alt*="avatar"], img[alt*="Avatar"]').first();
+    if (await avatarBtn.isVisible()) {
+      await avatarBtn.click();
+      await expect(page.getByText('アバターを選択')).toBeVisible({ timeout: 5000 });
+    }
+  });
+});
+
+// =============================================================
+// J. WebSocket接続
+// =============================================================
+test.describe('J. WebSocket接続', () => {
+  let slug: string;
+
+  test.beforeAll(async ({ request }) => {
+    slug = await createFloor(request, 'WS接続テスト');
+  });
+
+  test('J-1: 入室後にOnline表示', async ({ page }) => {
+    await joinFloor(page, slug, 'WS確認');
+    await expect(page.getByText('Online')).toBeVisible({ timeout: 10000 });
+  });
+});

@@ -1,95 +1,102 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import dynamic from 'next/dynamic';
-import Sidebar from '@/components/layout/Sidebar';
-import TopBar from '@/components/layout/TopBar';
-import RightPanel from '@/components/layout/RightPanel';
-import FloorCanvas from '@/components/floor/FloorCanvas';
-import EditorPanel from '@/components/editor/EditorPanel';
-import AvatarSelector from '@/components/profile/AvatarSelector';
-import NotificationToast from '@/components/layout/NotificationToast';
-import { useOfficeStore } from '@/store/officeStore';
-import { useWebSocket } from '@/hooks/useWebSocket';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-const SpaceWizard = dynamic(() => import('@/components/editor/SpaceWizard'), { ssr: false });
+export default function LandingPage() {
+  const router = useRouter();
+  const [floorName, setFloorName] = useState('');
+  const [creatorName, setCreatorName] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState('');
 
-export default function Home() {
-  const { editorMode, showAvatarSelector, currentUser, currentSeatId, wsConnected } = useOfficeStore();
-  const [showSpaceWizard, setShowSpaceWizard] = useState(false);
-  const { send, connected } = useWebSocket();
+  const handleCreate = async () => {
+    if (!floorName.trim()) {
+      setError('フロア名を入力してください');
+      return;
+    }
 
-  // Generate unique user ID on client mount (avoids hydration mismatch)
-  useEffect(() => {
-    if (currentUser.id === 'pending') {
-      const num = Math.floor(Math.random() * 1000);
-      useOfficeStore.setState({
-        currentUser: {
-          ...currentUser,
-          id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          name: `ユーザー${num}`,
-          avatarSeed: `user-${num}`,
-        },
+    setCreating(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/floors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: floorName.trim(),
+          creatorName: creatorName.trim() || undefined,
+        }),
       });
+
+      if (!res.ok) throw new Error('Failed to create floor');
+
+      const floor = await res.json();
+      router.push(`/f/${floor.slug}`);
+    } catch {
+      setError('フロアの作成に失敗しました');
+      setCreating(false);
     }
-  }, [currentUser]);
-
-  // Keep refs to avoid stale closures in subscriptions
-  const sendRef = useRef(send);
-  sendRef.current = send;
-
-  // Subscribe to position changes and broadcast via WS
-  const prevPosRef = useRef(currentUser.position);
-  useEffect(() => {
-    const pos = currentUser.position;
-    if (pos.x !== prevPosRef.current.x || pos.y !== prevPosRef.current.y) {
-      prevPosRef.current = pos;
-      // If sitting at a seat, the sit message is sent separately
-      if (!currentSeatId) {
-        sendRef.current.move(pos.x, pos.y);
-      }
-    }
-  }, [currentUser.position, currentSeatId]);
-
-  // Subscribe to status changes
-  const prevStatusRef = useRef(currentUser.status);
-  useEffect(() => {
-    if (currentUser.status !== prevStatusRef.current) {
-      prevStatusRef.current = currentUser.status;
-      sendRef.current.status(currentUser.status);
-    }
-  }, [currentUser.status]);
-
-  // Expose send functions for child components via store or context
-  // For now, we attach them to window for simplicity
-  useEffect(() => {
-    (window as unknown as Record<string, unknown>).__wsSend = send;
-    return () => {
-      delete (window as unknown as Record<string, unknown>).__wsSend;
-    };
-  }, [send]);
+  };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <TopBar />
-        <div className="flex-1 flex min-h-0">
-          <FloorCanvas />
-          {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} />}
-          <RightPanel />
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Ethereal Office</h1>
+          <p className="text-gray-500 text-lg">バーチャルオフィスを作成して、チームとつながろう</p>
         </div>
-      </div>
-      {showAvatarSelector && <AvatarSelector />}
-      {showSpaceWizard && <SpaceWizard onClose={() => setShowSpaceWizard(false)} />}
-      <NotificationToast />
-      {/* WS connection indicator */}
-      <div
-        className="fixed bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-full text-xs bg-white/80 backdrop-blur shadow-sm border border-gray-200"
-        title={connected ? 'WebSocket connected' : 'WebSocket disconnected'}
-      >
-        <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-400'}`} />
-        <span className="text-gray-500">{connected ? 'Online' : 'Offline'}</span>
+
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">新しいフロアを作成</h2>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                フロア名 <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={floorName}
+                onChange={(e) => setFloorName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                placeholder="例: 開発チームのオフィス"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent text-gray-800 placeholder-gray-400"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                あなたの名前（任意）
+              </label>
+              <input
+                type="text"
+                value={creatorName}
+                onChange={(e) => setCreatorName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                placeholder="例: 田中太郎"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent text-gray-800 placeholder-gray-400"
+              />
+            </div>
+
+            {error && (
+              <p className="text-red-500 text-sm">{error}</p>
+            )}
+
+            <button
+              onClick={handleCreate}
+              disabled={creating}
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-medium rounded-xl transition-colors"
+            >
+              {creating ? '作成中...' : 'フロアを作成'}
+            </button>
+          </div>
+        </div>
+
+        <p className="text-center text-gray-400 text-sm mt-6">
+          作成後、URLを共有するだけで誰でも参加できます
+        </p>
       </div>
     </div>
   );

@@ -6,8 +6,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getFurnitureLibrary } from './furnitureLibrary';
 
-const STORAGE_KEY = 'ethereal-office-scene';
-const DEBOUNCE_MS = 1000;
+const DEBOUNCE_MS = 2000;
 
 function deskSet(x: number, y: number, gid: string) {
   return [
@@ -20,6 +19,7 @@ function deskSet(x: number, y: number, gid: string) {
 function openSpace(name: string, rows: number, cols: number, spacing: number, ox: number, oy: number) {
   const cellW = 80 + spacing, cellH = 70 + spacing;
   const roomW = cols * cellW + 30, roomH = rows * cellH + 50;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const els: any[] = [
     { type: 'rectangle' as const, x: ox, y: oy, width: roomW, height: roomH, backgroundColor: '#ffffff', strokeColor: '#e5e5e5', fillStyle: 'solid' as const, roundness: { type: 3 as const }, strokeWidth: 1 },
     { type: 'text' as const, x: ox + 12, y: oy + 10, text: name, fontSize: 13, strokeColor: '#6b7280' },
@@ -31,6 +31,7 @@ function openSpace(name: string, rows: number, cols: number, spacing: number, ox
 }
 
 function meetingRoom(name: string, seats: number, ox: number, oy: number) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const els: any[] = [
     { type: 'rectangle' as const, x: ox, y: oy, width: 220, height: 160, backgroundColor: '#ffffff', strokeColor: '#e5e5e5', fillStyle: 'solid' as const, roundness: { type: 3 as const }, strokeWidth: 1 },
     { type: 'text' as const, x: ox + 12, y: oy + 10, text: name, fontSize: 13, strokeColor: '#6b7280' },
@@ -55,18 +56,16 @@ function loungeArea(name: string, ox: number, oy: number) {
   ];
 }
 
-// Default floor plan data (no side effects — seat init happens in handleAPI)
-const DEFAULT_SPACES = [
-  { name: 'オープンスペース', raw: openSpace('オープンスペース', 3, 4, 25, 50, 50), type: 'desk' as const },
-  { name: '会議室 A', raw: meetingRoom('会議室 A', 3, 520, 50), type: 'meeting' as const },
-  { name: '会議室 B', raw: meetingRoom('会議室 B', 2, 520, 260), type: 'meeting' as const },
-  { name: 'エンジニアリング', raw: openSpace('エンジニアリング', 2, 3, 25, 50, 400), type: 'desk' as const },
-  { name: 'ラウンジ', raw: loungeArea('ラウンジ', 520, 470), type: 'lounge' as const },
-];
-
 function getDefaultInitialData() {
-  const allRaw = DEFAULT_SPACES.flatMap(s => s.raw);
-  const elements = convertToExcalidrawElements(allRaw as any);
+  const spaces = [
+    openSpace('オープンスペース', 3, 4, 25, 50, 50),
+    meetingRoom('会議室 A', 3, 520, 50),
+    meetingRoom('会議室 B', 2, 520, 260),
+    openSpace('エンジニアリング', 2, 3, 25, 50, 400),
+    loungeArea('ラウンジ', 520, 470),
+  ];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const elements = convertToExcalidrawElements(spaces.flat() as any);
   return {
     elements,
     appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
@@ -74,69 +73,74 @@ function getDefaultInitialData() {
   };
 }
 
-// Initialize seat data from floor plan (called once after API is ready)
-function initializeSeats() {
-  const zones = DEFAULT_SPACES.map((space, si) => {
-    const chairs = space.raw.filter((el: any) => el.type === 'ellipse' && el.backgroundColor === '#9ca3af');
-    return {
-      id: `init-zone-${si}`,
-      type: space.type,
-      name: space.name,
-      x: 0, y: 0, w: 0, h: 0,
-      seats: chairs.map((c: any, ci: number) => ({
-        id: `init-seat-${si}-${ci}`,
-        roomId: `init-zone-${si}`,
-        x: (c.x as number) + ((c.width as number) || 22) / 2,
-        y: (c.y as number) + ((c.height as number) || 22) / 2,
-        occupied: false,
-        occupiedBy: undefined as string | undefined,
-      })),
-    };
-  });
+function initSeatsFromElements(elements: readonly unknown[]) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const els = elements as any[];
+  const desks = els.filter((el) =>
+    el.type === 'rectangle' && !el.isDeleted &&
+    el.backgroundColor === '#e8e3dd' && el.width > 40 && el.width < 120
+  );
+  const allChairs = els.filter((el) =>
+    el.type === 'ellipse' && !el.isDeleted &&
+    el.backgroundColor === '#9ca3af' && el.width <= 30 && el.height <= 30
+  );
 
-  const store = useOfficeStore.getState();
-  const allSeats = zones.flatMap(z => z.seats);
-
-  // Assign users to seats and update their positions
-  const updatedUsers = store.users.map((user, idx) => {
-    if (idx < allSeats.length) {
-      allSeats[idx].occupied = true;
-      allSeats[idx].occupiedBy = user.id;
-      return { ...user, position: { x: allSeats[idx].x, y: allSeats[idx].y } };
-    }
-    return user;
-  });
-
-  useOfficeStore.setState({ zones, users: updatedUsers });
-}
-
-function loadFromLocalStorage(): { elements: any; appState: any; scrollToContent: boolean } | null {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return null;
-    const parsed = JSON.parse(stored);
-    if (parsed && Array.isArray(parsed.elements) && parsed.elements.length > 0) {
-      return {
-        elements: parsed.elements,
-        appState: parsed.appState ?? {},
-        scrollToContent: true,
-      };
-    }
-    return null;
-  } catch {
-    return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const deskChairs: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const otherChairs: any[] = [];
+  for (const chair of allChairs) {
+    const cx = chair.x + chair.width / 2;
+    const cy = chair.y + chair.height / 2;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nearDesk = desks.some((d: any) => {
+      const dx = d.x + d.width / 2;
+      const dy = d.y + d.height / 2;
+      return Math.abs(cx - dx) < 60 && Math.abs(cy - dy) < 60;
+    });
+    if (nearDesk) deskChairs.push(chair);
+    else otherChairs.push(chair);
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sortChairs = (arr: any[]) => arr.sort((a: any, b: any) => {
+    const dy = a.y - b.y;
+    if (Math.abs(dy) > 10) return dy;
+    return a.x - b.x;
+  });
+  const sortedChairs = [...sortChairs(deskChairs), ...sortChairs(otherChairs)];
+
+  const zones = [{
+    id: 'office', type: 'desk' as const, name: 'オフィス',
+    x: 0, y: 0, w: 0, h: 0,
+    seats: sortedChairs.map((c, i) => ({
+      id: `seat-${i}`,
+      roomId: 'office',
+      x: c.x,
+      y: c.y,
+      w: c.width,
+      h: c.height,
+      occupied: false,
+      occupiedBy: undefined as string | undefined,
+    })),
+  }];
+
+  useOfficeStore.setState({ zones });
 }
 
 interface ExcalidrawEditorProps {
   viewMode?: boolean;
+  floorSlug?: string;
+  savedScene?: unknown;
 }
 
-export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorProps) {
+export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedScene }: ExcalidrawEditorProps) {
   const setExcalidrawAPI = useOfficeStore((s) => s.setExcalidrawAPI);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const apiRef = useRef<any>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const floorSlugRef = useRef(floorSlug);
+  floorSlugRef.current = floorSlug;
 
   const handleAPI = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -144,100 +148,66 @@ export default function ExcalidrawEditor({ viewMode = false }: ExcalidrawEditorP
       apiRef.current = api;
       setExcalidrawAPI(api);
 
-      // Load furniture library
       const lib = getFurnitureLibrary();
       api.updateLibrary({ libraryItems: lib.libraryItems, merge: true, openLibraryMenu: false });
 
-      // Initialize seats from ACTUAL rendered elements
+      // Initialize seats from rendered elements
       setTimeout(() => {
         const elements = api.getSceneElements();
-        if (!elements || elements.length === 0) return;
-
-        // Find desks and chairs
-        const desks = elements.filter((el: any) =>
-          el.type === 'rectangle' && !el.isDeleted &&
-          el.backgroundColor === '#e8e3dd' && el.width > 40 && el.width < 120
-        );
-        const allChairs = elements.filter((el: any) =>
-          el.type === 'ellipse' && !el.isDeleted &&
-          el.backgroundColor === '#9ca3af' && el.width <= 30 && el.height <= 30
-        );
-
-        // Split: chairs near a desk (within 40px) = desk chairs (priority)
-        // Others = meeting/lounge chairs
-        const deskChairs: any[] = [];
-        const otherChairs: any[] = [];
-        for (const chair of allChairs) {
-          const cx = chair.x + chair.width / 2;
-          const cy = chair.y + chair.height / 2;
-          const nearDesk = desks.some((d: any) => {
-            const dx = d.x + d.width / 2;
-            const dy = d.y + d.height / 2;
-            return Math.abs(cx - dx) < 60 && Math.abs(cy - dy) < 60;
-          });
-          if (nearDesk) deskChairs.push(chair);
-          else otherChairs.push(chair);
+        if (elements && elements.length > 0) {
+          initSeatsFromElements(elements);
         }
-
-        // Sort each group top-to-bottom, left-to-right
-        const sortChairs = (arr: any[]) => arr.sort((a: any, b: any) => {
-          const dy = a.y - b.y;
-          if (Math.abs(dy) > 10) return dy;
-          return a.x - b.x;
-        });
-        const sortedChairs = [...sortChairs(deskChairs), ...sortChairs(otherChairs)];
-
-        const zones = [{
-          id: 'office', type: 'desk' as const, name: 'オフィス',
-          x: 0, y: 0, w: 0, h: 0,
-          seats: sortedChairs.map((c: any, i: number) => ({
-            id: `seat-${i}`,
-            roomId: 'office',
-            x: c.x,
-            y: c.y,
-            w: c.width,
-            h: c.height,
-            occupied: false,
-            occupiedBy: undefined as string | undefined,
-          })),
-        }];
-
-        // Just save zones with empty seats — users join via WebSocket
-        useOfficeStore.setState({ zones });
       }, 800);
     },
     [setExcalidrawAPI],
   );
 
   const initialData = useMemo(() => {
-    return loadFromLocalStorage() ?? getDefaultInitialData();
-  }, []);
+    // Load from DB scene if available
+    if (savedScene && typeof savedScene === 'object') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const scene = savedScene as any;
+      if (Array.isArray(scene.elements) && scene.elements.length > 0) {
+        return {
+          elements: scene.elements,
+          appState: scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
+          scrollToContent: true,
+        };
+      }
+    }
+    // New floor: use default template
+    return getDefaultInitialData();
+  }, [savedScene]);
 
   const setExcalidrawAppState = useOfficeStore((s) => s.setExcalidrawAppState);
 
-  // onChange: update appState in store (real-time) + debounced save to localStorage
   const handleChange = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (elements: readonly any[], appState: any) => {
-      // Real-time appState update for avatar overlay positioning
       setExcalidrawAppState(appState);
 
-      // Debounced localStorage save
+      // Debounced save to DB
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
+        const slug = floorSlugRef.current;
+        if (!slug) return;
         try {
           const { collaborators, ...cleanAppState } = appState;
-          localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({ elements, appState: cleanAppState }),
-          );
-        } catch {}
+          const scene = { elements, appState: cleanAppState };
+          // Also save to localStorage as fallback
+          localStorage.setItem(`ethereal-scene-${slug}`, JSON.stringify(scene));
+          // Save to DB via API
+          fetch(`/api/floors/${slug}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ excalidrawScene: scene }),
+          }).catch(() => { /* silently fail, localStorage has backup */ });
+        } catch { /* ignore */ }
       }, DEBOUNCE_MS);
     },
     [setExcalidrawAppState],
   );
 
-  // Cleanup timer on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);

@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { FloorPlan, User, ViewMode, EditorMode, Camera, Furniture, Room, FurnitureType, RoomType, Zone, UserAction, PresenceStatus } from '@/types';
-import { defaultFloorPlan, mockUsers, defaultZones } from '@/data/floorPlan';
 
 interface ChatMessage {
   userId: string;
@@ -94,14 +93,14 @@ let furnitureIdCounter = 100;
 let roomIdCounter = 100;
 
 export const useOfficeStore = create<OfficeState>((set, get) => ({
-  floorPlan: defaultFloorPlan,
+  floorPlan: { id: '', name: '', width: 800, height: 600, gridSize: 20, rooms: [], furniture: [] },
   users: [], // Real users come via WebSocket
   currentUser: {
-    id: 'pending', // Will be set on client-side mount
-    name: 'ユーザー',
+    id: 'pending', // Will be set by WebSocket welcome message
+    name: 'ゲスト',
     role: 'メンバー',
     avatarColor: '#4F46E5',
-    initials: 'U',
+    initials: 'G',
     status: 'online',
     position: { x: 200, y: 200 },
     avatarStyle: 'notionists',
@@ -121,7 +120,7 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   setExcalidrawAppState: (state) => set({ excalidrawAppState: state }),
 
   // Seat/Zone system
-  zones: defaultZones,
+  zones: [],
   currentAction: 'idle',
   currentSeatId: null,
 

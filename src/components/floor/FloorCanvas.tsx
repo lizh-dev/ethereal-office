@@ -41,7 +41,12 @@ function sceneToScreen(sceneX: number, sceneY: number, appState: any): { x: numb
   };
 }
 
-export default function FloorCanvas() {
+interface FloorCanvasProps {
+  floorSlug?: string;
+  savedScene?: unknown;
+}
+
+export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps = {}) {
   const ref = useRef<HTMLDivElement>(null);
   const [h, setH] = useState(600);
   const editorMode = useOfficeStore((s) => s.editorMode);
@@ -163,7 +168,11 @@ export default function FloorCanvas() {
 
   const handleSend = () => {
     if (!chatInput.trim()) return;
-    sendMessage(chatInput.trim());
+    const text = chatInput.trim();
+    sendMessage(text);
+    // Send via WebSocket to other users
+    const wsSend = (window as unknown as Record<string, any>).__wsSend;
+    if (wsSend?.chat) wsSend.chat(text);
     setChatInput('');
   };
 
@@ -185,7 +194,7 @@ export default function FloorCanvas() {
     <div ref={ref} style={{ width: '100%', height: '100%', position: 'relative' }}>
       {/* Excalidraw — always mounted, viewMode toggled */}
       <div style={{ width: '100%', height: `${h}px` }}>
-        <Editor viewMode={isViewMode} />
+        <Editor viewMode={isViewMode} floorSlug={floorSlug} savedScene={savedScene} />
       </div>
 
       {/* Avatar overlay in view mode */}

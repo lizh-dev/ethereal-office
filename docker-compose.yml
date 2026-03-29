@@ -1,0 +1,36 @@
+name: ethereal-office
+
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "56322:5432"
+    environment:
+      POSTGRES_DB: ethereal_office
+      POSTGRES_USER: ethereal
+      POSTGRES_PASSWORD: ethereal_dev
+    volumes:
+      - ethereal-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ethereal"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "host=db user=ethereal password=ethereal_dev dbname=ethereal_office port=5432 sslmode=disable"
+      WS_ALLOWED_ORIGINS: "http://localhost:3000"
+      PORT: "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  ethereal-db:
+    name: ethereal-office-db

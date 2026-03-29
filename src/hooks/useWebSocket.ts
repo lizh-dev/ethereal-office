@@ -4,8 +4,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import type { PresenceStatus } from '@/types';
 
-const WS_URL = 'ws://localhost:3001';
-const RECONNECT_INTERVAL = 10000; // Don't spam reconnects when server is down
+const RECONNECT_INTERVAL = 10000;
 
 interface WsSend {
   move: (x: number, y: number) => void;
@@ -15,13 +14,35 @@ interface WsSend {
   status: (status: PresenceStatus) => void;
 }
 
-export function useWebSocket(): { send: WsSend; connected: boolean } {
+interface UseWebSocketOptions {
+  floor: string;
+  name: string;
+  avatarStyle: string;
+  avatarSeed: string;
+}
+
+// Convert Go WS flat user format to frontend User format
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toUser(raw: any) {
+  return {
+    id: raw.id,
+    name: raw.name,
+    role: raw.role || 'メンバー',
+    avatarColor: raw.avatarColor || '#4F46E5',
+    initials: raw.name ? raw.name[0] : 'G',
+    status: raw.status || 'online',
+    position: { x: raw.x ?? 200, y: raw.y ?? 200 },
+    avatarStyle: raw.avatarStyle || 'notionists',
+    avatarSeed: raw.avatarSeed || 'default',
+  };
+}
+
+export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; connected: boolean } {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [connected, setConnected] = useState(false);
 
   const {
-    currentUser,
     setWsConnected,
     addRemoteUser,
     removeRemoteUser,
@@ -33,38 +54,28 @@ export function useWebSocket(): { send: WsSend; connected: boolean } {
     setRemoteUsers,
   } = useOfficeStore();
 
-  const currentUserRef = useRef(currentUser);
-  currentUserRef.current = currentUser;
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   const connect = useCallback(() => {
+    const opts = optionsRef.current;
+    if (!opts || !opts.floor || !opts.name) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    const ws = new WebSocket(WS_URL);
+    const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws';
+    const params = new URLSearchParams({
+      floor: opts.floor,
+      name: opts.name,
+      avatar: opts.avatarStyle || 'notionists',
+      seed: opts.avatarSeed || 'default',
+    });
+    const ws = new WebSocket(`${wsBaseUrl}?${params}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
       console.log('[WS] Connected');
       setConnected(true);
       setWsConnected(true);
-
-      // Send join message
-      const user = currentUserRef.current;
-      ws.send(
-        JSON.stringify({
-          type: 'join',
-          user: {
-            id: user.id,
-            name: user.name,
-            role: user.role,
-            avatarColor: user.avatarColor,
-            initials: user.initials,
-            status: user.status,
-            position: user.position,
-            avatarStyle: user.avatarStyle,
-            avatarSeed: user.avatarSeed,
-          },
-        }),
-      );
     };
 
     ws.onmessage = (event) => {
@@ -75,13 +86,21 @@ export function useWebSocket(): { send: WsSend; connected: boolean } {
         return;
       }
 
+      const currentUserId = useOfficeStore.getState().currentUser.id;
+
       switch (msg.type) {
         case 'welcome':
-          // Set all remote users (excluding self)
+          // Server assigned us a userId
+          if (msg.userId) {
+            useOfficeStore.setState((state) => ({
+              currentUser: { ...state.currentUser, id: msg.userId },
+            }));
+          }
           setRemoteUsers(
-            msg.users.filter((u: { id: string }) => u.id !== currentUserRef.current.id),
+            (msg.users || [])
+              .filter((u: { id: string }) => u.id !== msg.userId)
+              .map(toUser),
           );
-          // Load chat history
           if (msg.chatHistory) {
             for (const chatMsg of msg.chatHistory) {
               addChatMessage(chatMsg.userId, chatMsg.text, chatMsg.timestamp);
@@ -90,8 +109,8 @@ export function useWebSocket(): { send: WsSend; connected: boolean } {
           break;
 
         case 'user_joined':
-          if (msg.user.id !== currentUserRef.current.id) {
-            addRemoteUser(msg.user);
+          if (msg.user.id !== currentUserId) {
+            addRemoteUser(toUser(msg.user));
           }
           break;
 
@@ -126,13 +145,10 @@ export function useWebSocket(): { send: WsSend; connected: boolean } {
       setConnected(false);
       setWsConnected(false);
       wsRef.current = null;
-
-      // Schedule reconnect
       reconnectTimerRef.current = setTimeout(connect, RECONNECT_INTERVAL);
     };
 
-    ws.onerror = (err) => {
-      // Silently handle - WS server may not be running
+    ws.onerror = () => {
       ws.close();
     };
   }, [
@@ -148,7 +164,9 @@ export function useWebSocket(): { send: WsSend; connected: boolean } {
   ]);
 
   useEffect(() => {
-    connect();
+    if (options?.floor && options?.name) {
+      connect();
+    }
     return () => {
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current);
@@ -157,7 +175,7 @@ export function useWebSocket(): { send: WsSend; connected: boolean } {
         wsRef.current.close();
       }
     };
-  }, [connect]);
+  }, [connect, options?.floor, options?.name]);
 
   const sendRaw = useCallback((data: Record<string, unknown>) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
