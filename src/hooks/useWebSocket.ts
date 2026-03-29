@@ -15,6 +15,7 @@ interface WsSend {
   media: (isMuted: boolean, isCameraOn: boolean) => void;
   reaction: (emoji: string) => void;
   sceneUpdate: () => void;
+  kick: (targetUserId: string) => void;
 }
 
 interface UseWebSocketOptions {
@@ -159,6 +160,12 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           }));
           break;
 
+        case 'kicked':
+          // This user has been kicked by the floor owner
+          alert('フロアオーナーにより退出されました');
+          window.location.href = '/';
+          break;
+
         case 'scene_updated':
           // Floor editor saved changes - reload scene
           addNotification('フロアが更新されました。再読み込みします...');
@@ -253,6 +260,10 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     ),
     sceneUpdate: useCallback(
       () => sendRaw({ type: 'scene_update' }),
+      [sendRaw],
+    ),
+    kick: useCallback(
+      (targetUserId: string) => sendRaw({ type: 'kick', targetUserId }),
       [sendRaw],
     ),
   };

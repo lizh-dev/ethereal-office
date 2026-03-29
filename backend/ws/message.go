@@ -12,6 +12,7 @@ const (
 	MsgMedia    = "media"
 	MsgReaction    = "reaction"
 	MsgSceneUpdate = "scene_update"
+	MsgKick        = "kick"
 )
 
 // Server→Client message types
@@ -27,6 +28,7 @@ const (
 	MsgUserMedia     = "user_media"
 	MsgUserReaction     = "user_reaction"
 	MsgSceneUpdated     = "scene_updated"
+	MsgKicked           = "kicked"
 )
 
 type IncomingMessage struct {
@@ -38,7 +40,8 @@ type IncomingMessage struct {
 	Status   string  `json:"status,omitempty"`
 	IsMuted  *bool   `json:"isMuted,omitempty"`
 	IsCamOn  *bool   `json:"isCameraOn,omitempty"`
-	Emoji    string  `json:"emoji,omitempty"`
+	Emoji        string  `json:"emoji,omitempty"`
+	TargetUserID string  `json:"targetUserId,omitempty"`
 }
 
 type UserInfo struct {

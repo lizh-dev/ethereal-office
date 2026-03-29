@@ -61,13 +61,9 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
     if (!excalidrawAPI) return;
     setSaving(true);
 
-    // 1. Re-detect seats from current Excalidraw elements
     const elements = excalidrawAPI.getSceneElements();
-    if (elements && elements.length > 0) {
-      redetectSeats(elements);
-    }
 
-    // 2. Save to DB
+    // 1. Save to DB
     if (floorSlug) {
       try {
         const appState = excalidrawAPI.getAppState();
@@ -83,13 +79,20 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
       } catch { /* silent */ }
     }
 
-    // 3. Notify other users via WS
+    // 2. Notify other users via WS
     const wsSend = (window as unknown as Record<string, any>).__wsSend;
     wsSend?.sceneUpdate?.();
 
-    // 4. Switch to view mode
-    setSaving(false);
+    // 3. Switch to view mode first
     setEditorMode('view');
+    setSaving(false);
+
+    // 4. Re-detect seats after view mode renders (with delay for Excalidraw to update)
+    setTimeout(() => {
+      if (elements && elements.length > 0) {
+        redetectSeats(elements);
+      }
+    }, 500);
   };
 
   // Re-detect seats preserving existing labels

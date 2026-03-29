@@ -12,7 +12,13 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function MembersView() {
-  const { currentUser, users, searchQuery } = useOfficeStore();
+  const { currentUser, users, searchQuery, isFloorOwner } = useOfficeStore();
+
+  const handleKick = (userId: string, userName: string) => {
+    if (!confirm(`${userName} をフロアから退出させますか？`)) return;
+    const wsSend = (window as unknown as Record<string, any>).__wsSend;
+    wsSend?.kick?.(userId);
+  };
 
   const allUsers = useMemo(() => {
     const all = [currentUser, ...users];
@@ -67,6 +73,15 @@ export default function MembersView() {
                   </div>
                   <div className="text-xs text-gray-400">{STATUS_LABELS[user.status] || user.status}</div>
                 </div>
+                {isFloorOwner && user.id !== currentUser.id && (
+                  <button
+                    onClick={() => handleKick(user.id, user.name)}
+                    className="text-[10px] px-2 py-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                    title={`${user.name} を退出させる`}
+                  >
+                    退出
+                  </button>
+                )}
               </div>
             ))}
           </div>

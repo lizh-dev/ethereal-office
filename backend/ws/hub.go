@@ -224,6 +224,34 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 			Status: msg.Status,
 		}, client.info.ID)
 
+	case MsgKick:
+		if msg.TargetUserID == "" {
+			return
+		}
+		h.mu.RLock()
+		room := h.rooms[client.room]
+		h.mu.RUnlock()
+		if room == nil {
+			return
+		}
+		h.mu.RLock()
+		target, ok := room.clients[msg.TargetUserID]
+		h.mu.RUnlock()
+		if !ok {
+			return
+		}
+		// Send kicked message to target
+		target.send <- MarshalMessage(OutgoingMessage{
+			Type:   MsgKicked,
+			UserID: msg.TargetUserID,
+		})
+		// Close target's connection after a short delay
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			target.conn.Close()
+		}()
+		log.Printf("[%s] %s kicked %s", client.room, client.info.Name, target.info.Name)
+
 	case MsgSceneUpdate:
 		// Notify other users that the floor scene has been updated
 		h.broadcastToRoom(client.room, OutgoingMessage{
