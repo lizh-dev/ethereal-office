@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useOfficeStore } from '@/store/officeStore';
 import { ViewMode } from '@/types';
 
@@ -63,10 +64,14 @@ export default function Sidebar() {
   return (
     <>
       <aside className="w-[60px] bg-white border-r border-gray-200 flex flex-col items-center h-full py-3">
-        {/* Logo */}
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg mb-4 shadow-md">
-          W
-        </div>
+        {/* Logo - link to home */}
+        <Link
+          href="/"
+          className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm mb-4 shadow-md hover:scale-105 transition-transform"
+          title="ホームに戻る"
+        >
+          SO
+        </Link>
 
         {/* Nav */}
         <nav className="flex-1 flex flex-col items-center gap-1">

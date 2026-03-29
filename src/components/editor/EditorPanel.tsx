@@ -43,7 +43,26 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
   };
 
   const handleRenameZone = (zoneId: string, newName: string) => {
+    const zone = zones.find(z => z.id === zoneId);
+    if (!zone) return;
+    const oldName = zone.name;
+
+    // 1. Update zone in store
     setZones(zones.map(z => z.id === zoneId ? { ...z, name: newName } : z));
+
+    // 2. Update matching text element in Excalidraw
+    if (excalidrawAPI) {
+      const elements = excalidrawAPI.getSceneElements();
+      const updated = elements.map((el: any) => {
+        if (el.type === 'text' && !el.isDeleted && el.text === oldName &&
+            el.x >= zone.x - 10 && el.x <= zone.x + zone.w + 10 &&
+            el.y >= zone.y - 10 && el.y <= zone.y + zone.h + 10) {
+          return { ...el, text: newName, version: (el.version || 0) + 1, versionNonce: Math.random() * 1e9 | 0 };
+        }
+        return el;
+      });
+      excalidrawAPI.updateScene({ elements: updated });
+    }
   };
 
   const handleApplyPrefix = (zoneId: string, prefix: string) => {
