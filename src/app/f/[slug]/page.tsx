@@ -144,7 +144,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
           {viewMode === 'floor' && (
             <>
               <FloorCanvas floorSlug={slug} savedScene={floorData?.excalidrawScene} />
-              {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} />}
+              {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} floorSlug={slug} />}
               <RightPanel />
             </>
           )}
