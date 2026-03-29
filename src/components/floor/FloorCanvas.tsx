@@ -172,32 +172,19 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentSeatId, isViewMode, standUp, wsSend]);
 
-  // Click on Excalidraw canvas to move avatar (view mode only)
+  // Double-click on Excalidraw canvas to move avatar (view mode only)
+  // Single click/drag = Excalidraw's native pan. Double-click = move avatar.
   useEffect(() => {
     if (!isViewMode) return;
     const container = ref.current;
     if (!container) return;
 
-    let startX = 0, startY = 0;
-    const handleMouseDown = (e: MouseEvent) => {
-      startX = e.clientX;
-      startY = e.clientY;
-    };
-    const handleMouseUp = (e: MouseEvent) => {
-      const dx = Math.abs(e.clientX - startX);
-      const dy = Math.abs(e.clientY - startY);
-      // Only treat as click if barely moved (not a drag/pan)
-      if (dx < 5 && dy < 5) {
-        handleCanvasClick({ clientX: e.clientX, clientY: e.clientY } as React.MouseEvent);
-      }
+    const handleDblClick = (e: MouseEvent) => {
+      handleCanvasClick({ clientX: e.clientX, clientY: e.clientY } as React.MouseEvent);
     };
 
-    container.addEventListener('mousedown', handleMouseDown);
-    container.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      container.removeEventListener('mousedown', handleMouseDown);
-      container.removeEventListener('mouseup', handleMouseUp);
-    };
+    container.addEventListener('dblclick', handleDblClick);
+    return () => container.removeEventListener('dblclick', handleDblClick);
   }, [isViewMode, handleCanvasClick]);
 
   const chatMessages = useOfficeStore((s) => s.chatMessages);
@@ -339,11 +326,11 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             <span onClick={() => setShowHelp(false)} style={{ cursor: 'pointer', color: '#9ca3af', fontSize: 16 }}>×</span>
           </div>
           {[
-            ['🖱 クリック', 'その場所へ移動'],
-            ['🪑 席をクリック', '座席に着席'],
+            ['🖱 ダブルクリック', 'その場所へ移動'],
+            ['🪑 席をダブルクリック', '座席に着席'],
+            ['✋ ドラッグ', 'フロアを移動'],
             ['⌨ Esc', '席から離れる'],
             ['🔍 Ctrl+ホイール', '拡大/縮小'],
-            ['✋ ホイールドラッグ', 'フロアを移動'],
             ['💬 下部入力欄', 'チャット送信'],
             ['😀 下部スタンプ', 'リアクション'],
           ].map(([key, desc]) => (
