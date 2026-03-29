@@ -16,7 +16,7 @@ test.describe('スペース名変更', () => {
     editToken = body.editToken;
   });
 
-  test('スペース名をクリックで変更できる', async ({ page }) => {
+  test('スペース名をクリックで変更し、保存後も維持される', async ({ page }) => {
     // Join as owner
     await page.goto(`${BASE}/f/${slug}`);
     await page.evaluate(({ s, t }) => {
@@ -63,11 +63,19 @@ test.describe('スペース名変更', () => {
 
       // Verify old name is gone (replaced)
       if (originalName && originalName !== '営業チーム') {
-        // The original name text should no longer be in that span
         await expect(page.locator(`span:has-text("${originalName} ✎")`)).not.toBeVisible({ timeout: 2000 });
       }
+
+      // Save and switch to view mode
+      await page.click('button:has-text("保存して閲覧モードへ")');
+      await page.waitForTimeout(1000);
+
+      // Re-enter edit mode and verify name persisted
+      await page.click('[title*="フロアを編集"]');
+      await page.waitForSelector('text=フロアエディター', { timeout: 5000 });
+      await page.waitForTimeout(500);
+      await expect(page.getByText('営業チーム').first()).toBeVisible({ timeout: 5000 });
     } else {
-      // No zones detected yet - test passes if we're in edit mode
       await expect(page.getByText('フロアエディター')).toBeVisible();
     }
   });
