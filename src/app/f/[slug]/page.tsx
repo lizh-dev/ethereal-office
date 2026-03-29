@@ -37,6 +37,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   const { editorMode, showAvatarSelector, currentUser, currentSeatId, viewMode, kickedNotification, activeDMUserId } = useOfficeStore();
   const [showSpaceWizard, setShowSpaceWizard] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(false);
+  const [showEditHint, setShowEditHint] = useState(false);
   const [joined, setJoined] = useState(false);
   const [wsOptions, setWsOptions] = useState<{
     floor: string;
@@ -213,6 +214,23 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
     <WebSocketProvider value={{ send, connected }}>
       <div className="floor-page flex h-screen overflow-hidden bg-white">
         <Sidebar />
+        {/* Edit button hint tooltip */}
+        {showEditHint && (
+          <div
+            className="fixed z-[60] animate-float-in"
+            style={{ left: 70, bottom: 60 }}
+            onClick={() => setShowEditHint(false)}
+          >
+            <div className="bg-sky-500 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer">
+              <span className="text-lg">←</span>
+              <div>
+                <div>ここからフロアを編集できます</div>
+                <div className="text-xs text-sky-100 font-normal mt-0.5">✏️ ボタンをクリックして開始</div>
+              </div>
+            </div>
+            <div className="absolute -left-2 bottom-4 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-sky-500" />
+          </div>
+        )}
         <div className="flex-1 flex flex-col min-w-0">
           <TopBar />
           <div className="flex-1 flex min-h-0">
@@ -234,7 +252,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
               useOfficeStore.getState().setEditorMode('edit');
               setShowSpaceWizard(true);
             }}
-            onSkip={() => setShowSetupGuide(false)}
+            onSkip={() => { setShowSetupGuide(false); setShowEditHint(true); setTimeout(() => setShowEditHint(false), 6000); }}
           />
         )}
         {showAvatarSelector && <AvatarSelector />}
