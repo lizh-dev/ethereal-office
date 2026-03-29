@@ -62,7 +62,7 @@ func (h *Hub) cleanupEmptyRooms() {
 	for slug, room := range h.rooms {
 		// Clean up expired reconnection entries (older than 60 seconds)
 		for uid, di := range room.recentlyDisconnected {
-			if time.Since(di.DisconnectAt) > 60*time.Second {
+			if time.Since(di.DisconnectAt) > 20*time.Second {
 				delete(room.recentlyDisconnected, uid)
 			}
 		}
@@ -98,7 +98,7 @@ func (h *Hub) addClient(client *Client) {
 	h.mu.Lock()
 	// Check if this user was recently disconnected — restore position only, NOT seat
 	if di, ok := room.recentlyDisconnected[client.info.ID]; ok {
-		if time.Since(di.DisconnectAt) < 60*time.Second {
+		if time.Since(di.DisconnectAt) < 20*time.Second {
 			client.info.X = di.Info.X
 			client.info.Y = di.Info.Y
 			// Do NOT restore SeatID — user must re-sit manually
@@ -206,7 +206,7 @@ func (h *Hub) HasRecentlyDisconnected(slug, userID string) bool {
 	if !ok {
 		return false
 	}
-	return time.Since(di.DisconnectAt) < 60*time.Second
+	return time.Since(di.DisconnectAt) < 20*time.Second
 }
 
 func (h *Hub) getRoomUsers(slug string) []UserInfo {
