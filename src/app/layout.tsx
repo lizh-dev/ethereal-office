@@ -8,8 +8,21 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "The Ethereal Office",
-  description: "Virtual office that surpasses oVice",
+  title: "Ethereal Office - チームの距離を、ゼロにする",
+  description: "ログイン不要、URLを共有するだけ。リモートチームが自然につながるバーチャルオフィス。30秒でオフィスを作成し、チームとリアルタイムでつながろう。",
+  keywords: ["バーチャルオフィス", "リモートワーク", "オンラインオフィス", "チームコミュニケーション", "virtual office"],
+  openGraph: {
+    title: "Ethereal Office - チームの距離を、ゼロにする",
+    description: "ログイン不要、URLを共有するだけ。リモートチームが自然につながるバーチャルオフィス。",
+    type: "website",
+    locale: "ja_JP",
+    siteName: "Ethereal Office",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ethereal Office - チームの距離を、ゼロにする",
+    description: "ログイン不要、URLを共有するだけ。リモートチームが自然につながるバーチャルオフィス。",
+  },
 };
 
 export default function RootLayout({
@@ -18,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ja">
       <body className={`${geistSans.variable} antialiased`}>
         {children}
       </body>
