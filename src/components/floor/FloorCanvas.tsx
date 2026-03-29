@@ -157,33 +157,48 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
   const currentAction = useOfficeStore((s) => s.currentAction);
 
-  // Keyboard: Esc = stand up, Space = pan mode
-  const [isPanning, setIsPanning] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showStamps, setShowStamps] = useState(false);
+
+  // Keyboard: Esc = stand up
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && currentSeatId && isViewMode) {
         standUp();
         wsSend.stand();
       }
-      if (e.key === ' ' && !e.repeat && isViewMode) {
-        e.preventDefault();
-        setIsPanning(true);
-      }
-    };
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === ' ') {
-        setIsPanning(false);
-      }
     };
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentSeatId, isViewMode, standUp, wsSend]);
+
+  // Click on Excalidraw canvas to move avatar (view mode only)
+  useEffect(() => {
+    if (!isViewMode) return;
+    const container = ref.current;
+    if (!container) return;
+
+    let startX = 0, startY = 0;
+    const handleMouseDown = (e: MouseEvent) => {
+      startX = e.clientX;
+      startY = e.clientY;
+    };
+    const handleMouseUp = (e: MouseEvent) => {
+      const dx = Math.abs(e.clientX - startX);
+      const dy = Math.abs(e.clientY - startY);
+      // Only treat as click if barely moved (not a drag/pan)
+      if (dx < 5 && dy < 5) {
+        handleCanvasClick({ clientX: e.clientX, clientY: e.clientY } as React.MouseEvent);
+      }
+    };
+
+    container.addEventListener('mousedown', handleMouseDown);
+    container.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      container.removeEventListener('mousedown', handleMouseDown);
+      container.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isViewMode, handleCanvasClick]);
 
   const chatMessages = useOfficeStore((s) => s.chatMessages);
   const sendMessage = useOfficeStore((s) => s.sendMessage);
@@ -266,56 +281,6 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
         <Editor viewMode={isViewMode} floorSlug={floorSlug} savedScene={savedScene} />
       </div>
 
-      {/* Click-to-move layer — passes wheel/scroll to Excalidraw for zoom/pan */}
-      {isViewMode && appState && (
-        <div
-          onMouseDown={(e) => {
-            if (isPanning) {
-              // Space+drag = pan the canvas
-              e.preventDefault();
-              const startX = e.clientX;
-              const startY = e.clientY;
-              const api = excalidrawAPI;
-              if (!api) return;
-              const startState = api.getAppState();
-              const startScrollX = startState.scrollX || 0;
-              const startScrollY = startState.scrollY || 0;
-              const handleMove = (moveE: MouseEvent) => {
-                const zoom = startState.zoom?.value || 1;
-                const dx = (moveE.clientX - startX) / zoom;
-                const dy = (moveE.clientY - startY) / zoom;
-                api.updateScene({ appState: { ...api.getAppState(), scrollX: startScrollX + dx, scrollY: startScrollY + dy } });
-              };
-              const handleUp = () => {
-                window.removeEventListener('mousemove', handleMove);
-                window.removeEventListener('mouseup', handleUp);
-              };
-              window.addEventListener('mousemove', handleMove);
-              window.addEventListener('mouseup', handleUp);
-              return;
-            }
-            // Normal click = move avatar
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const handleUp = (upE: MouseEvent) => {
-              const dx = Math.abs(upE.clientX - startX);
-              const dy = Math.abs(upE.clientY - startY);
-              if (dx < 5 && dy < 5) {
-                handleCanvasClick(e as unknown as React.MouseEvent);
-              }
-              window.removeEventListener('mouseup', handleUp);
-            };
-            window.addEventListener('mouseup', handleUp);
-          }}
-          onWheel={(e) => {
-            // Temporarily disable pointer-events so wheel goes directly to Excalidraw
-            const el = e.currentTarget as HTMLElement;
-            el.style.pointerEvents = 'none';
-            requestAnimationFrame(() => { el.style.pointerEvents = 'auto'; });
-          }}
-          style={{ position: 'absolute', inset: 0, zIndex: 2, cursor: isPanning ? 'grab' : 'crosshair', pointerEvents: 'auto' }}
-        />
-      )}
 
       {/* Zoom controls */}
       {isViewMode && appState && (() => {
@@ -378,7 +343,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             ['🪑 席をクリック', '座席に着席'],
             ['⌨ Esc', '席から離れる'],
             ['🔍 Ctrl+ホイール', '拡大/縮小'],
-            ['✋ Space+ドラッグ', 'フロアを移動'],
+            ['✋ ホイールドラッグ', 'フロアを移動'],
             ['💬 下部入力欄', 'チャット送信'],
             ['😀 下部スタンプ', 'リアクション'],
           ].map(([key, desc]) => (
