@@ -15,6 +15,7 @@ type CreateFloorRequest struct {
 	Name            string          `json:"name"`
 	CreatorName     string          `json:"creatorName,omitempty"`
 	Password        string          `json:"password,omitempty"`
+	OwnerPassword   string          `json:"ownerPassword,omitempty"`
 	ExcalidrawScene json.RawMessage `json:"excalidrawScene,omitempty"`
 }
 
@@ -64,6 +65,9 @@ func CreateFloor(w http.ResponseWriter, r *http.Request) {
 	if req.Password != "" {
 		floor.Password = &req.Password
 	}
+	if req.OwnerPassword != "" {
+		floor.OwnerPassword = &req.OwnerPassword
+	}
 	if req.ExcalidrawScene != nil {
 		floor.ExcalidrawScene = datatypes.JSON(req.ExcalidrawScene)
 	}
@@ -105,7 +109,8 @@ func GetFloor(w http.ResponseWriter, r *http.Request) {
 		"creatorName":     floor.CreatorName,
 		"excalidrawScene": floor.ExcalidrawScene,
 		"zones":           floor.Zones,
-		"hasPassword":     floor.Password != nil && *floor.Password != "",
+		"hasPassword":      floor.Password != nil && *floor.Password != "",
+		"hasOwnerPassword": floor.OwnerPassword != nil && *floor.OwnerPassword != "",
 		"createdAt":       floor.CreatedAt,
 		"updatedAt":       floor.UpdatedAt,
 	})
@@ -119,12 +124,9 @@ func UpdateFloor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify edit token from header
+	// Verify owner permission via owner password or legacy edit token
+	ownerPw := r.Header.Get("X-Owner-Password")
 	editToken := r.Header.Get("X-Edit-Token")
-	if editToken == "" {
-		writeError(w, http.StatusForbidden, "edit token required")
-		return
-	}
 
 	var floor model.Floor
 	if err := db.DB.Where("slug = ?", slug).First(&floor).Error; err != nil {
@@ -132,8 +134,14 @@ func UpdateFloor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if floor.EditToken != editToken {
-		writeError(w, http.StatusForbidden, "invalid edit token")
+	authorized := false
+	if floor.OwnerPassword != nil && *floor.OwnerPassword != "" {
+		authorized = ownerPw == *floor.OwnerPassword
+	} else {
+		authorized = editToken != "" && floor.EditToken == editToken
+	}
+	if !authorized {
+		writeError(w, http.StatusForbidden, "not authorized to edit")
 		return
 	}
 
@@ -166,11 +174,15 @@ func UpdateFloor(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, floor)
 }
 
-// POST /api/floors/{slug}/verify-token
-func VerifyEditToken(w http.ResponseWriter, r *http.Request) {
+// POST /api/floors/{slug}/verify-owner
+func VerifyOwner(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
-	editToken := r.Header.Get("X-Edit-Token")
-	if slug == "" || editToken == "" {
+	var body struct {
+		OwnerPassword string `json:"ownerPassword"`
+	}
+	json.NewDecoder(r.Body).Decode(&body)
+
+	if slug == "" || body.OwnerPassword == "" {
 		writeJSON(w, http.StatusOK, map[string]bool{"canEdit": false})
 		return
 	}
@@ -181,7 +193,14 @@ func VerifyEditToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]bool{"canEdit": floor.EditToken == editToken})
+	if floor.OwnerPassword == nil || *floor.OwnerPassword == "" {
+		// No owner password set - use legacy editToken
+		editToken := r.Header.Get("X-Edit-Token")
+		writeJSON(w, http.StatusOK, map[string]bool{"canEdit": floor.EditToken == editToken})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]bool{"canEdit": body.OwnerPassword == *floor.OwnerPassword})
 }
 
 // POST /api/floors/{slug}/verify-password

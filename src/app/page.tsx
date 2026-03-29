@@ -19,6 +19,7 @@ export default function LandingPage() {
   const [visitHistory, setVisitHistory] = useState<VisitEntry[]>([]);
   const [creatorName, setCreatorName] = useState('');
   const [password, setPassword] = useState('');
+  const [ownerPassword, setOwnerPassword] = useState('');
   const [template, setTemplate] = useState('default');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -55,6 +56,7 @@ export default function LandingPage() {
           name: floorName.trim(),
           creatorName: creatorName.trim() || undefined,
           password: password.trim() || undefined,
+          ownerPassword: ownerPassword.trim() || undefined,
           excalidrawScene: template !== 'empty' ? {
             elements: getTemplateElements(template),
             appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
@@ -161,6 +163,21 @@ export default function LandingPage() {
                 placeholder="設定するとURL知っていてもパスワードが必要"
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent text-gray-800 placeholder-gray-400"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                管理者パスワード（任意）
+              </label>
+              <input
+                type="password"
+                value={ownerPassword}
+                onChange={(e) => setOwnerPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                placeholder="フロア編集・メンバー退出に必要"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent text-gray-800 placeholder-gray-400"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">どのPCからでもこのパスワードで管理者になれます</p>
             </div>
 
             {error && (

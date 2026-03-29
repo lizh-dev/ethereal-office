@@ -17,7 +17,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		if origin != "" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Edit-Token")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Edit-Token, X-Owner-Password")
 		}
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -39,7 +39,7 @@ func main() {
 	mux.HandleFunc("POST /api/floors", handler.CreateFloor)
 	mux.HandleFunc("GET /api/floors/{slug}", handler.GetFloor)
 	mux.HandleFunc("PATCH /api/floors/{slug}", handler.UpdateFloor)
-	mux.HandleFunc("POST /api/floors/{slug}/verify-token", handler.VerifyEditToken)
+	mux.HandleFunc("POST /api/floors/{slug}/verify-owner", handler.VerifyOwner)
 	mux.HandleFunc("POST /api/floors/{slug}/verify-password", handler.VerifyPassword)
 	mux.HandleFunc("DELETE /api/floors/{slug}", handler.DeleteFloor)
 

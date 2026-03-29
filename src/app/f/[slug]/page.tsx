@@ -25,6 +25,7 @@ interface FloorData {
   excalidrawScene?: unknown;
   zones?: unknown;
   hasPassword?: boolean;
+  hasOwnerPassword?: boolean;
 }
 
 export default function FloorPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -44,28 +45,32 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   const [autoJoinChecked, setAutoJoinChecked] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
 
-  // Verify edit permission with server
+  // Check if already authenticated as owner in this session
   useEffect(() => {
-    const tokens = JSON.parse(localStorage.getItem('ethereal-edit-tokens') || '{}');
-    const token = tokens[slug];
-    if (!token) {
-      setIsOwner(false);
-      useOfficeStore.getState().setIsFloorOwner(false);
-      return;
+    const sessionOwner = sessionStorage.getItem(`ethereal-owner-${slug}`);
+    if (sessionOwner === 'true') {
+      setIsOwner(true);
+      useOfficeStore.getState().setIsFloorOwner(true);
+    } else {
+      // Also check legacy editToken
+      const tokens = JSON.parse(localStorage.getItem('ethereal-edit-tokens') || '{}');
+      if (tokens[slug]) {
+        fetch(`/api/floors/${slug}/verify-owner`, {
+          method: 'POST',
+          headers: { 'X-Edit-Token': tokens[slug], 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ownerPassword: '' }),
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.canEdit) {
+              setIsOwner(true);
+              useOfficeStore.getState().setIsFloorOwner(true);
+              sessionStorage.setItem(`ethereal-owner-${slug}`, 'true');
+            }
+          })
+          .catch(() => {});
+      }
     }
-    fetch(`/api/floors/${slug}/verify-token`, {
-      method: 'POST',
-      headers: { 'X-Edit-Token': token },
-    })
-      .then(res => res.json())
-      .then(data => {
-        setIsOwner(data.canEdit);
-        useOfficeStore.getState().setIsFloorOwner(data.canEdit);
-      })
-      .catch(() => {
-        setIsOwner(false);
-        useOfficeStore.getState().setIsFloorOwner(false);
-      });
   }, [slug]);
 
   // Fetch floor data

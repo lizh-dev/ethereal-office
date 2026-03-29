@@ -49,20 +49,49 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Edit mode - owner only */}
-      {isFloorOwner && (
-        <button
-          onClick={() => setEditorMode(editorMode === 'view' ? 'edit' : 'view')}
-          className={`w-11 h-11 rounded-xl flex items-center justify-center mb-2 transition-all ${
-            editorMode === 'edit'
-              ? 'bg-amber-100 text-amber-600'
-              : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
-          }`}
-          title={editorMode === 'edit' ? '編集終了' : 'フロアを編集'}
-        >
-          <span className="text-lg">✏️</span>
-        </button>
-      )}
+      {/* Edit mode */}
+      <button
+        onClick={async () => {
+          if (editorMode === 'edit') {
+            setEditorMode('view');
+            return;
+          }
+          if (isFloorOwner) {
+            setEditorMode('edit');
+            return;
+          }
+          // Not yet authenticated - ask for owner password
+          const pw = prompt('管理者パスワードを入力してください');
+          if (!pw) return;
+          try {
+            const slug = window.location.pathname.split('/f/')[1];
+            const res = await fetch(`/api/floors/${slug}/verify-owner`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ownerPassword: pw }),
+            });
+            const data = await res.json();
+            if (data.canEdit) {
+              useOfficeStore.getState().setIsFloorOwner(true);
+              sessionStorage.setItem(`ethereal-owner-${slug}`, 'true');
+              sessionStorage.setItem(`ethereal-owner-pw-${slug}`, pw);
+              setEditorMode('edit');
+            } else {
+              useOfficeStore.getState().addNotification('パスワードが正しくありません');
+            }
+          } catch {
+            useOfficeStore.getState().addNotification('認証に失敗しました');
+          }
+        }}
+        className={`w-11 h-11 rounded-xl flex items-center justify-center mb-2 transition-all ${
+          editorMode === 'edit'
+            ? 'bg-amber-100 text-amber-600'
+            : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+        }`}
+        title={editorMode === 'edit' ? '編集終了' : 'フロアを編集（管理者パスワード必要）'}
+      >
+        <span className="text-lg">{isFloorOwner ? '✏️' : '🔒'}</span>
+      </button>
     </aside>
   );
 }

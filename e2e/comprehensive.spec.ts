@@ -25,9 +25,11 @@ async function joinFloor(page: Page, slug: string, userName: string, asOwner = f
     const token = getEditToken(slug);
     await page.goto(`${BASE}/f/${slug}`);
     await page.evaluate(({ s, t }) => {
+      // Set both legacy editToken and session owner flag
       const tokens = JSON.parse(localStorage.getItem('ethereal-edit-tokens') || '{}');
       tokens[s] = t;
       localStorage.setItem('ethereal-edit-tokens', JSON.stringify(tokens));
+      sessionStorage.setItem(`ethereal-owner-${s}`, 'true');
     }, { s: slug, t: token });
     await page.reload();
   } else {

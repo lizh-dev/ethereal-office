@@ -306,9 +306,10 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
           // Save to DB via API (with edit token)
           const tokens = JSON.parse(localStorage.getItem('ethereal-edit-tokens') || '{}');
           const editToken = tokens[slug] || '';
+          const ownerPw = sessionStorage.getItem(`ethereal-owner-pw-${slug}`) || '';
           fetch(`/api/floors/${slug}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'X-Edit-Token': editToken },
+            headers: { 'Content-Type': 'application/json', 'X-Edit-Token': editToken, 'X-Owner-Password': ownerPw },
             body: JSON.stringify({ excalidrawScene: scene }),
           }).catch(() => { /* silently fail, localStorage has backup */ });
         } catch { /* ignore */ }

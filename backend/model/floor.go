@@ -12,8 +12,9 @@ type Floor struct {
 	Slug            string         `gorm:"uniqueIndex;not null" json:"slug"`
 	Name            string         `gorm:"not null" json:"name"`
 	CreatorName     *string        `json:"creatorName,omitempty"`
-	EditToken       string         `gorm:"not null" json:"-"`
-	Password        *string        `json:"-"` // optional floor password, never exposed
+	EditToken       string         `gorm:"not null" json:"-"`           // legacy, kept for migration
+	Password        *string        `json:"-"`                           // optional entry password
+	OwnerPassword   *string        `json:"-"`                           // password to enter edit mode
 	ExcalidrawScene datatypes.JSON `gorm:"type:jsonb" json:"excalidrawScene,omitempty"`
 	Zones           datatypes.JSON `gorm:"type:jsonb" json:"zones,omitempty"`
 	Settings        datatypes.JSON `gorm:"type:jsonb;default:'{}'" json:"settings,omitempty"`

@@ -71,9 +71,10 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
         const scene = { elements, appState: cleanAppState };
         const tokens = JSON.parse(localStorage.getItem('ethereal-edit-tokens') || '{}');
         const editToken = tokens[floorSlug] || '';
+        const ownerPw = sessionStorage.getItem(`ethereal-owner-pw-${floorSlug}`) || '';
         await fetch(`/api/floors/${floorSlug}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'X-Edit-Token': editToken },
+          headers: { 'Content-Type': 'application/json', 'X-Edit-Token': editToken, 'X-Owner-Password': ownerPw },
           body: JSON.stringify({ excalidrawScene: scene }),
         });
       } catch { /* silent */ }
