@@ -317,9 +317,26 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
     store.setZones([...store.zones, newZone]);
 
     try {
-      excalidrawAPI.updateScene({
-        elements: [...excalidrawAPI.getSceneElements(), ...result.elements],
-      });
+      // Split: add primitives first (safe), then images after ensuring files are registered
+      const imageEls = result.elements.filter(el => el.type === 'image');
+      const primitiveEls = result.elements.filter(el => el.type !== 'image');
+      const existingEls = excalidrawAPI.getSceneElements();
+
+      // Add primitives first
+      if (primitiveEls.length > 0) {
+        excalidrawAPI.updateScene({
+          elements: [...existingEls, ...primitiveEls],
+        });
+      }
+
+      // Then add images (files should already be registered from handleAPI)
+      if (imageEls.length > 0) {
+        const current = excalidrawAPI.getSceneElements();
+        excalidrawAPI.updateScene({
+          elements: [...current, ...imageEls],
+        });
+      }
+
       const allElements = excalidrawAPI.getSceneElements();
       excalidrawAPI.scrollToContent(allElements, { fitToViewport: true, viewportZoomFactor: 0.9 });
     } catch (e) {

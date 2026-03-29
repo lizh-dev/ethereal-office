@@ -279,7 +279,6 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
     if (savedScene && typeof savedScene === 'object') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const scene = savedScene as any;
-      // Check appState.templateId or existing image elements with fur- prefix
       if (scene.appState?.templateId === 'isometric') return true;
       if (Array.isArray(scene.elements)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -288,6 +287,59 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
     }
     return false;
   }, [savedScene]);
+
+  // Whether this floor needs isometric image elements loaded after API init
+  const needsIsometricLoad = useMemo(() => {
+    if (!savedScene || typeof savedScene !== 'object') return false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const scene = savedScene as any;
+    if (scene.appState?.templateId === 'isometric') return true;
+    if (Array.isArray(scene.elements)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return scene.elements.some((el: any) => el.type === '__isometric_marker__');
+    }
+    return false;
+  }, [savedScene]);
+
+  const initialData = useMemo(() => {
+    if (savedScene && typeof savedScene === 'object') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const scene = savedScene as any;
+      if (Array.isArray(scene.elements)) {
+        // For isometric/new-icon template: primitives only, images added after file registration
+        if (needsIsometricLoad) {
+          const rawElements = generateIsometricDemoFloor();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const primitiveEls = rawElements.filter((el: any) => el.type !== 'image');
+          let converted: ReturnType<typeof convertToExcalidrawElements> = [];
+          try {
+            if (primitiveEls.length > 0) {
+              converted = convertToExcalidrawElements(primitiveEls as Parameters<typeof convertToExcalidrawElements>[0]);
+            }
+          } catch { /* ignore */ }
+          return {
+            elements: converted,
+            appState: { viewBackgroundColor: '#f0f9ff', gridSize: 20 },
+            scrollToContent: true,
+          };
+        }
+        // Normal saved scene — separate images for deferred load after file registration
+        const nonImageElements = scene.elements.filter((el: { type: string }) =>
+          el.type !== '__isometric_marker__' && el.type !== 'image'
+        );
+        const imageElements = scene.elements.filter((el: { type: string }) => el.type === 'image');
+        if (nonImageElements.length > 0 || imageElements.length > 0) {
+          return {
+            elements: nonImageElements,
+            appState: scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
+            scrollToContent: true,
+            _deferredImages: imageElements,
+          };
+        }
+      }
+    }
+    return getDefaultInitialData();
+  }, [savedScene, needsIsometricLoad]);
 
   const handleAPI = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -298,14 +350,28 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       const lib = getFurnitureLibrary();
       api.updateLibrary({ libraryItems: lib.libraryItems, merge: true, openLibraryMenu: false });
 
-      // Always register furniture image files so SpaceWizard can use them too
+      // Register furniture image files, then add any deferred image elements
       registerFurnitureFiles(api).then(() => {
-        if (isIsometric) {
-          // Force re-render for initial isometric template
-          const els = api.getSceneElements();
-          api.updateScene({ elements: [...els] });
-          setTimeout(() => initSeatsFromElements(api.getSceneElements()), 500);
+        const currentEls = api.getSceneElements();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let newImageEls: any[] = [];
+
+        if (needsIsometricLoad) {
+          // Add image elements from the isometric demo floor
+          const rawElements = generateIsometricDemoFloor();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          newImageEls = rawElements.filter((el: any) => el.type === 'image');
+        } else if (initialData && '_deferredImages' in initialData) {
+          // Re-add saved image elements
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          newImageEls = (initialData as any)._deferredImages || [];
         }
+
+        if (newImageEls.length > 0) {
+          api.updateScene({ elements: [...currentEls, ...newImageEls] });
+        }
+
+        setTimeout(() => initSeatsFromElements(api.getSceneElements()), 500);
       }).catch(console.error);
 
       // Initialize seats from rendered elements
@@ -316,53 +382,9 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         }
       }, 800);
     },
-    [setExcalidrawAPI, isIsometric],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [setExcalidrawAPI, isIsometric, needsIsometricLoad],
   );
-
-  const initialData = useMemo(() => {
-    // Load from DB scene if available
-    if (savedScene && typeof savedScene === 'object') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const scene = savedScene as any;
-      if (Array.isArray(scene.elements)) {
-        // Check for isometric template (via appState or legacy marker)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isIsoTemplate = scene.appState?.templateId === 'isometric' || scene.elements.some((el: any) => el.type === '__isometric_marker__');
-        if (isIsoTemplate && scene.elements.filter((el: { type: string }) => el.type !== '__isometric_marker__').length === 0) {
-          const rawElements = generateIsometricDemoFloor();
-          // Image elements pass through as-is; primitives need conversion
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const imageEls = rawElements.filter((el: any) => el.type === 'image');
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const primitiveEls = rawElements.filter((el: any) => el.type !== 'image');
-          let converted: ReturnType<typeof convertToExcalidrawElements> = [];
-          try {
-            if (primitiveEls.length > 0) {
-              converted = convertToExcalidrawElements(primitiveEls as Parameters<typeof convertToExcalidrawElements>[0]);
-            }
-          } catch (e) {
-            console.error('Failed to convert primitive elements:', e);
-          }
-          return {
-            elements: [...converted, ...imageEls],
-            appState: { viewBackgroundColor: '#f0f9ff', gridSize: 20 },
-            scrollToContent: true,
-          };
-        }
-        // Normal saved scene (from DB) — filter out any stale markers
-        const cleanElements = scene.elements.filter((el: { type: string }) => el.type !== '__isometric_marker__');
-        if (cleanElements.length > 0) {
-          return {
-            elements: cleanElements,
-            appState: scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
-            scrollToContent: true,
-          };
-        }
-      }
-    }
-    // No saved scene: use default template (all primitives, always safe)
-    return getDefaultInitialData();
-  }, [savedScene]);
 
   const setExcalidrawAppState = useOfficeStore((s) => s.setExcalidrawAppState);
 
