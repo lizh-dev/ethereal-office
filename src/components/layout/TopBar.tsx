@@ -129,22 +129,6 @@ export default function TopBar() {
             <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
           </>
         )}
-        <button onClick={() => setViewMode('chat')} className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center text-gray-400 relative transition-colors" title="チャット">
-          💬
-          {chatMessages.length > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border border-white">
-              {chatMessages.length > 9 ? '9+' : chatMessages.length}
-            </span>
-          )}
-        </button>
-        <button onClick={() => setViewMode('meetings')} className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center text-gray-400 relative transition-colors" title="メンバー">
-          🔔
-          {notifications.length > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border border-white">
-              {notifications.length}
-            </span>
-          )}
-        </button>
 
         {/* User avatar - click to change avatar */}
         <button

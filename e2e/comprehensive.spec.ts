@@ -133,8 +133,7 @@ test.describe('B. 入室ダイアログ', () => {
     expect(data.name).toBe('ストレージテスト');
   });
 
-  test('B-5: localStorageから名前復元', async ({ page }) => {
-    // First set localStorage
+  test('B-5: リロード時にlocalStorageから自動入室', async ({ page }) => {
     await page.goto(`${BASE}/f/${slug}`);
     await page.evaluate(() => {
       localStorage.setItem('ethereal-office-user', JSON.stringify({
@@ -144,9 +143,9 @@ test.describe('B. 入室ダイアログ', () => {
       }));
     });
     await page.reload();
-    await page.waitForSelector('input[placeholder*="名前"]');
-    const val = await page.inputValue('input[placeholder*="名前"]');
-    expect(val).toBe('復元テスト');
+    // Should auto-join without showing JoinDialog
+    await page.waitForSelector('[title*="WebSocket"]', { timeout: 15000 });
+    await expect(page.getByText('Online')).toBeVisible();
   });
 });
 

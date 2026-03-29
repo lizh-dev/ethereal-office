@@ -503,6 +503,17 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
               onMouseLeave={isEmpty ? (e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0)'; e.currentTarget.style.background = 'transparent'; }) : undefined}
               onClick={isEmpty ? (e => { e.stopPropagation(); const ws = (window as unknown as Record<string, any>).__wsSend; if (currentSeatId) { standUp(); ws?.stand?.(); } sitAt(seat.id); moveCurrentUser(seat.x, seat.y); ws?.sit?.(seat.id, seat.x, seat.y); }) : undefined}
               >
+                {/* Empty seat + icon */}
+                {isEmpty && zoom > 0.3 && (
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'rgba(99,102,241,0.3)', fontSize: sw * 0.6, fontWeight: 300,
+                    pointerEvents: 'none', lineHeight: 1,
+                  }}>
+                    +
+                  </div>
+                )}
                 {/* Seat label */}
                 {seat.label && zoom > 0.4 && (
                   <div style={{

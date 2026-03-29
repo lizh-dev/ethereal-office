@@ -41,6 +41,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   const [floorData, setFloorData] = useState<FloorData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [autoJoinChecked, setAutoJoinChecked] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
 
   // Verify edit permission with server
@@ -83,6 +84,22 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
         setLoading(false);
       });
   }, [slug]);
+
+  // Auto-join on reload if user info exists in localStorage
+  useEffect(() => {
+    if (autoJoinChecked || joined || loading || notFound) return;
+    setAutoJoinChecked(true);
+    try {
+      const saved = localStorage.getItem('ethereal-office-user');
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.name) {
+          handleJoin(data.name, data.avatarStyle || 'notionists', data.avatarSeed || 'default');
+        }
+      }
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, notFound, autoJoinChecked, joined]);
 
   const { send, connected } = useWebSocket(wsOptions);
   useIdleDetection();
