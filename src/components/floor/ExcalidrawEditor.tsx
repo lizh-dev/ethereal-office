@@ -350,37 +350,37 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       const lib = getFurnitureLibrary();
       api.updateLibrary({ libraryItems: lib.libraryItems, merge: true, openLibraryMenu: false });
 
-      // Register furniture image files, then add any deferred image elements
+      // Register furniture files first, then add image elements after a delay
+      // to ensure initialData primitives are rendered
       registerFurnitureFiles(api).then(() => {
-        const currentEls = api.getSceneElements();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let newImageEls: any[] = [];
-
-        if (needsIsometricLoad) {
-          // Add image elements from the isometric demo floor
-          const rawElements = generateIsometricDemoFloor();
+        // Wait for Excalidraw to finish rendering initialData primitives
+        setTimeout(() => {
+          const currentEls = api.getSceneElements();
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          newImageEls = rawElements.filter((el: any) => el.type === 'image');
-        } else if (initialData && '_deferredImages' in initialData) {
-          // Re-add saved image elements
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          newImageEls = (initialData as any)._deferredImages || [];
-        }
+          let newImageEls: any[] = [];
 
-        if (newImageEls.length > 0) {
-          api.updateScene({ elements: [...currentEls, ...newImageEls] });
-        }
+          if (needsIsometricLoad) {
+            const rawElements = generateIsometricDemoFloor();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            newImageEls = rawElements.filter((el: any) => el.type === 'image');
+          } else if (initialData && '_deferredImages' in initialData) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            newImageEls = (initialData as any)._deferredImages || [];
+          }
 
-        setTimeout(() => initSeatsFromElements(api.getSceneElements()), 500);
+          if (newImageEls.length > 0) {
+            // Deduplicate: don't add if image elements already exist
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const existingImageIds = new Set(currentEls.filter((e: any) => e.type === 'image').map((e: any) => e.fileId));
+            const toAdd = newImageEls.filter((e: { fileId?: string }) => !existingImageIds.has(e.fileId));
+            if (toAdd.length > 0) {
+              api.updateScene({ elements: [...currentEls, ...toAdd] });
+            }
+          }
+
+          setTimeout(() => initSeatsFromElements(api.getSceneElements()), 500);
+        }, 500); // wait for initialData to be applied
       }).catch(console.error);
-
-      // Initialize seats from rendered elements
-      setTimeout(() => {
-        const elements = api.getSceneElements();
-        if (elements && elements.length > 0) {
-          initSeatsFromElements(elements);
-        }
-      }, 800);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [setExcalidrawAPI, isIsometric, needsIsometricLoad],
