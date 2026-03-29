@@ -127,14 +127,20 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
       }
     }
 
+    const wsSend = (window as unknown as Record<string, any>).__wsSend;
     if (closestSeat) {
-      // Stand up from current seat first, then sit at new one
-      if (currentSeatId) standUp();
+      if (currentSeatId) {
+        standUp();
+        wsSend?.stand?.();
+      }
       sitAt(closestSeat.id);
       moveCurrentUser(closestSeat.x, closestSeat.y);
+      wsSend?.sit?.(closestSeat.id, closestSeat.x, closestSeat.y);
     } else {
-      // Free move (stand up if seated)
-      if (currentSeatId) standUp();
+      if (currentSeatId) {
+        standUp();
+        wsSend?.stand?.();
+      }
       moveCurrentUser(sceneX, sceneY);
     }
   }, [isViewMode, excalidrawAPI, moveCurrentUser, zones, sitAt, standUp, currentSeatId, currentUser.id]);
@@ -153,6 +159,8 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && currentSeatId && isViewMode) {
         standUp();
+        const wsSend = (window as unknown as Record<string, any>).__wsSend;
+        wsSend?.stand?.();
       }
     };
     window.addEventListener('keydown', handleKey);
@@ -301,7 +309,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
           {/* Stand up button */}
           {currentSeatId && (
-            <button onClick={(e) => { e.stopPropagation(); standUp(); }} style={{
+            <button onClick={(e) => { e.stopPropagation(); standUp(); const ws = (window as unknown as Record<string, any>).__wsSend; ws?.stand?.(); }} style={{
               position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)',
               zIndex: 50, pointerEvents: 'auto', padding: '6px 16px', borderRadius: 16,
               border: '1px solid #e5e5e5', background: 'rgba(255,255,255,0.95)', cursor: 'pointer',
@@ -468,7 +476,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)'; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0)'; e.currentTarget.style.background = 'transparent'; }}
-              onClick={e => { e.stopPropagation(); if (currentSeatId) standUp(); sitAt(seat.id); moveCurrentUser(seat.x, seat.y); }}
+              onClick={e => { e.stopPropagation(); const ws = (window as unknown as Record<string, any>).__wsSend; if (currentSeatId) { standUp(); ws?.stand?.(); } sitAt(seat.id); moveCurrentUser(seat.x, seat.y); ws?.sit?.(seat.id, seat.x, seat.y); }}
               />
             );
           })}

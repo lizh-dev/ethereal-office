@@ -52,6 +52,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     addChatMessage,
     updateRemoteUserStatus,
     setRemoteUsers,
+    addNotification,
   } = useOfficeStore();
 
   const optionsRef = useRef(options);
@@ -110,13 +111,20 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
 
         case 'user_joined':
           if (msg.user.id !== currentUserId) {
-            addRemoteUser(toUser(msg.user));
+            const user = toUser(msg.user);
+            addRemoteUser(user);
+            addNotification(`${user.name} が入室しました`);
           }
           break;
 
-        case 'user_left':
+        case 'user_left': {
+          const leftUser = useOfficeStore.getState().users.find(u => u.id === msg.userId);
           removeRemoteUser(msg.userId);
+          if (leftUser) {
+            addNotification(`${leftUser.name} が退室しました`);
+          }
           break;
+        }
 
         case 'user_moved':
           updateRemoteUserPosition(msg.userId, msg.x, msg.y);
@@ -161,6 +169,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     addChatMessage,
     updateRemoteUserStatus,
     setRemoteUsers,
+    addNotification,
   ]);
 
   useEffect(() => {

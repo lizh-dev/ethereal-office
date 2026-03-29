@@ -65,11 +65,16 @@ function UserRow({ user, action, zoneName, onClickUser }: {
 export default function RightPanel() {
   const {
     users, currentUser, zones, currentAction, currentSeatId,
-    excalidrawAPI, standUp, sitAt, addNotification,
+    excalidrawAPI, standUp, sitAt, addNotification, searchQuery,
   } = useOfficeStore();
 
   const allUsers = useMemo(() => [currentUser, ...users], [currentUser, users]);
-  const onlineUsers = useMemo(() => allUsers.filter(u => u.status !== 'offline'), [allUsers]);
+  const onlineUsers = useMemo(() => {
+    const online = allUsers.filter(u => u.status !== 'offline');
+    if (!searchQuery.trim()) return online;
+    const q = searchQuery.trim().toLowerCase();
+    return online.filter(u => u.name.toLowerCase().includes(q));
+  }, [allUsers, searchQuery]);
 
   // Build maps of userId -> zone name and userId -> action
   const userInfo = useMemo(() => {
@@ -166,6 +171,8 @@ export default function RightPanel() {
     const availableSeat = zone.seats.find(s => !s.occupied);
     if (availableSeat) {
       sitAt(availableSeat.id);
+      const wsSend = (window as unknown as Record<string, any>).__wsSend;
+      wsSend?.sit?.(availableSeat.id, availableSeat.x, availableSeat.y);
     } else {
       addNotification('空席がありません');
     }
@@ -207,7 +214,7 @@ export default function RightPanel() {
               <div className="flex items-center gap-1 mt-0.5">
                 <span className="text-[9px] text-indigo-500 font-medium">{currentZoneName}</span>
                 <button
-                  onClick={standUp}
+                  onClick={() => { standUp(); const ws = (window as unknown as Record<string, any>).__wsSend; ws?.stand?.(); }}
                   className="text-[8px] px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 transition-colors ml-auto"
                 >
                   立ち上がる

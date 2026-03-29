@@ -20,7 +20,7 @@ const STATUS_OPTIONS: { value: PresenceStatus; label: string; color: string }[] 
 ];
 
 export default function TopBar() {
-  const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus } = useOfficeStore();
+  const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, searchQuery, setSearchQuery } = useOfficeStore();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const statusMenuRef = useRef<HTMLDivElement>(null);
 
@@ -64,7 +64,9 @@ export default function TopBar() {
       <div className="flex-1 max-w-md mx-6">
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
-          <input type="text" placeholder="メンバー、部屋、タグを検索..."
+          <input type="text" placeholder="メンバーを検索..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
             className="w-full h-9 pl-9 pr-4 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-600 placeholder:text-gray-400 focus:outline-none focus:border-blue-300 focus:bg-white transition-colors"
           />
         </div>

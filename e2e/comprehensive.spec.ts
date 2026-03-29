@@ -454,6 +454,94 @@ test.describe('I. アバターセレクター', () => {
 });
 
 // =============================================================
+// I-2. 検索フィルタ
+// =============================================================
+test.describe('I-2. 検索フィルタ', () => {
+  let slug: string;
+
+  test.beforeAll(async ({ request }) => {
+    slug = await createFloor(request, '検索テストフロア');
+  });
+
+  test('I-2-1: 検索入力でメンバーリストがフィルタされる', async ({ browser }) => {
+    const ctxA = await browser.newContext();
+    const ctxB = await browser.newContext();
+    const pageA = await ctxA.newPage();
+    const pageB = await ctxB.newPage();
+
+    await joinFloor(pageA, slug, '検索ユーザー');
+    await joinFloor(pageB, slug, '別のメンバー');
+    await pageA.waitForTimeout(2000);
+
+    // 両方見える
+    await expect(pageA.getByText('別のメンバー').first()).toBeVisible({ timeout: 5000 });
+
+    // 検索して「別の」でフィルタ
+    await pageA.fill('input[placeholder*="メンバーを検索"]', '別の');
+    await pageA.waitForTimeout(500);
+
+    // 「別のメンバー」は見える
+    await expect(pageA.getByText('別のメンバー').first()).toBeVisible();
+
+    // 検索クリアで全員復活
+    await pageA.fill('input[placeholder*="メンバーを検索"]', '');
+    await pageA.waitForTimeout(500);
+    await expect(pageA.getByText('検索ユーザー').first()).toBeVisible();
+
+    await ctxA.close();
+    await ctxB.close();
+  });
+});
+
+// =============================================================
+// I-3. 通知
+// =============================================================
+test.describe('I-3. 通知', () => {
+  let slug: string;
+
+  test.beforeAll(async ({ request }) => {
+    slug = await createFloor(request, '通知テストフロア');
+  });
+
+  test('I-3-1: ユーザー入室時に通知が表示される', async ({ browser }) => {
+    const ctxA = await browser.newContext();
+    const ctxB = await browser.newContext();
+    const pageA = await ctxA.newPage();
+
+    await joinFloor(pageA, slug, '先に入室');
+
+    // 別ユーザーが入室
+    const pageB = await ctxB.newPage();
+    await joinFloor(pageB, slug, '後から入室');
+
+    // 先に入室したユーザーに通知が表示される
+    await expect(pageA.getByText('後から入室 が入室しました')).toBeVisible({ timeout: 5000 });
+
+    await ctxA.close();
+    await ctxB.close();
+  });
+
+  test('I-3-2: ユーザー退出時に通知が表示される', async ({ browser }) => {
+    const ctxA = await browser.newContext();
+    const ctxB = await browser.newContext();
+    const pageA = await ctxA.newPage();
+    const pageB = await ctxB.newPage();
+
+    await joinFloor(pageA, slug, '残る人');
+    await joinFloor(pageB, slug, '去る人');
+    await pageA.waitForTimeout(2000);
+
+    // 去る人のタブを閉じる
+    await ctxB.close();
+
+    // 残る人に退出通知が表示される
+    await expect(pageA.getByText('去る人 が退室しました')).toBeVisible({ timeout: 8000 });
+
+    await ctxA.close();
+  });
+});
+
+// =============================================================
 // J. WebSocket接続
 // =============================================================
 test.describe('J. WebSocket接続', () => {

@@ -41,6 +41,10 @@ interface OfficeState {
   addNotification: (text: string) => void;
   removeNotification: (id: string) => void;
 
+  // Search
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+
   // WebSocket
   wsConnected: boolean;
   setWsConnected: (connected: boolean) => void;
@@ -118,6 +122,10 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   excalidrawAPI: null,
   excalidrawAppState: null,
   setExcalidrawAppState: (state) => set({ excalidrawAppState: state }),
+
+  // Search
+  searchQuery: '',
+  setSearchQuery: (query) => set({ searchQuery: query }),
 
   // Seat/Zone system
   zones: [],
