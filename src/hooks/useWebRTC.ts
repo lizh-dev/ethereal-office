@@ -364,25 +364,25 @@ export function useWebRTC(): WebRTCState {
     disconnectAll();
   }, [disconnectAll]);
 
-  // Join voice — manually connect to peers in same zone
+  // Join voice — connect to all users on the floor
   const joinVoice = useCallback(async () => {
-    if (!currentSeatId || !currentUser.id || currentUser.id === 'pending') return;
-    const zonePeers = getZonePeers(currentUser.id, currentSeatId);
+    if (!currentUser.id || currentUser.id === 'pending') return;
+    const allUsers = useOfficeStore.getState().users;
     const stream = await acquireLocalStream();
     if (!stream) return;
 
     setIsVoiceActive(true);
 
-    for (const peerId of zonePeers) {
-      if (!peersRef.current.has(peerId) && currentUser.id < peerId) {
-        await connectToPeer(peerId);
+    for (const user of allUsers) {
+      if (user.id !== currentUser.id && !peersRef.current.has(user.id) && currentUser.id < user.id) {
+        await connectToPeer(user.id);
       }
     }
-  }, [currentSeatId, currentUser.id, acquireLocalStream, connectToPeer]);
+  }, [currentUser.id, acquireLocalStream, connectToPeer]);
 
-  // Whether voice can be joined (seated + others in same zone)
-  const canJoinVoice = !!currentSeatId && currentUser.id !== 'pending' &&
-    getZonePeers(currentUser.id, currentSeatId).length > 0;
+  // Whether voice can be joined (any other users on the floor)
+  const users = useOfficeStore((s) => s.users);
+  const canJoinVoice = currentUser.id !== 'pending' && users.length > 0;
 
   return {
     localStream: localStreamRef.current,
