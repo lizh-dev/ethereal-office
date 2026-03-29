@@ -224,11 +224,32 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
         <Editor viewMode={isViewMode} floorSlug={floorSlug} savedScene={savedScene} />
       </div>
 
+      {/* Click-to-move layer */}
+      {isViewMode && appState && (
+        <div
+          onMouseDown={(e) => {
+            // Only handle simple clicks (not drag/pan)
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const handleUp = (upE: MouseEvent) => {
+              const dx = Math.abs(upE.clientX - startX);
+              const dy = Math.abs(upE.clientY - startY);
+              // If moved less than 5px, treat as click
+              if (dx < 5 && dy < 5) {
+                handleCanvasClick(e as unknown as React.MouseEvent);
+              }
+              window.removeEventListener('mouseup', handleUp);
+            };
+            window.addEventListener('mouseup', handleUp);
+          }}
+          style={{ position: 'absolute', inset: 0, zIndex: 2, cursor: 'crosshair', pointerEvents: 'auto' }}
+        />
+      )}
+
       {/* Avatar overlay in view mode */}
       {isViewMode && appState && (
         <div
           style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}
-          onClick={handleCanvasClick}
         >
           {/* Proximity lines between nearby users */}
           <svg style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1 }}>
