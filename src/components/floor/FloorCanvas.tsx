@@ -391,6 +391,10 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
           {allUsers.map((user) => {
             const pos = sceneToScreen(user.position.x, user.position.y, appState);
+            // Skip users outside viewport
+            const vw = ref.current?.clientWidth || 2000;
+            const vh = ref.current?.clientHeight || 2000;
+            if (pos.x < -100 || pos.x > vw + 100 || pos.y < -100 || pos.y > vh + 100) return null;
             const isCurrent = user.id === currentUser.id;
             const zoom = appState.zoom?.value || 1;
             const size = Math.max(28, 36 * zoom);
@@ -729,11 +733,14 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
           {/* Zone name labels — removed: Excalidraw text elements already show zone names */}
 
-          {/* Seat indicators — small label badge below each chair */}
+          {/* Seat indicators — only render visible seats for performance */}
           {zones.flatMap(z => z.seats).map((seat: any, i) => {
             if (seat.occupied && seat.occupiedBy !== currentUser.id) return null;
             const zoom = appState.zoom?.value || 1;
             const pos = sceneToScreen(seat.x, seat.y, appState);
+            // Skip seats outside viewport
+            if (pos.x < -50 || pos.x > (ref.current?.clientWidth || 2000) + 50 ||
+                pos.y < -50 || pos.y > (ref.current?.clientHeight || 2000) + 50) return null;
             const isEmpty = !seat.occupied;
             const size = 18 * zoom;
             return (
