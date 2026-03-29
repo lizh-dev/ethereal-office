@@ -182,7 +182,7 @@ func VerifyOwner(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewDecoder(r.Body).Decode(&body)
 
-	if slug == "" || body.OwnerPassword == "" {
+	if slug == "" {
 		writeJSON(w, http.StatusOK, map[string]bool{"canEdit": false})
 		return
 	}
@@ -193,10 +193,16 @@ func VerifyOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// No owner password set on floor - check editToken
 	if floor.OwnerPassword == nil || *floor.OwnerPassword == "" {
-		// No owner password set - use legacy editToken
 		editToken := r.Header.Get("X-Edit-Token")
-		writeJSON(w, http.StatusOK, map[string]bool{"canEdit": floor.EditToken == editToken})
+		writeJSON(w, http.StatusOK, map[string]bool{"canEdit": editToken != "" && floor.EditToken == editToken})
+		return
+	}
+
+	// Owner password is set but none provided - deny
+	if body.OwnerPassword == "" {
+		writeJSON(w, http.StatusOK, map[string]bool{"canEdit": false})
 		return
 	}
 
