@@ -44,8 +44,11 @@ async function joinFloor(page: Page, slug: string, userName: string, asOwner = f
   // Dismiss setup guide if it appears
   await page.waitForTimeout(2000);
   const skipBtn = page.locator('text=あとで');
-  if (await skipBtn.isVisible()) await skipBtn.click();
-  await page.waitForTimeout(500);
+  if (await skipBtn.isVisible()) {
+    await skipBtn.click();
+    // Wait for edit hint tooltip to disappear (6s)
+    await page.waitForTimeout(7000);
+  }
   if (asOwner) {
     await page.waitForSelector('[title*="フロアを編集"]', { timeout: 5000 });
   }
@@ -574,9 +577,13 @@ test.describe('L. スタンプ/リアクション', () => {
 
   test('L-1: スタンプパレットが表示される', async ({ page }) => {
     await joinFloor(page, slug, 'スタンパー');
-    await expect(page.getByText('👋')).toBeVisible();
-    await expect(page.getByText('👍')).toBeVisible();
-    await expect(page.getByText('🎉')).toBeVisible();
+    // Click stamp toggle button (😀 emoji button)
+    const stampToggle = page.locator('button:has-text("😀")');
+    await stampToggle.click();
+    await page.waitForTimeout(500);
+    await expect(page.locator('button:has-text("👋")')).toBeVisible();
+    await expect(page.locator('button:has-text("👍")')).toBeVisible();
+    await expect(page.locator('button:has-text("🎉")')).toBeVisible();
   });
 
   test('L-2: スタンプ送信が他ユーザーに表示', async ({ browser }) => {
@@ -589,7 +596,9 @@ test.describe('L. スタンプ/リアクション', () => {
     await joinFloor(pageB, slug, '受信者');
     await pageA.waitForTimeout(2000);
 
-    // 送信者がスタンプクリック
+    // スタンプパレットを開いてからクリック
+    await pageA.click('button:has-text("😀")');
+    await pageA.waitForTimeout(500);
     await pageA.click('button:has-text("👏")');
 
     // 受信者のフロア上にリアクションが表示される
