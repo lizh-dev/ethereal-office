@@ -3,29 +3,43 @@ import { test, expect, Page, BrowserContext } from '@playwright/test';
 const BASE = 'http://localhost:3000';
 const API = 'http://localhost:8080';
 
-// Helper: create floor via API and return slug
+// Helper: create floor via API and return slug + editToken
 async function createFloor(request: any, name = 'テストフロア'): Promise<string> {
   const res = await request.post(`${API}/api/floors`, {
     data: { name, creatorName: 'テスター' },
   });
   const body = await res.json();
+  // Store editToken for later use
+  (createFloor as any)._tokens = (createFloor as any)._tokens || {};
+  (createFloor as any)._tokens[body.slug] = body.editToken;
   return body.slug;
 }
 
-// Helper: join a floor with given name. asOwner=true sets this browser as floor creator.
+function getEditToken(slug: string): string {
+  return (createFloor as any)._tokens?.[slug] || '';
+}
+
+// Helper: join a floor with given name. asOwner=true sets the real editToken.
 async function joinFloor(page: Page, slug: string, userName: string, asOwner = false) {
-  await page.goto(`${BASE}/f/${slug}`);
   if (asOwner) {
-    await page.evaluate((s) => {
-      const owners = JSON.parse(localStorage.getItem('ethereal-floor-owners') || '[]');
-      if (!owners.includes(s)) { owners.push(s); localStorage.setItem('ethereal-floor-owners', JSON.stringify(owners)); }
-    }, slug);
+    const token = getEditToken(slug);
+    await page.goto(`${BASE}/f/${slug}`);
+    await page.evaluate(({ s, t }) => {
+      const tokens = JSON.parse(localStorage.getItem('ethereal-edit-tokens') || '{}');
+      tokens[s] = t;
+      localStorage.setItem('ethereal-edit-tokens', JSON.stringify(tokens));
+    }, { s: slug, t: token });
     await page.reload();
+  } else {
+    await page.goto(`${BASE}/f/${slug}`);
   }
   await page.waitForSelector('input[placeholder*="名前"]', { timeout: 10000 });
   await page.fill('input[placeholder*="名前"]', userName);
   await page.click('button:has-text("入室する")');
   await page.waitForSelector('[title*="WebSocket"]', { timeout: 15000 });
+  if (asOwner) {
+    await page.waitForSelector('[title="フロアを編集"]', { timeout: 5000 });
+  }
 }
 
 // =============================================================

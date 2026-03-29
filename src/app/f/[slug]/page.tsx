@@ -41,12 +41,28 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   const [notFound, setNotFound] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
 
-  // Check if current browser is the floor creator
+  // Verify edit permission with server
   useEffect(() => {
-    const owners = JSON.parse(localStorage.getItem('ethereal-floor-owners') || '[]');
-    const owns = owners.includes(slug);
-    setIsOwner(owns);
-    useOfficeStore.getState().setIsFloorOwner(owns);
+    const tokens = JSON.parse(localStorage.getItem('ethereal-edit-tokens') || '{}');
+    const token = tokens[slug];
+    if (!token) {
+      setIsOwner(false);
+      useOfficeStore.getState().setIsFloorOwner(false);
+      return;
+    }
+    fetch(`/api/floors/${slug}/verify-token`, {
+      method: 'POST',
+      headers: { 'X-Edit-Token': token },
+    })
+      .then(res => res.json())
+      .then(data => {
+        setIsOwner(data.canEdit);
+        useOfficeStore.getState().setIsFloorOwner(data.canEdit);
+      })
+      .catch(() => {
+        setIsOwner(false);
+        useOfficeStore.getState().setIsFloorOwner(false);
+      });
   }, [slug]);
 
   // Fetch floor data

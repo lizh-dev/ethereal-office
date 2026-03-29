@@ -49,9 +49,11 @@ func CreateFloor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	editToken := generateSlug() + generateSlug() // 16 hex chars
 	floor := model.Floor{
-		Slug: generateSlug(),
-		Name: req.Name,
+		Slug:      generateSlug(),
+		Name:      req.Name,
+		EditToken: editToken,
 	}
 	if req.CreatorName != "" {
 		floor.CreatorName = &req.CreatorName
@@ -62,7 +64,15 @@ func CreateFloor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, floor)
+	// Return editToken only on creation (json:"-" hides it in other responses)
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"id":          floor.ID,
+		"slug":        floor.Slug,
+		"name":        floor.Name,
+		"creatorName": floor.CreatorName,
+		"editToken":   editToken,
+		"createdAt":   floor.CreatedAt,
+	})
 }
 
 // GET /api/floors/{slug}
@@ -90,9 +100,21 @@ func UpdateFloor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Verify edit token from header
+	editToken := r.Header.Get("X-Edit-Token")
+	if editToken == "" {
+		writeError(w, http.StatusForbidden, "edit token required")
+		return
+	}
+
 	var floor model.Floor
 	if err := db.DB.Where("slug = ?", slug).First(&floor).Error; err != nil {
 		writeError(w, http.StatusNotFound, "floor not found")
+		return
+	}
+
+	if floor.EditToken != editToken {
+		writeError(w, http.StatusForbidden, "invalid edit token")
 		return
 	}
 
@@ -123,6 +145,24 @@ func UpdateFloor(w http.ResponseWriter, r *http.Request) {
 	// Reload
 	db.DB.Where("slug = ?", slug).First(&floor)
 	writeJSON(w, http.StatusOK, floor)
+}
+
+// POST /api/floors/{slug}/verify-token
+func VerifyEditToken(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	editToken := r.Header.Get("X-Edit-Token")
+	if slug == "" || editToken == "" {
+		writeJSON(w, http.StatusOK, map[string]bool{"canEdit": false})
+		return
+	}
+
+	var floor model.Floor
+	if err := db.DB.Where("slug = ?", slug).First(&floor).Error; err != nil {
+		writeJSON(w, http.StatusOK, map[string]bool{"canEdit": false})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]bool{"canEdit": floor.EditToken == editToken})
 }
 
 // DELETE /api/floors/{slug}

@@ -12,6 +12,7 @@ type Floor struct {
 	Slug            string         `gorm:"uniqueIndex;not null" json:"slug"`
 	Name            string         `gorm:"not null" json:"name"`
 	CreatorName     *string        `json:"creatorName,omitempty"`
+	EditToken       string         `gorm:"not null" json:"-"` // never exposed in GET responses
 	ExcalidrawScene datatypes.JSON `gorm:"type:jsonb" json:"excalidrawScene,omitempty"`
 	Zones           datatypes.JSON `gorm:"type:jsonb" json:"zones,omitempty"`
 	Settings        datatypes.JSON `gorm:"type:jsonb;default:'{}'" json:"settings,omitempty"`

@@ -73,9 +73,11 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
         const appState = excalidrawAPI.getAppState();
         const { collaborators, ...cleanAppState } = appState;
         const scene = { elements, appState: cleanAppState };
+        const tokens = JSON.parse(localStorage.getItem('ethereal-edit-tokens') || '{}');
+        const editToken = tokens[floorSlug] || '';
         await fetch(`/api/floors/${floorSlug}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Edit-Token': editToken },
           body: JSON.stringify({ excalidrawScene: scene }),
         });
       } catch { /* silent */ }

@@ -171,8 +171,6 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
   const sendMessage = useOfficeStore((s) => s.sendMessage);
   const [chatInput, setChatInput] = useState('');
   const [hoveredUser, setHoveredUser] = useState<{ user: User; screenX: number; screenY: number } | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isCameraOn, setIsCameraOn] = useState(true);
 
   const handleSend = () => {
     if (!chatInput.trim()) return;
@@ -284,32 +282,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                   border: '2px solid #fff',
                 }} />
                 {/* Mute indicator */}
-                {/* Media state indicators for other users */}
-                {!isCurrent && (user.isMuted || user.isCameraOn === false) && (
-                  <div style={{
-                    position: 'absolute', top: -6, left: -6,
-                    display: 'flex', gap: 1, zIndex: 25,
-                  }}>
-                    {user.isMuted && (
-                      <div title={`${user.name} はミュート中`} style={{
-                        fontSize: 9, background: '#FEE2E2', borderRadius: '50%',
-                        width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.15)', border: '1px solid #FECACA',
-                      }}>
-                        🔇
-                      </div>
-                    )}
-                    {user.isCameraOn === false && (
-                      <div title={`${user.name} はカメラOFF`} style={{
-                        fontSize: 9, background: '#FEE2E2', borderRadius: '50%',
-                        width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.15)', border: '1px solid #FECACA',
-                      }}>
-                        🚫
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Reserved for future media indicators */}
                 {/* Name */}
                 {(zoom > 0.5 || isMatch) && (
                   <div style={{
@@ -434,12 +407,6 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                     📍 {seatInfo.zoneName}
                   </div>
                 )}
-                {(hoveredUser.user.isMuted || hoveredUser.user.isCameraOn === false) && (
-                  <div style={{ fontSize: 10, color: '#DC2626', marginTop: 2, display: 'flex', gap: 6 }}>
-                    {hoveredUser.user.isMuted && <span>🔇 ミュート中</span>}
-                    {hoveredUser.user.isCameraOn === false && <span>🚫 カメラOFF</span>}
-                  </div>
-                )}
               </div>
             );
           })()}
@@ -465,53 +432,15 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
               </span>
             </div>
 
-            {/* Mute toggle */}
-            <button
-              onClick={() => { const next = !isMuted; setIsMuted(next); const ws = (window as unknown as Record<string, any>).__wsSend; ws?.media?.(next, isCameraOn); }}
-              title={isMuted ? 'クリックでミュート解除（他のメンバーに状態が共有されます）' : 'クリックでミュート（他のメンバーに状態が共有されます）'}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                padding: '5px 10px', borderRadius: 8,
-                border: isMuted ? '1px solid #FECACA' : '1px solid transparent',
-                background: isMuted ? '#FEE2E2' : '#F3F4F6',
-                color: isMuted ? '#DC2626' : '#374151',
-                fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-            >
-              {isMuted ? '🔇' : '🎤'} {isMuted ? 'ミュート中' : 'マイク'}
-            </button>
-
-            {/* Camera toggle */}
-            <button
-              onClick={() => { const next = !isCameraOn; setIsCameraOn(next); const ws = (window as unknown as Record<string, any>).__wsSend; ws?.media?.(isMuted, next); }}
-              title={isCameraOn ? 'クリックでカメラOFF（他のメンバーに状態が共有されます）' : 'クリックでカメラON（他のメンバーに状態が共有されます）'}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                padding: '5px 10px', borderRadius: 8,
-                border: !isCameraOn ? '1px solid #FECACA' : '1px solid transparent',
-                background: !isCameraOn ? '#FEE2E2' : '#F3F4F6',
-                color: !isCameraOn ? '#DC2626' : '#374151',
-                fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-            >
-              {isCameraOn ? '📹' : '🚫'} {isCameraOn ? 'カメラ' : 'カメラOFF'}
-            </button>
-
-            {/* Screen share - coming soon */}
-            <button
-              title="画面共有は今後のアップデートで対応予定です"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                padding: '5px 10px', borderRadius: 8, border: 'none',
-                background: '#F3F4F6', color: '#9CA3AF',
-                fontSize: 12, fontWeight: 500, cursor: 'not-allowed',
-                opacity: 0.6,
-              }}
-            >
-              🖥️ 画面共有 <span style={{ fontSize: 9, background: '#E5E7EB', padding: '1px 4px', borderRadius: 4 }}>準備中</span>
-            </button>
+            {/* Seat info */}
+            {currentSeatId && (() => {
+              const seatLabel = zones.flatMap(z => z.seats).find(s => s.id === currentSeatId)?.label;
+              return seatLabel ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 8px', fontSize: 11, color: '#6366F1', fontWeight: 500 }}>
+                  📍 {seatLabel}
+                </div>
+              ) : null;
+            })()}
           </div>
 
           {/* Seat indicators with labels */}
