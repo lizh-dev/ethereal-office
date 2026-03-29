@@ -158,6 +158,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
   // Keyboard: Esc = stand up, Space = pan mode
   const [isPanning, setIsPanning] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && currentSeatId && isViewMode) {
@@ -348,6 +349,45 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             }}
             title="全体表示"
           >⊞</button>
+          <button
+            onClick={() => setShowHelp(v => !v)}
+            style={{
+              width: 36, height: 36, borderRadius: 10, border: '1px solid #e5e7eb',
+              background: showHelp ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.95)', cursor: 'pointer',
+              fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.08)', color: showHelp ? '#4F46E5' : '#374151',
+            }}
+            title="操作ヘルプ"
+          >?</button>
+        </div>
+      )}
+
+      {/* Help overlay */}
+      {showHelp && isViewMode && (
+        <div style={{
+          position: 'absolute', bottom: 56, right: 12, zIndex: 60,
+          background: 'rgba(255,255,255,0.97)', borderRadius: 14,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.12)', border: '1px solid #e5e7eb',
+          padding: '14px 18px', width: 240, pointerEvents: 'auto',
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            操作ガイド
+            <span onClick={() => setShowHelp(false)} style={{ cursor: 'pointer', color: '#9ca3af', fontSize: 16 }}>×</span>
+          </div>
+          {[
+            ['🖱 クリック', 'その場所へ移動'],
+            ['🪑 席をクリック', '座席に着席'],
+            ['⌨ Esc', '席から離れる'],
+            ['🔍 Ctrl+ホイール', '拡大/縮小'],
+            ['✋ Space+ドラッグ', 'フロアを移動'],
+            ['💬 下部入力欄', 'チャット送信'],
+            ['😀 下部スタンプ', 'リアクション'],
+          ].map(([key, desc]) => (
+            <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid #f3f4f6' }}>
+              <span style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>{key}</span>
+              <span style={{ fontSize: 11, color: '#6b7280' }}>{desc}</span>
+            </div>
+          ))}
         </div>
       )}
 
