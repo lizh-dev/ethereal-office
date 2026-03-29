@@ -2,6 +2,7 @@
 
 import { useOfficeStore } from '@/store/officeStore';
 import { useWsSend } from '@/contexts/WebSocketContext';
+import { initSeatsFromElements } from '@/components/floor/ExcalidrawEditor';
 import { useRef, useState } from 'react';
 
 const ISLAND_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -99,7 +100,11 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
 
     const elements = excalidrawAPI.getSceneElements();
 
-    // 1. Save to DB
+    // 1. Re-detect seats from current element positions before saving
+    initSeatsFromElements(elements);
+    const updatedZones = useOfficeStore.getState().zones;
+
+    // 2. Save to DB
     if (floorSlug) {
       try {
         const appState = excalidrawAPI.getAppState();
@@ -111,7 +116,7 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
         await fetch(`/api/floors/${floorSlug}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', 'X-Edit-Token': editToken, 'X-Owner-Password': ownerPw },
-          body: JSON.stringify({ excalidrawScene: scene, zones: zones }),
+          body: JSON.stringify({ excalidrawScene: scene, zones: updatedZones }),
         });
       } catch { /* silent */ }
     }
@@ -126,7 +131,7 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
     // 4. Re-detect seats after view mode renders (with delay for Excalidraw to update)
     setTimeout(() => {
       if (elements && elements.length > 0) {
-        redetectSeats(elements);
+        initSeatsFromElements(elements);
       }
     }, 500);
   };
