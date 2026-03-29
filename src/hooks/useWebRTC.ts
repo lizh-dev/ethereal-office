@@ -22,6 +22,8 @@ export interface WebRTCState {
   activeSpeakers: Set<string>;
   toggleMute: () => void;
   leaveVoice: () => void;
+  joinVoice: () => void;
+  canJoinVoice: boolean;
 }
 
 /**
@@ -336,57 +338,6 @@ export function useWebRTC(): WebRTCState {
     return unsubscribe;
   }, [acquireLocalStream, createPeerConnection, wsSend, removePeer]);
 
-  // Auto-connect is disabled — voice is opt-in only via VoiceControls
-  // Users must explicitly click a "通話開始" button to join voice
-  // This prevents unwanted mic access and cross-zone connections
-
-  // Also re-evaluate when remote users change seats (zones update)
-  const zones = useOfficeStore((s) => s.zones);
-  const prevZonePeersRef = useRef<string[]>([]);
-
-  useEffect(() => {
-    if (!currentSeatId || !currentUser.id || currentUser.id === 'pending') return;
-
-    const zonePeers = getZonePeers(currentUser.id, currentSeatId);
-    const prev = prevZonePeersRef.current;
-
-    // Check if the peer list actually changed
-    const same = prev.length === zonePeers.length && prev.every((id) => zonePeers.includes(id));
-    if (same) return;
-    prevZonePeersRef.current = zonePeers;
-
-    if (zonePeers.length === 0) {
-      if (peersRef.current.size > 0) {
-        disconnectAll();
-      }
-      return;
-    }
-
-    const updateConnections = async () => {
-      const stream = await acquireLocalStream();
-      if (!stream) return;
-
-      setIsVoiceActive(true);
-
-      // Connect to new peers (lower ID initiates)
-      for (const peerId of zonePeers) {
-        if (!peersRef.current.has(peerId) && currentUser.id < peerId) {
-          await connectToPeer(peerId);
-        }
-      }
-
-      // Disconnect peers who left the zone
-      for (const [id] of peersRef.current) {
-        if (!zonePeers.includes(id)) {
-          removePeer(id);
-        }
-      }
-    };
-
-    updateConnections();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zones]);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -403,7 +354,6 @@ export function useWebRTC(): WebRTCState {
           track.enabled = !next;
         }
       }
-      // Broadcast media state via WS
       wsSend.media(next, false);
       return next;
     });
@@ -414,6 +364,26 @@ export function useWebRTC(): WebRTCState {
     disconnectAll();
   }, [disconnectAll]);
 
+  // Join voice — manually connect to peers in same zone
+  const joinVoice = useCallback(async () => {
+    if (!currentSeatId || !currentUser.id || currentUser.id === 'pending') return;
+    const zonePeers = getZonePeers(currentUser.id, currentSeatId);
+    const stream = await acquireLocalStream();
+    if (!stream) return;
+
+    setIsVoiceActive(true);
+
+    for (const peerId of zonePeers) {
+      if (!peersRef.current.has(peerId) && currentUser.id < peerId) {
+        await connectToPeer(peerId);
+      }
+    }
+  }, [currentSeatId, currentUser.id, acquireLocalStream, connectToPeer]);
+
+  // Whether voice can be joined (seated + others in same zone)
+  const canJoinVoice = !!currentSeatId && currentUser.id !== 'pending' &&
+    getZonePeers(currentUser.id, currentSeatId).length > 0;
+
   return {
     localStream: localStreamRef.current,
     remoteStreams,
@@ -422,5 +392,7 @@ export function useWebRTC(): WebRTCState {
     activeSpeakers,
     toggleMute,
     leaveVoice,
+    joinVoice,
+    canJoinVoice,
   };
 }

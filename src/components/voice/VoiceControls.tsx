@@ -9,7 +9,7 @@ interface VoiceControlsProps {
 }
 
 export default function VoiceControls({ webrtc }: VoiceControlsProps) {
-  const { isVoiceActive, isMuted, toggleMute, leaveVoice, remoteStreams, activeSpeakers } = webrtc;
+  const { isVoiceActive, isMuted, toggleMute, leaveVoice, joinVoice, canJoinVoice, remoteStreams, activeSpeakers } = webrtc;
   const users = useOfficeStore((s) => s.users);
   const currentUser = useOfficeStore((s) => s.currentUser);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
@@ -46,7 +46,25 @@ export default function VoiceControls({ webrtc }: VoiceControlsProps) {
     };
   }, []);
 
-  if (!isVoiceActive) return null;
+  if (!isVoiceActive) {
+    // Show "join voice" button if there are peers in the same zone
+    if (!canJoinVoice) return null;
+    return (
+      <div className="fixed bottom-20 md:bottom-4 left-1/2 -translate-x-1/2 z-50">
+        <button
+          onClick={joinVoice}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl shadow-lg border text-sm font-medium text-white transition-all hover:scale-105"
+          style={{ background: 'rgba(34, 197, 94, 0.9)', borderColor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)' }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="currentColor" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          🎙 通話に参加
+        </button>
+      </div>
+    );
+  }
 
   const peerCount = remoteStreams.size;
 
