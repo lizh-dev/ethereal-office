@@ -2,10 +2,10 @@
 
 import { Excalidraw, convertToExcalidrawElements } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getFurnitureLibrary } from './furnitureLibrary';
-import { registerFurnitureFiles, generateIsometricDemoFloor } from '@/lib/furnitureAssets';
+import { preloadFurnitureFiles, registerFurnitureFiles, generateIsometricDemoFloor } from '@/lib/furnitureAssets';
 
 const DEBOUNCE_MS = 2000;
 
@@ -275,40 +275,44 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
   const floorSlugRef = useRef(floorSlug);
   floorSlugRef.current = floorSlug;
 
-  const isIsometric = useMemo(() => {
-    if (savedScene && typeof savedScene === 'object') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const scene = savedScene as any;
-      if (scene.appState?.templateId === 'isometric') return true;
-      if (Array.isArray(scene.elements)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return scene.elements.some((el: any) => el.type === 'image' && el.fileId?.startsWith('fur-'));
-      }
-    }
-    return false;
-  }, [savedScene]);
+  // Pre-load furniture image files as data URLs (for Excalidraw's files parameter)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [furnitureFiles, setFurnitureFiles] = useState<Record<string, any> | null>(null);
 
-  // Whether this floor needs isometric image elements loaded after API init
-  const needsIsometricLoad = useMemo(() => {
+  useEffect(() => {
+    preloadFurnitureFiles().then(setFurnitureFiles).catch(console.error);
+  }, []);
+
+  // Detect if this floor uses image-based furniture
+  const hasImageFurniture = useMemo(() => {
     if (!savedScene || typeof savedScene !== 'object') return false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const scene = savedScene as any;
     if (scene.appState?.templateId === 'isometric') return true;
     if (Array.isArray(scene.elements)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return scene.elements.some((el: any) => el.type === '__isometric_marker__');
+      return scene.elements.some(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (el: any) => el.type === '__isometric_marker__' || (el.type === 'image' && el.fileId?.startsWith('fur-'))
+      );
     }
     return false;
   }, [savedScene]);
 
+  // Build initialData — include image elements AND files together
   const initialData = useMemo(() => {
     if (savedScene && typeof savedScene === 'object') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const scene = savedScene as any;
       if (Array.isArray(scene.elements)) {
-        // For isometric/new-icon template: primitives only, images added after file registration
-        if (needsIsometricLoad) {
+        // Isometric template (new floor or legacy marker)
+        const isIsoTemplate = scene.appState?.templateId === 'isometric' ||
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          scene.elements.some((el: any) => el.type === '__isometric_marker__');
+
+        if (isIsoTemplate) {
           const rawElements = generateIsometricDemoFloor();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const imageEls = rawElements.filter((el: any) => el.type === 'image');
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const primitiveEls = rawElements.filter((el: any) => el.type !== 'image');
           let converted: ReturnType<typeof convertToExcalidrawElements> = [];
@@ -318,28 +322,27 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
             }
           } catch { /* ignore */ }
           return {
-            elements: converted,
+            elements: [...converted, ...imageEls],
             appState: { viewBackgroundColor: '#f0f9ff', gridSize: 20 },
             scrollToContent: true,
+            files: furnitureFiles || {},
           };
         }
-        // Normal saved scene — separate images for deferred load after file registration
-        const nonImageElements = scene.elements.filter((el: { type: string }) =>
-          el.type !== '__isometric_marker__' && el.type !== 'image'
-        );
-        const imageElements = scene.elements.filter((el: { type: string }) => el.type === 'image');
-        if (nonImageElements.length > 0 || imageElements.length > 0) {
+
+        // Normal saved scene (may include image elements)
+        const cleanElements = scene.elements.filter((el: { type: string }) => el.type !== '__isometric_marker__');
+        if (cleanElements.length > 0) {
           return {
-            elements: nonImageElements,
+            elements: cleanElements,
             appState: scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
             scrollToContent: true,
-            _deferredImages: imageElements,
+            files: furnitureFiles || {},
           };
         }
       }
     }
     return getDefaultInitialData();
-  }, [savedScene, needsIsometricLoad]);
+  }, [savedScene, furnitureFiles]);
 
   const handleAPI = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -350,41 +353,28 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       const lib = getFurnitureLibrary();
       api.updateLibrary({ libraryItems: lib.libraryItems, merge: true, openLibraryMenu: false });
 
-      // Register furniture files first, then add image elements after a delay
-      // to ensure initialData primitives are rendered
-      registerFurnitureFiles(api).then(() => {
-        // Wait for Excalidraw to finish rendering initialData primitives
-        setTimeout(() => {
-          const currentEls = api.getSceneElements();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let newImageEls: any[] = [];
+      // Also register files via API (for SpaceWizard dynamic adds)
+      if (furnitureFiles) {
+        api.addFiles(Object.values(furnitureFiles));
+      }
 
-          if (needsIsometricLoad) {
-            const rawElements = generateIsometricDemoFloor();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            newImageEls = rawElements.filter((el: any) => el.type === 'image');
-          } else if (initialData && '_deferredImages' in initialData) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            newImageEls = (initialData as any)._deferredImages || [];
-          }
-
-          if (newImageEls.length > 0) {
-            // Deduplicate: don't add if image elements already exist
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const existingImageIds = new Set(currentEls.filter((e: any) => e.type === 'image').map((e: any) => e.fileId));
-            const toAdd = newImageEls.filter((e: { fileId?: string }) => !existingImageIds.has(e.fileId));
-            if (toAdd.length > 0) {
-              api.updateScene({ elements: [...currentEls, ...toAdd] });
-            }
-          }
-
-          setTimeout(() => initSeatsFromElements(api.getSceneElements()), 500);
-        }, 500); // wait for initialData to be applied
-      }).catch(console.error);
+      // Initialize seats
+      setTimeout(() => {
+        const elements = api.getSceneElements();
+        if (elements && elements.length > 0) {
+          initSeatsFromElements(elements);
+        }
+      }, 800);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [setExcalidrawAPI, isIsometric, needsIsometricLoad],
+    [setExcalidrawAPI, furnitureFiles],
   );
+
+  // Don't render Excalidraw until furniture files are loaded (if needed)
+  if (hasImageFurniture && !furnitureFiles) {
+    return <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span className="text-gray-400 text-sm">読み込み中...</span>
+    </div>;
+  }
 
   const setExcalidrawAppState = useOfficeStore((s) => s.setExcalidrawAppState);
 
@@ -427,7 +417,7 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       `}</style>
       <Excalidraw
         excalidrawAPI={handleAPI}
-        initialData={initialData?.elements ? initialData : { elements: [], appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 }, scrollToContent: true }}
+        initialData={initialData}
         gridModeEnabled={true}
         theme="light"
         langCode="ja-JP"

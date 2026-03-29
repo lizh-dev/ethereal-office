@@ -41,18 +41,35 @@ async function fetchAsDataURL(src: string): Promise<string> {
   });
 }
 
+// Pre-load all furniture images as data URLs
+// Returns a map of { fileId: { id, dataURL, mimeType, created } }
+type FileEntry = { id: string; dataURL: string; mimeType: string; created: number };
+let _cachedFiles: Record<string, FileEntry> | null = null;
+let _loadingPromise: Promise<Record<string, FileEntry>> | null = null;
+
+export async function preloadFurnitureFiles(): Promise<Record<string, FileEntry>> {
+  if (_cachedFiles) return _cachedFiles;
+  if (_loadingPromise) return _loadingPromise;
+
+  _loadingPromise = (async () => {
+    const entries = await Promise.all(
+      FURNITURE_ASSETS.map(async (asset) => {
+        const dataURL = await fetchAsDataURL(asset.src);
+        return [asset.id, { id: asset.id, dataURL, mimeType: 'image/png' as const, created: Date.now() }] as const;
+      })
+    );
+    _cachedFiles = Object.fromEntries(entries);
+    return _cachedFiles;
+  })();
+
+  return _loadingPromise as Promise<NonNullable<typeof _cachedFiles>>;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function registerFurnitureFiles(api: any) {
-  const files = await Promise.all(
-    FURNITURE_ASSETS.map(async (asset) => ({
-      id: asset.id,
-      dataURL: await fetchAsDataURL(asset.src),
-      mimeType: 'image/png',
-      created: Date.now(),
-    }))
-  );
-  api.addFiles(files);
-  return files;
+  const filesMap = await preloadFurnitureFiles();
+  api.addFiles(Object.values(filesMap));
+  return filesMap;
 }
 
 function eid() {
