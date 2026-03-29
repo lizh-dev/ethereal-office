@@ -330,14 +330,10 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         .excalidraw-view-mode .excalidraw .App-toolbar-container,
         .excalidraw-view-mode .excalidraw .HintViewer,
         .excalidraw-view-mode .excalidraw .context-menu,
-        .excalidraw-view-mode .excalidraw [class*="context-menu"] {
+        .excalidraw-view-mode .excalidraw [class*="context-menu"],
+        .excalidraw-view-mode .excalidraw .popover,
+        .excalidraw-view-mode .excalidraw [class*="popover"] {
           display: none !important;
-        }
-        .excalidraw-view-mode .excalidraw {
-          pointer-events: none !important;
-        }
-        .excalidraw-view-mode .excalidraw canvas {
-          pointer-events: auto !important;
         }
       `}</style>
       <Excalidraw
