@@ -11,6 +11,8 @@ interface SpaceConfig {
   cols: number;
   spacing: number;
   direction: 'horizontal' | 'vertical';
+  labelPrefix: string;
+  labelStart: number;
 }
 
 const SPACE_TYPES = [
@@ -149,6 +151,7 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
   const excalidrawAPI = useOfficeStore((s) => s.excalidrawAPI);
   const [config, setConfig] = useState<SpaceConfig>({
     type: 'desk-area', name: 'オープンスペース', rows: 3, cols: 4, spacing: 20, direction: 'horizontal',
+    labelPrefix: 'A', labelStart: 1,
   });
 
   const handleGenerate = () => {
@@ -173,14 +176,20 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
     const chairElements = rawElements.filter(el => el.type === 'ellipse' && el.backgroundColor === '#9ca3af');
     const zoneId = gid();
     const zoneType = config.type === 'desk-area' ? 'desk' : config.type === 'meeting' ? 'meeting' : config.type === 'cafe' ? 'cafe' : 'lounge';
-    const newSeats = chairElements.map((c, i) => ({
-      id: `seat-${zoneId}-${i}`,
-      roomId: zoneId,
-      x: (c.x as number) + ((c.width as number) || 22) / 2,
-      y: (c.y as number) + ((c.height as number) || 22) / 2,
-      occupied: false,
-      occupiedBy: undefined as string | undefined,
-    }));
+    const prefix = config.labelPrefix.trim() || 'A';
+    const start = config.labelStart;
+    const newSeats = chairElements.map((c, i) => {
+      const label = `${prefix}-${start + i}`;
+      return {
+        id: label,
+        roomId: zoneId,
+        x: (c.x as number) + ((c.width as number) || 22) / 2,
+        y: (c.y as number) + ((c.height as number) || 22) / 2,
+        label,
+        occupied: false,
+        occupiedBy: undefined as string | undefined,
+      };
+    });
     const newZone = {
       id: zoneId,
       type: zoneType as 'desk' | 'meeting' | 'lounge' | 'cafe' | 'open',
@@ -270,6 +279,34 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           )}
+
+          {/* Label rule */}
+          <div>
+            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+              {config.type === 'meeting' ? '4' : config.type === 'lounge' ? '3' : '4'}. 座席ラベル
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] text-gray-500 block mb-1">プレフィックス</label>
+                <input
+                  type="text"
+                  value={config.labelPrefix}
+                  onChange={e => setConfig(c => ({ ...c, labelPrefix: e.target.value }))}
+                  placeholder="例: A, 営業, MTG"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-300"
+                />
+              </div>
+              <NumInput label="開始番号" value={config.labelStart} min={1} max={999} onChange={v => setConfig(c => ({ ...c, labelStart: v }))} />
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {Array.from({ length: Math.min(seatCount, 8) }, (_, i) => (
+                <span key={i} className="text-[9px] px-1.5 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-indigo-700 font-mono">
+                  {config.labelPrefix.trim() || 'A'}-{config.labelStart + i}
+                </span>
+              ))}
+              {seatCount > 8 && <span className="text-[9px] text-gray-400">... +{seatCount - 8}</span>}
+            </div>
+          </div>
 
           {/* Summary */}
           <div className="bg-gray-50 rounded-xl p-3 flex items-center justify-between">

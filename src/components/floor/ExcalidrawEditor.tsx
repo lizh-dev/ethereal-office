@@ -142,6 +142,17 @@ function initSeatsFromElements(elements: readonly unknown[]) {
     return a.x - b.x;
   });
 
+  // Get existing zones to preserve labels
+  const existingZones = useOfficeStore.getState().zones;
+  const existingSeatsMap = new Map<string, { label?: string; id: string }>();
+  for (const z of existingZones) {
+    for (const s of z.seats) {
+      // Key by approximate position (round to nearest 5px)
+      const key = `${Math.round(s.x / 5) * 5},${Math.round(s.y / 5) * 5}`;
+      existingSeatsMap.set(key, { label: s.label, id: s.id });
+    }
+  }
+
   // Assign chairs to rooms
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const assignedChairs = new Set<any>();
@@ -168,17 +179,22 @@ function initSeatsFromElements(elements: readonly unknown[]) {
       y: room.y,
       w: room.width,
       h: room.height,
-      seats: sorted.map((c, i) => ({
-        id: `${letter}-${i + 1}`,
+      seats: sorted.map((c, i) => {
+        const key = `${Math.round(c.x / 5) * 5},${Math.round(c.y / 5) * 5}`;
+        const existing = existingSeatsMap.get(key);
+        const defaultLabel = `${letter}-${i + 1}`;
+        return {
+        id: existing?.id || defaultLabel,
         roomId: `zone-${ri}`,
         x: c.x,
         y: c.y,
         w: c.width,
         h: c.height,
-        label: `${letter}-${i + 1}`,
+        label: existing?.label || defaultLabel,
         occupied: false,
         occupiedBy: undefined as string | undefined,
-      })),
+      };
+      }),
     };
   });
 
@@ -192,17 +208,22 @@ function initSeatsFromElements(elements: readonly unknown[]) {
       type: 'open',
       name: 'その他',
       x: 0, y: 0, w: 0, h: 0,
-      seats: sorted.map((c, i) => ({
-        id: `${letter}-${i + 1}`,
+      seats: sorted.map((c, i) => {
+        const key = `${Math.round(c.x / 5) * 5},${Math.round(c.y / 5) * 5}`;
+        const existing = existingSeatsMap.get(key);
+        const defaultLabel = `${letter}-${i + 1}`;
+        return {
+        id: existing?.id || defaultLabel,
         roomId: 'zone-other',
         x: c.x,
         y: c.y,
         w: c.width,
         h: c.height,
-        label: `${letter}-${i + 1}`,
+        label: existing?.label || defaultLabel,
         occupied: false,
         occupiedBy: undefined as string | undefined,
-      })),
+      };
+      }),
     });
   }
 
