@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
+import QRCodeModal from '@/components/QRCodeModal';
 import type { PresenceStatus } from '@/types';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -22,14 +23,7 @@ const STATUS_OPTIONS: { value: PresenceStatus; label: string; color: string }[] 
 export default function TopBar() {
   const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode } = useOfficeStore();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const handleCopyUrl = () => {
-    navigator.clipboard.writeText(window.location.href).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
+  const [showQR, setShowQR] = useState(false);
   const statusMenuRef = useRef<HTMLDivElement>(null);
 
   // Close status menu when clicking outside
@@ -45,15 +39,55 @@ export default function TopBar() {
     }
   }, [showStatusMenu]);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleExport = () => {
-    const json = exportFloorPlan();
-    const blob = new Blob([json], { type: 'application/json' });
+    const store = useOfficeStore.getState();
+    const api = store.excalidrawAPI;
+    const exportData = {
+      version: 1,
+      name: 'Ethereal Office Floor Export',
+      excalidrawScene: api ? {
+        elements: api.getSceneElements(),
+        appState: (() => { const { collaborators, ...rest } = api.getAppState(); return rest; })(),
+      } : null,
+      zones: store.zones,
+      floorPlan: store.exportFloorPlan ? JSON.parse(store.exportFloorPlan()) : null,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'floorplan.json';
+    a.download = `floor-export-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        const store = useOfficeStore.getState();
+        const api = store.excalidrawAPI;
+        if (data.excalidrawScene && api) {
+          api.updateScene({
+            elements: data.excalidrawScene.elements,
+            appState: data.excalidrawScene.appState,
+          });
+        }
+        if (data.zones) {
+          store.setZones(data.zones);
+        }
+        useOfficeStore.getState().addNotification('フロア設定をインポートしました');
+      } catch {
+        useOfficeStore.getState().addNotification('インポートに失敗しました');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (
@@ -81,13 +115,19 @@ export default function TopBar() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button onClick={handleCopyUrl} title="フロアのURLをコピーして共有" className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
-          {copied ? '✓ コピーしました' : '🔗 URL共有'}
+        <button onClick={() => setShowQR(true)} title="QRコードで共有" className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
+          📱 QR共有
         </button>
         {editorMode === 'edit' && (
-          <button onClick={handleExport} className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
-            JSONエクスポート
-          </button>
+          <>
+            <button onClick={handleExport} className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
+              📤 エクスポート
+            </button>
+            <button onClick={() => fileInputRef.current?.click()} className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
+              📥 インポート
+            </button>
+            <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
+          </>
         )}
         <button onClick={() => setViewMode('chat')} className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center text-gray-400 relative transition-colors" title="チャット">
           💬
@@ -173,6 +213,13 @@ export default function TopBar() {
           )}
         </div>
       </div>
+      {showQR && (
+        <QRCodeModal
+          url={typeof window !== 'undefined' ? window.location.href : ''}
+          floorName="フロア"
+          onClose={() => setShowQR(false)}
+        />
+      )}
     </header>
   );
 }

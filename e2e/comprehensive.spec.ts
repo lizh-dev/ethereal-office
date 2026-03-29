@@ -373,7 +373,8 @@ test.describe('F. エディターモード', () => {
   test('F-2: TopBarにJSONエクスポートボタン', async ({ page }) => {
     await joinFloor(page, slug, 'エクスポーター', true);
     await page.click('[title="フロアを編集"]');
-    await expect(page.getByText('JSONエクスポート')).toBeVisible();
+    await expect(page.getByText('エクスポート')).toBeVisible();
+    await expect(page.getByText('インポート')).toBeVisible();
   });
 
   test('F-3: スペースウィザード表示', async ({ page }) => {

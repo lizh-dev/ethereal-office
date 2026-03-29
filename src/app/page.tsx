@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { getTemplateElements } from '@/lib/templates';
+
+const QRScannerModal = dynamic(() => import('@/components/QRScannerModal'), { ssr: false });
 
 interface VisitEntry {
   slug: string;
@@ -19,6 +22,7 @@ export default function LandingPage() {
   const [template, setTemplate] = useState('default');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     try {
@@ -80,6 +84,12 @@ export default function LandingPage() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Ethereal Office</h1>
           <p className="text-gray-500 text-lg">バーチャルオフィスを作成して、チームとつながろう</p>
+          <button
+            onClick={() => setShowScanner(true)}
+            className="mt-3 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            📷 QRコードで入室
+          </button>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
@@ -200,6 +210,7 @@ export default function LandingPage() {
           </div>
         )}
       </div>
+      {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} />}
     </div>
   );
 }
