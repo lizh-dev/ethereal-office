@@ -151,7 +151,7 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
   const excalidrawAPI = useOfficeStore((s) => s.excalidrawAPI);
   const [config, setConfig] = useState<SpaceConfig>({
     type: 'desk-area', name: 'オープンスペース', rows: 3, cols: 4, spacing: 20, direction: 'horizontal',
-    labelPrefix: 'A', labelStart: 1,
+    labelPrefix: 'オープンスペース', labelStart: 1,
   });
 
   const handleGenerate = () => {
@@ -237,7 +237,7 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
             <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 block">1. スペース種類</label>
             <div className="grid grid-cols-2 gap-2">
               {SPACE_TYPES.map(t => (
-                <button key={t.id} onClick={() => setConfig(c => ({ ...c, type: t.id, name: t.label }))}
+                <button key={t.id} onClick={() => setConfig(c => ({ ...c, type: t.id, name: t.label, labelPrefix: t.label }))}
                   className={`p-3 rounded-xl border text-left transition-all ${config.type === t.id ? 'border-indigo-300 bg-indigo-50' : 'border-gray-100 hover:border-gray-200'}`}>
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{t.icon}</span>
@@ -254,7 +254,7 @@ export default function SpaceWizard({ onClose }: { onClose: () => void }) {
           {/* Name */}
           <div>
             <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">2. 名前</label>
-            <input type="text" value={config.name} onChange={e => setConfig(c => ({ ...c, name: e.target.value }))}
+            <input type="text" value={config.name} onChange={e => setConfig(c => ({ ...c, name: e.target.value, labelPrefix: e.target.value }))}
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-indigo-300" />
           </div>
 

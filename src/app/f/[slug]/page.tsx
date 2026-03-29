@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, use } from 'react';
 import dynamic from 'next/dynamic';
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
-import RightPanel from '@/components/layout/RightPanel';
+
 import FloorCanvas from '@/components/floor/FloorCanvas';
 import EditorPanel from '@/components/editor/EditorPanel';
 import AvatarSelector from '@/components/profile/AvatarSelector';
@@ -204,7 +204,6 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
             <>
               <FloorCanvas floorSlug={slug} savedScene={floorData?.excalidrawScene} />
               {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} floorSlug={slug} />}
-              <RightPanel />
             </>
           )}
           {viewMode === 'meetings' && <MembersView />}

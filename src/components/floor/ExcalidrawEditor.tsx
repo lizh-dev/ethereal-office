@@ -90,10 +90,13 @@ function initSeatsFromElements(elements: readonly unknown[]) {
     return a.x - b.x;
   });
 
-  // Detect all chairs
+  // Detect all chairs = small ellipses (any color, width/height <= 30)
+  // Exclude plants (green tones) and large decorative ellipses
+  const plantColors = ['#86ceab', '#5ead88', '#4ade80', '#22c55e', '#16a34a'];
   const allChairs = els.filter((el) =>
     el.type === 'ellipse' && !el.isDeleted &&
-    el.backgroundColor === '#9ca3af' && el.width <= 30 && el.height <= 30
+    el.width <= 30 && el.height <= 30 &&
+    !plantColors.includes(el.backgroundColor)
   );
 
   // Detect room type from elements inside
@@ -325,8 +328,16 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         .excalidraw-view-mode .excalidraw .layer-ui__wrapper__top-right,
         .excalidraw-view-mode .excalidraw .layer-ui__wrapper__footer-left,
         .excalidraw-view-mode .excalidraw .App-toolbar-container,
-        .excalidraw-view-mode .excalidraw .HintViewer {
+        .excalidraw-view-mode .excalidraw .HintViewer,
+        .excalidraw-view-mode .excalidraw .context-menu,
+        .excalidraw-view-mode .excalidraw [class*="context-menu"] {
           display: none !important;
+        }
+        .excalidraw-view-mode .excalidraw {
+          pointer-events: none !important;
+        }
+        .excalidraw-view-mode .excalidraw canvas {
+          pointer-events: auto !important;
         }
       `}</style>
       <Excalidraw

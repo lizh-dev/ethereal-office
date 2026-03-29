@@ -186,8 +186,8 @@ test.describe('D. オフィスUI基本', () => {
     await expect(page.locator('input[placeholder*="メンバー"]')).toBeVisible();
     // WS接続インジケーター
     await expect(page.getByText('Online')).toBeVisible();
-    // RightPanel - オンラインメンバー
-    await expect(page.getByText('オンラインメンバー')).toBeVisible();
+    // WS connection indicator
+    await expect(page.getByText('Online')).toBeVisible();
   });
 
   test('D-2: サイドバー編集モード切り替え', async ({ page }) => {
@@ -321,8 +321,7 @@ test.describe('E. マルチユーザー同期', () => {
     await pageA.click('text=ビジー');
     await pageA.waitForTimeout(1000);
 
-    // ステBのRightPanelでステAのステータスが変わっている（ステータスドットの色変化）
-    // RightPanelのメンバーリストを確認
+    // ステBのフロア上でステAが見えている
     await expect(pageB.getByText('ステA').first()).toBeVisible({ timeout: 5000 });
 
     await ctxA.close();
@@ -423,34 +422,6 @@ test.describe('G. Excalidrawフロアプラン', () => {
   });
 });
 
-// =============================================================
-// H. RightPanel
-// =============================================================
-test.describe('H. RightPanel', () => {
-  let slug: string;
-
-  test.beforeAll(async ({ request }) => {
-    slug = await createFloor(request, 'RightPanelテスト');
-  });
-
-  test('H-1: 自分のステータスカード表示', async ({ page }) => {
-    await joinFloor(page, slug, 'パネルテスター');
-    // RightPanelに自分の名前が表示
-    await expect(page.getByText('パネルテスター').first()).toBeVisible();
-    // フリー状態の表示
-    await expect(page.getByText('フリー').first()).toBeVisible();
-  });
-
-  test('H-2: オンラインメンバー数表示', async ({ page }) => {
-    await joinFloor(page, slug, 'メンバーカウント');
-    await expect(page.getByText(/オンラインメンバー/)).toBeVisible();
-  });
-
-  test('H-3: アクティブミーティングセクション', async ({ page }) => {
-    await joinFloor(page, slug, 'ミーティングチェック');
-    await expect(page.getByText('アクティブミーティング')).toBeVisible();
-  });
-});
 
 // =============================================================
 // I. アバターセレクター

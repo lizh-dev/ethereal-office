@@ -349,7 +349,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
               fontSize: 12, color: '#6B7280', boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
               display: 'flex', alignItems: 'center', gap: 4,
             }}>
-              🚶 立ち上がる（Esc）
+              📍 {(() => { const s = zones.flatMap(z => z.seats).find(s => s.id === currentSeatId); return s?.label || '席'; })()}から離れる（Esc）
             </button>
           )}
 
@@ -494,34 +494,43 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             const isEmpty = !seat.occupied;
             return (
               <div key={`seat-${seat.id}-${i}`} title={isEmpty ? `${seat.label || seat.id} - クリックして座る` : seat.label || seat.id} style={{
-                position: 'absolute', left: pos.x, top: pos.y, width: sw, height: sh,
-                borderRadius: '50%', border: isEmpty ? '2px dashed rgba(99,102,241,0)' : 'none',
+                position: 'absolute', left: pos.x - 2, top: pos.y - 2, width: sw + 4, height: sh + 4,
+                borderRadius: '50%',
+                border: isEmpty ? '2px solid rgba(99,102,241,0.25)' : 'none',
+                background: isEmpty ? 'rgba(99,102,241,0.06)' : 'transparent',
                 cursor: isEmpty ? 'pointer' : 'default', pointerEvents: isEmpty ? 'auto' : 'none', zIndex: 5,
-                transition: 'border-color 0.2s, background 0.2s',
+                transition: 'all 0.2s ease',
               }}
-              onMouseEnter={isEmpty ? (e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)'; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }) : undefined}
-              onMouseLeave={isEmpty ? (e => { e.currentTarget.style.borderColor = 'rgba(99,102,241,0)'; e.currentTarget.style.background = 'transparent'; }) : undefined}
+              onMouseEnter={isEmpty ? (e => { e.currentTarget.style.border = '2px solid rgba(99,102,241,0.6)'; e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.transform = 'scale(1.15)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(99,102,241,0.3)'; }) : undefined}
+              onMouseLeave={isEmpty ? (e => { e.currentTarget.style.border = '2px solid rgba(99,102,241,0.25)'; e.currentTarget.style.background = 'rgba(99,102,241,0.06)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }) : undefined}
               onClick={isEmpty ? (e => { e.stopPropagation(); const ws = (window as unknown as Record<string, any>).__wsSend; if (currentSeatId) { standUp(); ws?.stand?.(); } sitAt(seat.id); moveCurrentUser(seat.x, seat.y); ws?.sit?.(seat.id, seat.x, seat.y); }) : undefined}
               >
-                {/* Empty seat + icon */}
+                {/* Empty seat icon */}
                 {isEmpty && zoom > 0.3 && (
                   <div style={{
                     position: 'absolute', inset: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'rgba(99,102,241,0.3)', fontSize: sw * 0.6, fontWeight: 300,
-                    pointerEvents: 'none', lineHeight: 1,
+                    pointerEvents: 'none',
                   }}>
-                    +
+                    <div style={{
+                      width: sw * 0.5, height: sw * 0.5, borderRadius: '50%',
+                      background: 'rgba(99,102,241,0.15)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: sw * 0.35, color: 'rgba(99,102,241,0.5)', fontWeight: 700,
+                    }}>
+                      +
+                    </div>
                   </div>
                 )}
                 {/* Seat label */}
                 {seat.label && zoom > 0.4 && (
                   <div style={{
-                    position: 'absolute', top: sh + 1, left: '50%', transform: 'translateX(-50%)',
-                    whiteSpace: 'nowrap', fontSize: 8, fontWeight: 600,
-                    color: isEmpty ? '#6366F1' : '#9CA3AF',
-                    background: isEmpty ? 'rgba(238,242,255,0.9)' : 'rgba(243,244,246,0.9)',
-                    borderRadius: 3, padding: '0px 3px',
+                    position: 'absolute', top: sh + 3, left: '50%', transform: 'translateX(-50%)',
+                    whiteSpace: 'nowrap', fontSize: 9, fontWeight: 600,
+                    color: isEmpty ? '#4F46E5' : '#9CA3AF',
+                    background: isEmpty ? 'rgba(238,242,255,0.95)' : 'rgba(243,244,246,0.9)',
+                    borderRadius: 4, padding: '1px 5px',
+                    border: isEmpty ? '1px solid rgba(99,102,241,0.2)' : 'none',
                     pointerEvents: 'none',
                   }}>
                     {seat.label}

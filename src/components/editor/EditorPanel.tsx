@@ -106,7 +106,8 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
     });
 
     const allChairs = els.filter((el: any) =>
-      el.type === 'ellipse' && el.backgroundColor === '#9ca3af' && el.width <= 30 && el.height <= 30
+      el.type === 'ellipse' && el.width <= 30 && el.height <= 30 &&
+      !['#86ceab', '#5ead88', '#4ade80', '#22c55e', '#16a34a'].includes(el.backgroundColor)
     );
 
     // Build existing label map
