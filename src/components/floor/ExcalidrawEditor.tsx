@@ -174,12 +174,18 @@ function initSeatsFromElements(elements: readonly unknown[]) {
     const letter = ISLAND_LETTERS[ri % 26];
     const roomType = getRoomType(room);
     const roomName = getRoomName(room);
-    const zoneName = roomName || `${letter}島`;
+    const zoneId = `zone-${ri}`;
+    // Preserve user renames, then existing zone names, then auto-detected
+    let renames: Record<string, string> = {};
+    try { renames = JSON.parse(sessionStorage.getItem('ethereal-zone-renames') || '{}'); } catch {}
+    const existingZone = existingZones.find(z => z.id === zoneId);
+    const detectedName = roomName || `${letter}島`;
+    const finalName = renames[zoneId] || existingZone?.name || detectedName;
 
     return {
-      id: `zone-${ri}`,
+      id: zoneId,
       type: roomType,
-      name: zoneName,
+      name: finalName,
       x: room.x,
       y: room.y,
       w: room.width,

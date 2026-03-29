@@ -50,19 +50,28 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
     // 1. Update zone in store
     setZones(zones.map(z => z.id === zoneId ? { ...z, name: newName } : z));
 
-    // 2. Update matching text element in Excalidraw
-    if (excalidrawAPI) {
+    // 2. Try to update matching text element in Excalidraw (if it exists on canvas)
+    if (excalidrawAPI && zone.x > 0 && zone.w > 0) {
       const elements = excalidrawAPI.getSceneElements();
+      let found = false;
       const updated = elements.map((el: any) => {
-        if (el.type === 'text' && !el.isDeleted && el.text === oldName &&
+        if (!found && el.type === 'text' && !el.isDeleted && el.text === oldName &&
             el.x >= zone.x - 10 && el.x <= zone.x + zone.w + 10 &&
             el.y >= zone.y - 10 && el.y <= zone.y + zone.h + 10) {
+          found = true;
           return { ...el, text: newName, version: (el.version || 0) + 1, versionNonce: Math.random() * 1e9 | 0 };
         }
         return el;
       });
-      excalidrawAPI.updateScene({ elements: updated });
+      if (found) {
+        excalidrawAPI.updateScene({ elements: updated });
+      }
     }
+
+    // Store rename mapping for persistence across re-detection
+    const renames = JSON.parse(sessionStorage.getItem('ethereal-zone-renames') || '{}');
+    renames[zoneId] = newName;
+    sessionStorage.setItem('ethereal-zone-renames', JSON.stringify(renames));
   };
 
   const handleApplyPrefix = (zoneId: string, prefix: string) => {
@@ -180,12 +189,17 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
       const sorted = sortChairs(chairsInRoom);
       const letter = ISLAND_LETTERS[ri % 26];
       const roomName = getRoomName(room);
-      const zoneName = roomName || `${letter}島`;
+      const zoneId = `zone-${ri}`;
+      // Check for user rename, then existing zone name, then auto-detected name
+      const renames = JSON.parse(sessionStorage.getItem('ethereal-zone-renames') || '{}');
+      const existingZone = zones.find(z => z.id === zoneId);
+      const detectedName = roomName || `${letter}島`;
+      const finalName = renames[zoneId] || existingZone?.name || detectedName;
 
       return {
-        id: `zone-${ri}`,
+        id: zoneId,
         type: getRoomType(room),
-        name: zoneName,
+        name: finalName,
         x: room.x, y: room.y, w: room.width, h: room.height,
         seats: sorted.map((c: any, i: number) => {
           const key = `${Math.round(c.x / 5) * 5},${Math.round(c.y / 5) * 5}`;
