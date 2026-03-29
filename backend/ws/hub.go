@@ -205,6 +205,13 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 			Status: msg.Status,
 		}, client.info.ID)
 
+	case MsgSceneUpdate:
+		// Notify other users that the floor scene has been updated
+		h.broadcastToRoom(client.room, OutgoingMessage{
+			Type:   MsgSceneUpdated,
+			UserID: client.info.ID,
+		}, client.info.ID)
+
 	case MsgReaction:
 		if msg.Emoji != "" {
 			h.broadcastToRoom(client.room, OutgoingMessage{

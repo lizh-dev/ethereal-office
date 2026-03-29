@@ -10,7 +10,8 @@ const (
 	MsgChat   = "chat"
 	MsgStatus = "status"
 	MsgMedia    = "media"
-	MsgReaction = "reaction"
+	MsgReaction    = "reaction"
+	MsgSceneUpdate = "scene_update"
 )
 
 // Server→Client message types
@@ -24,7 +25,8 @@ const (
 	MsgUserChat   = "user_chat"
 	MsgUserStatus = "user_status"
 	MsgUserMedia     = "user_media"
-	MsgUserReaction  = "user_reaction"
+	MsgUserReaction     = "user_reaction"
+	MsgSceneUpdated     = "scene_updated"
 )
 
 type IncomingMessage struct {

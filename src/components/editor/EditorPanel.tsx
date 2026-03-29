@@ -83,7 +83,11 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
       } catch { /* silent */ }
     }
 
-    // 3. Switch to view mode
+    // 3. Notify other users via WS
+    const wsSend = (window as unknown as Record<string, any>).__wsSend;
+    wsSend?.sceneUpdate?.();
+
+    // 4. Switch to view mode
     setSaving(false);
     setEditorMode('view');
   };

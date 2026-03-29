@@ -14,6 +14,7 @@ interface WsSend {
   status: (status: PresenceStatus) => void;
   media: (isMuted: boolean, isCameraOn: boolean) => void;
   reaction: (emoji: string) => void;
+  sceneUpdate: () => void;
 }
 
 interface UseWebSocketOptions {
@@ -158,6 +159,12 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           }));
           break;
 
+        case 'scene_updated':
+          // Floor editor saved changes - reload scene
+          addNotification('フロアが更新されました。再読み込みします...');
+          setTimeout(() => window.location.reload(), 1500);
+          break;
+
         case 'user_reaction':
           // Store reaction for display (auto-clear after 3s)
           useOfficeStore.setState((state) => ({
@@ -241,6 +248,10 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     ),
     reaction: useCallback(
       (emoji: string) => sendRaw({ type: 'reaction', emoji }),
+      [sendRaw],
+    ),
+    sceneUpdate: useCallback(
+      () => sendRaw({ type: 'scene_update' }),
       [sendRaw],
     ),
   };

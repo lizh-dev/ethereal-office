@@ -54,7 +54,8 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
   const currentUser = useOfficeStore((s) => s.currentUser);
   const excalidrawAPI = useOfficeStore((s) => s.excalidrawAPI);
   const moveCurrentUser = useOfficeStore((s) => s.moveCurrentUser);
-  const isViewMode = editorMode !== 'edit';
+  const isFloorOwner = useOfficeStore((s) => s.isFloorOwner);
+  const isViewMode = !isFloorOwner || editorMode !== 'edit';
 
   const appState = useOfficeStore((s) => s.excalidrawAppState);
   const setZones = useOfficeStore((s) => s.setZones);
