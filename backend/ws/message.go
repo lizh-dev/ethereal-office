@@ -15,6 +15,9 @@ const (
 	MsgKick          = "kick"
 	MsgProfileUpdate = "profile_update"
 	MsgDM            = "dm"
+	MsgRTCOffer      = "rtc_offer"
+	MsgRTCAnswer     = "rtc_answer"
+	MsgRTCCandidate  = "rtc_candidate"
 )
 
 // Server→Client message types
@@ -33,6 +36,9 @@ const (
 	MsgKicked             = "kicked"
 	MsgUserProfileUpdated = "user_profile_updated"
 	MsgDMReceived         = "dm_received"
+	MsgRTCOfferRelay      = "rtc_offer"
+	MsgRTCAnswerRelay     = "rtc_answer"
+	MsgRTCCandidateRelay  = "rtc_candidate"
 )
 
 type IncomingMessage struct {
@@ -50,6 +56,8 @@ type IncomingMessage struct {
 	Name         string  `json:"name,omitempty"`
 	AvatarStyle  string  `json:"avatarStyle,omitempty"`
 	AvatarSeed   string  `json:"avatarSeed,omitempty"`
+	SDP          string  `json:"sdp,omitempty"`
+	Candidate    string  `json:"candidate,omitempty"`
 }
 
 type UserInfo struct {
@@ -95,6 +103,8 @@ type OutgoingMessage struct {
 	To            string        `json:"to,omitempty"`
 	Text          string        `json:"text,omitempty"`
 	Timestamp     string        `json:"timestamp,omitempty"`
+	SDP           string        `json:"sdp,omitempty"`
+	Candidate     string        `json:"candidate,omitempty"`
 }
 
 func MarshalMessage(msg OutgoingMessage) []byte {

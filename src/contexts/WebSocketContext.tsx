@@ -14,6 +14,9 @@ export interface WsSend {
   kick: (targetUserId: string) => void;
   profileUpdate: (name: string, avatarStyle: string, avatarSeed: string) => void;
   dm: (targetUserId: string, text: string) => void;
+  rtcOffer: (targetUserId: string, sdp: string) => void;
+  rtcAnswer: (targetUserId: string, sdp: string) => void;
+  rtcCandidate: (targetUserId: string, candidate: string) => void;
 }
 
 const WebSocketContext = createContext<{ send: WsSend; connected: boolean } | null>(null);

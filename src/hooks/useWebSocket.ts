@@ -6,6 +6,15 @@ import type { PresenceStatus } from '@/types';
 
 const RECONNECT_INTERVAL = 10000;
 
+// Event emitter for WebRTC signaling messages
+type RTCSignalHandler = (msg: { type: string; userId: string; sdp?: string; candidate?: string }) => void;
+const rtcSignalListeners = new Set<RTCSignalHandler>();
+
+export function onRTCSignal(handler: RTCSignalHandler): () => void {
+  rtcSignalListeners.add(handler);
+  return () => { rtcSignalListeners.delete(handler); };
+}
+
 interface WsSend {
   move: (x: number, y: number) => void;
   sit: (seatId: string, x: number, y: number) => void;
@@ -18,6 +27,9 @@ interface WsSend {
   kick: (targetUserId: string) => void;
   profileUpdate: (name: string, avatarStyle: string, avatarSeed: string) => void;
   dm: (targetUserId: string, text: string) => void;
+  rtcOffer: (targetUserId: string, sdp: string) => void;
+  rtcAnswer: (targetUserId: string, sdp: string) => void;
+  rtcCandidate: (targetUserId: string, candidate: string) => void;
 }
 
 interface UseWebSocketOptions {
@@ -250,6 +262,15 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
             });
           }, 3000);
           break;
+
+        case 'rtc_offer':
+        case 'rtc_answer':
+        case 'rtc_candidate':
+          // Dispatch to WebRTC hook listeners
+          for (const handler of rtcSignalListeners) {
+            handler({ type: msg.type, userId: msg.userId, sdp: msg.sdp, candidate: msg.candidate });
+          }
+          break;
       }
     };
 
@@ -340,6 +361,18 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     ),
     dm: useCallback(
       (targetUserId: string, text: string) => sendRaw({ type: 'dm', targetUserId, text }),
+      [sendRaw],
+    ),
+    rtcOffer: useCallback(
+      (targetUserId: string, sdp: string) => sendRaw({ type: 'rtc_offer', targetUserId, sdp }),
+      [sendRaw],
+    ),
+    rtcAnswer: useCallback(
+      (targetUserId: string, sdp: string) => sendRaw({ type: 'rtc_answer', targetUserId, sdp }),
+      [sendRaw],
+    ),
+    rtcCandidate: useCallback(
+      (targetUserId: string, candidate: string) => sendRaw({ type: 'rtc_candidate', targetUserId, candidate }),
       [sendRaw],
     ),
   };

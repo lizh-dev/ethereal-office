@@ -15,6 +15,7 @@ import ChatView from '@/components/views/ChatView';
 import MembersView from '@/components/views/MembersView';
 import ProfileView from '@/components/views/ProfileView';
 import DMPanel from '@/components/chat/DMPanel';
+import VoiceManager from '@/components/voice/VoiceManager';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useIdleDetection } from '@/hooks/useIdleDetection';
@@ -259,6 +260,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
         {showSpaceWizard && <SpaceWizard onClose={() => setShowSpaceWizard(false)} />}
         <NotificationToast />
         {activeDMUserId && <DMPanel />}
+        <VoiceManager />
         {/* Kick notification overlay */}
         {kickedNotification && (
           <div style={{

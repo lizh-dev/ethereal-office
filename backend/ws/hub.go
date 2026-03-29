@@ -400,6 +400,84 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 			AvatarSeed:  client.info.AvatarSeed,
 		}, client.info.ID)
 
+	case MsgRTCOffer:
+		if msg.TargetUserID == "" || msg.SDP == "" {
+			return
+		}
+		h.mu.RLock()
+		room := h.rooms[client.room]
+		h.mu.RUnlock()
+		if room == nil {
+			return
+		}
+		h.mu.RLock()
+		target, ok := room.clients[msg.TargetUserID]
+		h.mu.RUnlock()
+		if !ok {
+			return
+		}
+		data := MarshalMessage(OutgoingMessage{
+			Type:   MsgRTCOfferRelay,
+			UserID: client.info.ID,
+			SDP:    msg.SDP,
+		})
+		select {
+		case target.send <- data:
+		default:
+		}
+
+	case MsgRTCAnswer:
+		if msg.TargetUserID == "" || msg.SDP == "" {
+			return
+		}
+		h.mu.RLock()
+		room := h.rooms[client.room]
+		h.mu.RUnlock()
+		if room == nil {
+			return
+		}
+		h.mu.RLock()
+		target, ok := room.clients[msg.TargetUserID]
+		h.mu.RUnlock()
+		if !ok {
+			return
+		}
+		data := MarshalMessage(OutgoingMessage{
+			Type:   MsgRTCAnswerRelay,
+			UserID: client.info.ID,
+			SDP:    msg.SDP,
+		})
+		select {
+		case target.send <- data:
+		default:
+		}
+
+	case MsgRTCCandidate:
+		if msg.TargetUserID == "" || msg.Candidate == "" {
+			return
+		}
+		h.mu.RLock()
+		room := h.rooms[client.room]
+		h.mu.RUnlock()
+		if room == nil {
+			return
+		}
+		h.mu.RLock()
+		target, ok := room.clients[msg.TargetUserID]
+		h.mu.RUnlock()
+		if !ok {
+			return
+		}
+		data := MarshalMessage(OutgoingMessage{
+			Type:      MsgRTCCandidateRelay,
+			UserID:    client.info.ID,
+			Candidate: msg.Candidate,
+		})
+		select {
+		case target.send <- data:
+		default:
+		}
+
 	case MsgDM:
 		if msg.TargetUserID == "" || msg.Text == "" {
 			return
