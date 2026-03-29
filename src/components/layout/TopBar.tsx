@@ -22,6 +22,14 @@ const STATUS_OPTIONS: { value: PresenceStatus; label: string; color: string }[] 
 export default function TopBar() {
   const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode } = useOfficeStore();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyUrl = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
   const statusMenuRef = useRef<HTMLDivElement>(null);
 
   // Close status menu when clicking outside
@@ -73,6 +81,9 @@ export default function TopBar() {
       </div>
 
       <div className="flex items-center gap-3">
+        <button onClick={handleCopyUrl} title="フロアのURLをコピーして共有" className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
+          {copied ? '✓ コピーしました' : '🔗 URL共有'}
+        </button>
         {editorMode === 'edit' && (
           <button onClick={handleExport} className="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
             JSONエクスポート
@@ -149,6 +160,15 @@ export default function TopBar() {
                   )}
                 </button>
               ))}
+              <div className="border-t border-gray-100 mt-1 pt-1">
+                <button
+                  onClick={() => { window.location.href = '/'; }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-red-50 transition-colors text-left"
+                >
+                  <span className="text-sm">🚪</span>
+                  <span className="text-[12px] font-medium text-red-500">退室する</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
