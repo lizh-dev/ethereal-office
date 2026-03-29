@@ -60,7 +60,27 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
   const isFloorOwner = useOfficeStore((s) => s.isFloorOwner);
   const isViewMode = !isFloorOwner || editorMode !== 'edit';
 
-  const appState = useOfficeStore((s) => s.excalidrawAppState);
+  const storeAppState = useOfficeStore((s) => s.excalidrawAppState);
+  // Poll Excalidraw API for real-time appState (avoids store/render delay during pan/zoom)
+  const [liveAppState, setLiveAppState] = useState(storeAppState);
+  useEffect(() => {
+    if (!isViewMode || !excalidrawAPI) {
+      setLiveAppState(storeAppState);
+      return;
+    }
+    let running = true;
+    const poll = () => {
+      if (!running) return;
+      try {
+        const st = excalidrawAPI.getAppState();
+        if (st) setLiveAppState(st);
+      } catch { /* ignore */ }
+      requestAnimationFrame(poll);
+    };
+    requestAnimationFrame(poll);
+    return () => { running = false; };
+  }, [isViewMode, excalidrawAPI, storeAppState]);
+  const appState = liveAppState;
   const setZones = useOfficeStore((s) => s.setZones);
   const prevModeRef = useRef(editorMode);
 
