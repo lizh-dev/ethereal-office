@@ -171,11 +171,18 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
 
   if (notFound) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">フロアが見つかりません</h1>
-          <p className="text-gray-500 mb-4">このURLのフロアは存在しないか、削除されました。</p>
-          <a href="/" className="text-indigo-600 hover:text-indigo-700 font-medium">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center">
+          <div className="text-5xl mb-4">🏢</div>
+          <h1 className="text-xl font-bold text-gray-800 mb-2">フロアが見つかりません</h1>
+          <p className="text-gray-500 text-sm mb-6">このURLのフロアは存在しないか、削除されました。</p>
+          <a
+            href="/"
+            className="block w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors text-sm"
+          >
+            新しいフロアを作成する
+          </a>
+          <a href="/" className="block mt-3 text-sm text-gray-400 hover:text-gray-600">
             トップに戻る
           </a>
         </div>

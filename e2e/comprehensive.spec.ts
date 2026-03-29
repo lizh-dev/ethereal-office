@@ -153,16 +153,16 @@ test.describe('B. 入室ダイアログ', () => {
 // C. 存在しないフロア
 // =============================================================
 test.describe('C. エラーハンドリング', () => {
-  test('C-1: 存在しないフロアで404表示', async ({ page }) => {
+  test('C-1: 存在しないフロアで案内表示', async ({ page }) => {
     await page.goto(`${BASE}/f/nonexistent999`);
     await expect(page.getByText('フロアが見つかりません')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('トップに戻る')).toBeVisible();
+    await expect(page.getByText('新しいフロアを作成する')).toBeVisible();
   });
 
-  test('C-2: トップに戻るリンク動作', async ({ page }) => {
+  test('C-2: 新規作成ボタンでトップへ', async ({ page }) => {
     await page.goto(`${BASE}/f/nonexistent999`);
-    await page.waitForSelector('text=トップに戻る', { timeout: 10000 });
-    await page.click('text=トップに戻る');
+    await page.waitForSelector('text=新しいフロアを作成する', { timeout: 10000 });
+    await page.click('text=新しいフロアを作成する');
     await page.waitForURL(BASE + '/');
   });
 });

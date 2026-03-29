@@ -11,6 +11,7 @@ const maxChatHistory = 100
 type Room struct {
 	clients     map[string]*Client
 	chatHistory []ChatMessage
+	lastActive  time.Time
 }
 
 type Hub struct {
@@ -29,12 +30,28 @@ func NewHub() *Hub {
 }
 
 func (h *Hub) Run() {
+	cleanupTicker := time.NewTicker(5 * time.Minute)
+	defer cleanupTicker.Stop()
+
 	for {
 		select {
 		case client := <-h.register:
 			h.addClient(client)
 		case client := <-h.unregister:
 			h.removeClient(client)
+		case <-cleanupTicker.C:
+			h.cleanupEmptyRooms()
+		}
+	}
+}
+
+func (h *Hub) cleanupEmptyRooms() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for slug, room := range h.rooms {
+		if len(room.clients) == 0 && time.Since(room.lastActive) > 30*time.Minute {
+			delete(h.rooms, slug)
+			log.Printf("[cleanup] empty room %s removed", slug)
 		}
 	}
 }
@@ -48,9 +65,11 @@ func (h *Hub) getOrCreateRoom(slug string) *Room {
 		room = &Room{
 			clients:     make(map[string]*Client),
 			chatHistory: make([]ChatMessage, 0),
+			lastActive:  time.Now(),
 		}
 		h.rooms[slug] = room
 	}
+	room.lastActive = time.Now()
 	return room
 }
 
