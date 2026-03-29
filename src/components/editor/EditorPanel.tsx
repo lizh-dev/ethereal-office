@@ -111,7 +111,7 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
         await fetch(`/api/floors/${floorSlug}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', 'X-Edit-Token': editToken, 'X-Owner-Password': ownerPw },
-          body: JSON.stringify({ excalidrawScene: scene }),
+          body: JSON.stringify({ excalidrawScene: scene, zones: zones }),
         });
       } catch { /* silent */ }
     }
@@ -320,15 +320,15 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
         {zones.length > 0 && (
           <button
             onClick={() => {
-              // Auto-assign labels: use zone name as prefix for each zone
-              setZones(zones.map(z => ({
+              const updated = zones.map(z => ({
                 ...z,
                 seats: z.seats.map((s, i) => ({
                   ...s,
                   id: `${z.name}-${i + 1}`,
                   label: `${z.name}-${i + 1}`,
                 })),
-              })));
+              }));
+              setZones(updated);
             }}
             className="w-full mb-2 text-[10px] py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-medium rounded-lg transition-colors"
           >

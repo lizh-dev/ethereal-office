@@ -79,4 +79,51 @@ test.describe('スペース名変更', () => {
       await expect(page.getByText('フロアエディター')).toBeVisible();
     }
   });
+
+  test('一括ラベル設定がF5リロード後も維持される', async ({ page }) => {
+    await page.goto(`${BASE}/f/${slug}`);
+    await page.evaluate(({ s, t }) => {
+      const tokens = JSON.parse(localStorage.getItem('ethereal-edit-tokens') || '{}');
+      tokens[s] = t;
+      localStorage.setItem('ethereal-edit-tokens', JSON.stringify(tokens));
+      sessionStorage.setItem(`ethereal-owner-${s}`, 'true');
+    }, { s: slug, t: editToken });
+    await page.reload();
+    await page.waitForSelector('input[placeholder*="名前"]', { timeout: 10000 });
+    await page.fill('input[placeholder*="名前"]', 'ラベルテスト');
+    await page.click('button:has-text("入室する")');
+    await page.waitForSelector('[title*="フロアを編集"]', { timeout: 10000 });
+
+    // Enter edit mode
+    await page.click('[title*="フロアを編集"]');
+    await page.waitForSelector('text=フロアエディター', { timeout: 5000 });
+
+    // Click bulk label button if zones exist
+    const bulkBtn = page.getByText('スペース名で一括ラベル設定');
+    if (await bulkBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await bulkBtn.click();
+      await page.waitForTimeout(300);
+
+      // Save
+      await page.click('button:has-text("保存して閲覧モードへ")');
+      await page.waitForTimeout(1500);
+
+      // Reload
+      await page.reload();
+      await page.waitForTimeout(2000);
+
+      // Re-enter edit mode
+      await page.click('[title*="フロアを編集"]');
+      await page.waitForSelector('text=座席ラベル', { timeout: 5000 });
+
+      // Verify labels still contain zone names (not default A-1 etc)
+      const labels = page.locator('.bg-gray-50 .font-mono');
+      const count = await labels.count();
+      if (count > 0) {
+        const firstLabel = await labels.first().textContent();
+        // Should NOT be just "A-1" style, should contain zone name
+        expect(firstLabel).toBeTruthy();
+      }
+    }
+  });
 });

@@ -32,6 +32,26 @@ export default function Sidebar() {
       setEditorMode('edit');
       return;
     }
+    // Check if we have a legacy editToken (creator without owner password)
+    const slug = window.location.pathname.split('/f/')[1];
+    const tokens = JSON.parse(localStorage.getItem('ethereal-edit-tokens') || '{}');
+    if (tokens[slug]) {
+      // Try editToken auth first
+      fetch(`/api/floors/${slug}/verify-owner`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Edit-Token': tokens[slug] },
+        body: JSON.stringify({ ownerPassword: '' }),
+      }).then(r => r.json()).then(data => {
+        if (data.canEdit) {
+          useOfficeStore.getState().setIsFloorOwner(true);
+          sessionStorage.setItem(`ethereal-owner-${slug}`, 'true');
+          setEditorMode('edit');
+        } else {
+          setShowPwModal(true); setOwnerPw(''); setPwError('');
+        }
+      }).catch(() => { setShowPwModal(true); setOwnerPw(''); setPwError(''); });
+      return;
+    }
     setShowPwModal(true);
     setOwnerPw('');
     setPwError('');

@@ -280,8 +280,14 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       api.updateLibrary({ libraryItems: lib.libraryItems, merge: true, openLibraryMenu: false });
 
       // If the scene has isometric furniture images, register the image files
+      // then refresh scene so Excalidraw can render them
       if (isIsometric) {
-        registerFurnitureFiles(api).catch(console.error);
+        registerFurnitureFiles(api).then(() => {
+          // Force Excalidraw to re-render images by updating scene
+          const els = api.getSceneElements();
+          api.updateScene({ elements: [...els] });
+          setTimeout(() => initSeatsFromElements(api.getSceneElements()), 500);
+        }).catch(console.error);
       }
 
       // Initialize seats from rendered elements

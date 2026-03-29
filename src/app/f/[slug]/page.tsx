@@ -85,6 +85,10 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
       })
       .then((data) => {
         setFloorData(data);
+        // Restore zones from DB if available
+        if (data.zones && Array.isArray(data.zones) && data.zones.length > 0) {
+          useOfficeStore.getState().setZones(data.zones);
+        }
         setLoading(false);
       })
       .catch(() => {

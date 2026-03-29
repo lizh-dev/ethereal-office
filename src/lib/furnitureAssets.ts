@@ -4,28 +4,27 @@
 export interface FurnitureAsset {
   id: string;
   name: string;
-  src: string;       // path in /public
-  width: number;     // display width in Excalidraw
-  height: number;    // display height in Excalidraw
-  isSeat: boolean;   // if true, treated as a chair/seat for sitting
+  src: string;
+  width: number;
+  height: number;
+  isSeat: boolean;
 }
 
 export const FURNITURE_ASSETS: FurnitureAsset[] = [
   { id: 'fur-desk', name: 'デスク', src: '/assets/furniture/desk.png', width: 80, height: 84, isSeat: false },
   { id: 'fur-desk-corner', name: 'コーナーデスク', src: '/assets/furniture/desk-corner.png', width: 90, height: 90, isSeat: false },
-  { id: 'fur-chair', name: 'オフィスチェア', src: '/assets/furniture/chair.png', width: 45, height: 50, isSeat: true },
-  { id: 'fur-monitor', name: 'モニター', src: '/assets/furniture/monitor.png', width: 40, height: 40, isSeat: false },
-  { id: 'fur-sofa', name: 'ソファ', src: '/assets/furniture/sofa.png', width: 90, height: 70, isSeat: true },
-  { id: 'fur-lounge-chair', name: 'ラウンジチェア', src: '/assets/furniture/lounge-chair.png', width: 60, height: 65, isSeat: true },
-  { id: 'fur-table-round', name: '丸テーブル', src: '/assets/furniture/table-round.png', width: 70, height: 50, isSeat: false },
-  { id: 'fur-table-coffee', name: 'コーヒーテーブル', src: '/assets/furniture/table-coffee.png', width: 65, height: 50, isSeat: false },
-  { id: 'fur-plant', name: '観葉植物', src: '/assets/furniture/plant.png', width: 35, height: 50, isSeat: false },
-  { id: 'fur-bookcase', name: '本棚', src: '/assets/furniture/bookcase.png', width: 70, height: 80, isSeat: false },
-  { id: 'fur-lamp', name: 'フロアランプ', src: '/assets/furniture/lamp.png', width: 30, height: 55, isSeat: false },
-  { id: 'fur-rug', name: 'ラグ', src: '/assets/furniture/rug.png', width: 100, height: 60, isSeat: false },
+  { id: 'fur-chair', name: 'オフィスチェア', src: '/assets/furniture/chair.png', width: 40, height: 45, isSeat: true },
+  { id: 'fur-monitor', name: 'モニター', src: '/assets/furniture/monitor.png', width: 35, height: 35, isSeat: false },
+  { id: 'fur-sofa', name: 'ソファ', src: '/assets/furniture/sofa.png', width: 85, height: 65, isSeat: true },
+  { id: 'fur-lounge-chair', name: 'ラウンジチェア', src: '/assets/furniture/lounge-chair.png', width: 55, height: 60, isSeat: true },
+  { id: 'fur-table-round', name: '丸テーブル', src: '/assets/furniture/table-round.png', width: 65, height: 45, isSeat: false },
+  { id: 'fur-table-coffee', name: 'コーヒーテーブル', src: '/assets/furniture/table-coffee.png', width: 60, height: 45, isSeat: false },
+  { id: 'fur-plant', name: '観葉植物', src: '/assets/furniture/plant.png', width: 30, height: 45, isSeat: false },
+  { id: 'fur-bookcase', name: '本棚', src: '/assets/furniture/bookcase.png', width: 65, height: 75, isSeat: false },
+  { id: 'fur-lamp', name: 'フロアランプ', src: '/assets/furniture/lamp.png', width: 25, height: 50, isSeat: false },
+  { id: 'fur-rug', name: 'ラグ', src: '/assets/furniture/rug.png', width: 90, height: 55, isSeat: false },
 ];
 
-// Convert image file to data URL for Excalidraw
 async function fetchAsDataURL(src: string): Promise<string> {
   const res = await fetch(src);
   const blob = await res.blob();
@@ -40,46 +39,32 @@ async function fetchAsDataURL(src: string): Promise<string> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function registerFurnitureFiles(api: any) {
   const files = await Promise.all(
-    FURNITURE_ASSETS.map(async (asset) => {
-      const dataURL = await fetchAsDataURL(asset.src);
-      return {
-        id: asset.id,
-        dataURL,
-        mimeType: 'image/png',
-        created: Date.now(),
-      };
-    })
+    FURNITURE_ASSETS.map(async (asset) => ({
+      id: asset.id,
+      dataURL: await fetchAsDataURL(asset.src),
+      mimeType: 'image/png',
+      created: Date.now(),
+    }))
   );
   api.addFiles(files);
   return files;
 }
 
-// Generate a unique element ID
 function eid() {
   return `el-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-// Create an Excalidraw image element for a furniture item
-function furnitureElement(
-  assetId: string,
-  x: number,
-  y: number,
-  width?: number,
-  height?: number,
-  groupIds?: string[],
-) {
-  const asset = FURNITURE_ASSETS.find((a) => a.id === assetId);
-  if (!asset) throw new Error(`Unknown asset: ${assetId}`);
+function furnitureElement(assetId: string, x: number, y: number, w?: number, h?: number) {
+  const asset = FURNITURE_ASSETS.find((a) => a.id === assetId)!;
   return {
     id: eid(),
     type: 'image' as const,
     x,
     y,
-    width: width ?? asset.width,
-    height: height ?? asset.height,
+    width: w ?? asset.width,
+    height: h ?? asset.height,
     fileId: assetId,
     status: 'saved' as const,
-    groupIds: groupIds ?? [],
     strokeColor: 'transparent',
     backgroundColor: 'transparent',
     fillStyle: 'solid' as const,
@@ -89,93 +74,82 @@ function furnitureElement(
   };
 }
 
-// Generate a demo isometric office floor
+// Generate isometric demo floor — wider layout, proper spacing
 export function generateIsometricDemoFloor() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elements: any[] = [];
 
-  // Floor background
+  // ===== Workspace area (left side) =====
   elements.push({
-    type: 'rectangle', x: 20, y: 20, width: 800, height: 550,
-    backgroundColor: '#f8fafc', strokeColor: '#e2e8f0',
+    type: 'rectangle', x: 40, y: 40, width: 450, height: 350,
+    backgroundColor: '#ffffff', strokeColor: '#e2e8f0',
     fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1,
   });
   elements.push({
-    type: 'text', x: 35, y: 30, text: 'SmartOffice デモフロア',
-    fontSize: 16, strokeColor: '#475569',
+    type: 'text', x: 55, y: 52, text: 'ワークスペース',
+    fontSize: 14, strokeColor: '#64748b',
   });
 
-  // === Desk Area (4 desks with chairs) ===
+  // Desk row 1 (2 desks with chairs, spaced out)
+  elements.push(furnitureElement('fur-desk', 70, 90));
+  elements.push(furnitureElement('fur-monitor', 93, 95));
+  elements.push(furnitureElement('fur-chair', 90, 180));
+
+  elements.push(furnitureElement('fur-desk', 260, 90));
+  elements.push(furnitureElement('fur-monitor', 283, 95));
+  elements.push(furnitureElement('fur-chair', 280, 180));
+
+  // Desk row 2
+  elements.push(furnitureElement('fur-desk', 70, 240));
+  elements.push(furnitureElement('fur-monitor', 93, 245));
+  elements.push(furnitureElement('fur-chair', 90, 330));
+
+  elements.push(furnitureElement('fur-desk', 260, 240));
+  elements.push(furnitureElement('fur-monitor', 283, 245));
+  elements.push(furnitureElement('fur-chair', 280, 330));
+
+  // Decorations
+  elements.push(furnitureElement('fur-plant', 200, 100));
+  elements.push(furnitureElement('fur-plant', 420, 50));
+
+  // ===== Meeting Room (top right) =====
   elements.push({
-    type: 'rectangle', x: 40, y: 60, width: 380, height: 230,
-    backgroundColor: '#ffffff', strokeColor: '#e5e7eb',
+    type: 'rectangle', x: 530, y: 40, width: 320, height: 220,
+    backgroundColor: '#ffffff', strokeColor: '#e2e8f0',
     fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1,
   });
   elements.push({
-    type: 'text', x: 55, y: 70, text: 'ワークスペース',
-    fontSize: 12, strokeColor: '#6b7280',
+    type: 'text', x: 545, y: 52, text: '会議室',
+    fontSize: 14, strokeColor: '#64748b',
   });
 
-  // Row 1: 2 desk sets
-  for (let i = 0; i < 2; i++) {
-    const bx = 60 + i * 180;
-    elements.push(furnitureElement('fur-desk', bx, 95));
-    elements.push(furnitureElement('fur-monitor', bx + 20, 90));
-    elements.push(furnitureElement('fur-chair', bx + 18, 180));
-  }
+  elements.push(furnitureElement('fur-table-round', 650, 110));
+  elements.push(furnitureElement('fur-chair', 630, 80));
+  elements.push(furnitureElement('fur-chair', 720, 80));
+  elements.push(furnitureElement('fur-chair', 630, 165));
+  elements.push(furnitureElement('fur-chair', 720, 165));
+  elements.push(furnitureElement('fur-plant', 545, 210));
+  elements.push(furnitureElement('fur-plant', 810, 50));
 
-  // Row 2: 2 desk sets
-  for (let i = 0; i < 2; i++) {
-    const bx = 60 + i * 180;
-    elements.push(furnitureElement('fur-desk-corner', bx, 200));
-    elements.push(furnitureElement('fur-monitor', bx + 25, 195));
-    elements.push(furnitureElement('fur-chair', bx + 22, 275));  // Removed extra closing paren
-  }
-
-  // Plants between desks
-  elements.push(furnitureElement('fur-plant', 165, 100));
-  elements.push(furnitureElement('fur-plant', 345, 210));
-
-  // === Meeting Room ===
+  // ===== Lounge (bottom right) =====
   elements.push({
-    type: 'rectangle', x: 450, y: 60, width: 350, height: 200,
-    backgroundColor: '#ffffff', strokeColor: '#e5e7eb',
+    type: 'rectangle', x: 530, y: 300, width: 320, height: 260,
+    backgroundColor: '#ffffff', strokeColor: '#e2e8f0',
     fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1,
   });
   elements.push({
-    type: 'text', x: 465, y: 70, text: '会議室 A',
-    fontSize: 12, strokeColor: '#6b7280',
+    type: 'text', x: 545, y: 312, text: 'ラウンジ',
+    fontSize: 14, strokeColor: '#64748b',
   });
 
-  // Meeting table + chairs around it
-  elements.push(furnitureElement('fur-table-round', 580, 120));
-  elements.push(furnitureElement('fur-chair', 560, 90));
-  elements.push(furnitureElement('fur-chair', 640, 90));
-  elements.push(furnitureElement('fur-chair', 560, 175));
-  elements.push(furnitureElement('fur-chair', 640, 175));
-  elements.push(furnitureElement('fur-plant', 470, 95));
-  elements.push(furnitureElement('fur-plant', 760, 95));
-
-  // === Lounge Area ===
-  elements.push({
-    type: 'rectangle', x: 450, y: 290, width: 350, height: 260,
-    backgroundColor: '#ffffff', strokeColor: '#e5e7eb',
-    fillStyle: 'solid', roundness: { type: 3 }, strokeWidth: 1,
-  });
-  elements.push({
-    type: 'text', x: 465, y: 300, text: 'ラウンジ',
-    fontSize: 12, strokeColor: '#6b7280',
-  });
-
-  // Sofas + coffee table
-  elements.push(furnitureElement('fur-rug', 520, 380));
-  elements.push(furnitureElement('fur-sofa', 530, 330));
-  elements.push(furnitureElement('fur-table-coffee', 545, 400));
-  elements.push(furnitureElement('fur-sofa', 530, 450));
-  elements.push(furnitureElement('fur-lounge-chair', 680, 360));
-  elements.push(furnitureElement('fur-lamp', 760, 310));
-  elements.push(furnitureElement('fur-plant', 470, 490));
-  elements.push(furnitureElement('fur-bookcase', 700, 440));
+  elements.push(furnitureElement('fur-rug', 600, 410));
+  elements.push(furnitureElement('fur-sofa', 610, 355));
+  elements.push(furnitureElement('fur-table-coffee', 625, 430));
+  elements.push(furnitureElement('fur-sofa', 610, 475));
+  elements.push(furnitureElement('fur-lounge-chair', 740, 390));
+  elements.push(furnitureElement('fur-lamp', 810, 320));
+  elements.push(furnitureElement('fur-bookcase', 545, 460));
+  elements.push(furnitureElement('fur-plant', 810, 510));
 
   return elements;
 }
