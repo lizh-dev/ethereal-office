@@ -13,6 +13,7 @@ import (
 type CreateFloorRequest struct {
 	Name        string `json:"name"`
 	CreatorName string `json:"creatorName,omitempty"`
+	Password    string `json:"password,omitempty"`
 }
 
 type UpdateFloorRequest struct {
@@ -58,6 +59,9 @@ func CreateFloor(w http.ResponseWriter, r *http.Request) {
 	if req.CreatorName != "" {
 		floor.CreatorName = &req.CreatorName
 	}
+	if req.Password != "" {
+		floor.Password = &req.Password
+	}
 
 	if err := db.DB.Create(&floor).Error; err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to create floor")
@@ -89,7 +93,17 @@ func GetFloor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, floor)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"id":              floor.ID,
+		"slug":            floor.Slug,
+		"name":            floor.Name,
+		"creatorName":     floor.CreatorName,
+		"excalidrawScene": floor.ExcalidrawScene,
+		"zones":           floor.Zones,
+		"hasPassword":     floor.Password != nil && *floor.Password != "",
+		"createdAt":       floor.CreatedAt,
+		"updatedAt":       floor.UpdatedAt,
+	})
 }
 
 // PATCH /api/floors/{slug}
@@ -163,6 +177,28 @@ func VerifyEditToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]bool{"canEdit": floor.EditToken == editToken})
+}
+
+// POST /api/floors/{slug}/verify-password
+func VerifyPassword(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	var body struct {
+		Password string `json:"password"`
+	}
+	json.NewDecoder(r.Body).Decode(&body)
+
+	var floor model.Floor
+	if err := db.DB.Where("slug = ?", slug).First(&floor).Error; err != nil {
+		writeJSON(w, http.StatusOK, map[string]bool{"ok": false})
+		return
+	}
+
+	if floor.Password == nil || *floor.Password == "" {
+		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": body.Password == *floor.Password})
 }
 
 // DELETE /api/floors/{slug}

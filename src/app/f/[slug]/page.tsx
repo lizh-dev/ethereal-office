@@ -23,6 +23,7 @@ interface FloorData {
   name: string;
   excalidrawScene?: unknown;
   zones?: unknown;
+  hasPassword?: boolean;
 }
 
 export default function FloorPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -157,7 +158,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   }
 
   if (!joined) {
-    return <JoinDialog floorName={floorData?.name || 'フロア'} onJoin={handleJoin} />;
+    return <JoinDialog floorName={floorData?.name || 'フロア'} floorSlug={slug} hasPassword={floorData?.hasPassword} onJoin={handleJoin} />;
   }
 
   return (

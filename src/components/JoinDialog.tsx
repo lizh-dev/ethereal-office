@@ -7,12 +7,16 @@ const AVATAR_SEEDS = ['田中', '佐藤', '鈴木', '高橋', '伊藤', '渡辺'
 
 interface JoinDialogProps {
   floorName: string;
+  floorSlug: string;
+  hasPassword?: boolean;
   onJoin: (name: string, avatarStyle: string, avatarSeed: string) => void;
 }
 
-export default function JoinDialog({ floorName, onJoin }: JoinDialogProps) {
+export default function JoinDialog({ floorName, floorSlug, hasPassword, onJoin }: JoinDialogProps) {
   const [name, setName] = useState('');
   const [avatarStyle, setAvatarStyle] = useState('notionists');
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [avatarSeed, setAvatarSeed] = useState('田中');
 
   // Restore from localStorage
@@ -28,8 +32,29 @@ export default function JoinDialog({ floorName, onJoin }: JoinDialogProps) {
     }
   }, []);
 
-  const handleJoin = () => {
+  const handleJoin = async () => {
     if (!name.trim()) return;
+    setPasswordError('');
+
+    // Verify password if required
+    if (hasPassword) {
+      try {
+        const res = await fetch(`/api/floors/${floorSlug}/verify-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: password }),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          setPasswordError('パスワードが正しくありません');
+          return;
+        }
+      } catch {
+        setPasswordError('検証に失敗しました');
+        return;
+      }
+    }
+
     localStorage.setItem('ethereal-office-user', JSON.stringify({
       name: name.trim(),
       avatarStyle,
@@ -117,12 +142,29 @@ export default function JoinDialog({ floorName, onJoin }: JoinDialogProps) {
             </div>
           </div>
 
+          {hasPassword && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                パスワード <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => { setPassword(e.target.value); setPasswordError(''); }}
+                onKeyDown={e => { if (e.key === 'Enter') handleJoin(); }}
+                placeholder="フロアのパスワードを入力"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent text-gray-800 placeholder-gray-400"
+              />
+              {passwordError && <p className="text-red-500 text-xs mt-1">{passwordError}</p>}
+            </div>
+          )}
+
           <button
             onClick={handleJoin}
-            disabled={!name.trim()}
+            disabled={!name.trim() || (hasPassword && !password)}
             className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-medium rounded-xl transition-colors"
           >
-            入室する
+            {hasPassword ? '🔒 入室する' : '入室する'}
           </button>
         </div>
       </div>

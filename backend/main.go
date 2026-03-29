@@ -40,6 +40,7 @@ func main() {
 	mux.HandleFunc("GET /api/floors/{slug}", handler.GetFloor)
 	mux.HandleFunc("PATCH /api/floors/{slug}", handler.UpdateFloor)
 	mux.HandleFunc("POST /api/floors/{slug}/verify-token", handler.VerifyEditToken)
+	mux.HandleFunc("POST /api/floors/{slug}/verify-password", handler.VerifyPassword)
 	mux.HandleFunc("DELETE /api/floors/{slug}", handler.DeleteFloor)
 
 	// WebSocket

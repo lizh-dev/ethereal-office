@@ -7,6 +7,7 @@ export default function LandingPage() {
   const router = useRouter();
   const [floorName, setFloorName] = useState('');
   const [creatorName, setCreatorName] = useState('');
+  const [password, setPassword] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
 
@@ -26,6 +27,7 @@ export default function LandingPage() {
         body: JSON.stringify({
           name: floorName.trim(),
           creatorName: creatorName.trim() || undefined,
+          password: password.trim() || undefined,
         }),
       });
 
@@ -82,6 +84,20 @@ export default function LandingPage() {
                 onChange={(e) => setCreatorName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                 placeholder="例: 田中太郎"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent text-gray-800 placeholder-gray-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                パスワード（任意）
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                placeholder="設定するとURL知っていてもパスワードが必要"
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent text-gray-800 placeholder-gray-400"
               />
             </div>

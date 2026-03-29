@@ -586,6 +586,53 @@ test.describe('I-3. 通知', () => {
 });
 
 // =============================================================
+// K. パスワード保護
+// =============================================================
+test.describe('K. パスワード保護', () => {
+  let slug: string;
+
+  test.beforeAll(async ({ request }) => {
+    // Create password-protected floor directly via API
+    const res = await request.post(`${API}/api/floors`, {
+      data: { name: 'パスワードフロア', creatorName: 'テスター', password: 'secret123' },
+    });
+    const body = await res.json();
+    slug = body.slug;
+  });
+
+  test('K-1: パスワード付きフロアでパスワード入力欄が表示', async ({ page }) => {
+    await page.goto(`${BASE}/f/${slug}`);
+    await page.waitForSelector('input[placeholder*="名前"]', { timeout: 10000 });
+    await expect(page.locator('input[type="password"]')).toBeVisible();
+    await expect(page.getByText('🔒 入室する')).toBeVisible();
+  });
+
+  test('K-2: 間違ったパスワードでエラー', async ({ page }) => {
+    await page.goto(`${BASE}/f/${slug}`);
+    await page.fill('input[placeholder*="名前"]', 'テスター');
+    await page.fill('input[type="password"]', 'wrong');
+    await page.click('button:has-text("入室する")');
+    await expect(page.getByText('パスワードが正しくありません')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('K-3: 正しいパスワードで入室成功', async ({ page }) => {
+    await page.goto(`${BASE}/f/${slug}`);
+    await page.fill('input[placeholder*="名前"]', 'テスター');
+    await page.fill('input[type="password"]', 'secret123');
+    await page.click('button:has-text("入室する")');
+    await page.waitForSelector('[title*="WebSocket"]', { timeout: 15000 });
+    await expect(page.getByText('Online')).toBeVisible();
+  });
+
+  test('K-4: パスワードなしフロアではパスワード欄が出ない', async ({ page, request }) => {
+    const noPassSlug = await createFloor(request, 'パスワードなし');
+    await page.goto(`${BASE}/f/${noPassSlug}`);
+    await page.waitForSelector('input[placeholder*="名前"]', { timeout: 10000 });
+    await expect(page.locator('input[type="password"]')).not.toBeVisible();
+  });
+});
+
+// =============================================================
 // J. WebSocket接続
 // =============================================================
 test.describe('J. WebSocket接続', () => {
