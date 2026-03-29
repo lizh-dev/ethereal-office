@@ -172,6 +172,15 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
   const sendMessage = useOfficeStore((s) => s.sendMessage);
   const [chatInput, setChatInput] = useState('');
   const [hoveredUser, setHoveredUser] = useState<{ user: User; screenX: number; screenY: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ userId: string; userName: string; x: number; y: number } | null>(null);
+
+  // Close context menu on any click or right-click elsewhere
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [contextMenu]);
 
   const handleSend = () => {
     if (!chatInput.trim()) return;
@@ -254,6 +263,13 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                 key={user.id}
                 onMouseEnter={() => setHoveredUser({ user, screenX: pos.x, screenY: pos.y })}
                 onMouseLeave={() => setHoveredUser(null)}
+                onContextMenu={(e) => {
+                  if (isFloorOwner && !isCurrent) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setContextMenu({ userId: user.id, userName: user.name, x: e.clientX, y: e.clientY });
+                  }
+                }}
                 style={{
                   position: 'absolute',
                   left: pos.x - size / 2,
@@ -470,6 +486,45 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
               >{emoji}</button>
             ))}
           </div>
+
+          {/* Right-click context menu for kicking users */}
+          {contextMenu && (
+            <div
+              style={{
+                position: 'fixed',
+                left: contextMenu.x,
+                top: contextMenu.y,
+                zIndex: 200,
+                pointerEvents: 'auto',
+                background: '#fff',
+                borderRadius: 8,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)',
+                border: '1px solid #e5e7eb',
+                minWidth: 160,
+                overflow: 'hidden',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => {
+                  const wsSend = (window as unknown as Record<string, any>).__wsSend;
+                  wsSend?.kick?.(contextMenu.userId);
+                  setContextMenu(null);
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  width: '100%', padding: '10px 14px',
+                  border: 'none', background: 'transparent',
+                  cursor: 'pointer', fontSize: 13, color: '#DC2626',
+                  textAlign: 'left',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                🚫 退出させる
+              </button>
+            </div>
+          )}
 
           {/* Seat indicators with labels */}
           {zones.flatMap(z => z.seats).map((seat: any, i) => {

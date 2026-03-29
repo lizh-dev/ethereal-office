@@ -74,6 +74,13 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
       avatar: opts.avatarStyle || 'notionists',
       seed: opts.avatarSeed || 'default',
     });
+    // Send saved userId as hint so server can reuse it after reload
+    try {
+      const savedUserId = localStorage.getItem('ethereal-user-id');
+      if (savedUserId) {
+        params.set('userId', savedUserId);
+      }
+    } catch { /* ignore */ }
     const ws = new WebSocket(`${wsBaseUrl}?${params}`);
     wsRef.current = ws;
 
@@ -100,6 +107,9 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
             useOfficeStore.setState((state) => ({
               currentUser: { ...state.currentUser, id: msg.userId },
             }));
+            try {
+              localStorage.setItem('ethereal-user-id', msg.userId);
+            } catch { /* ignore */ }
           }
           setRemoteUsers(
             (msg.users || [])
@@ -162,8 +172,10 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
 
         case 'kicked':
           // This user has been kicked by the floor owner
-          alert('フロアオーナーにより退出されました');
-          window.location.href = '/';
+          useOfficeStore.getState().setKickedNotification(true);
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
           break;
 
         case 'scene_updated':

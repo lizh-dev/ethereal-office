@@ -29,7 +29,7 @@ interface FloorData {
 
 export default function FloorPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
-  const { editorMode, showAvatarSelector, currentUser, currentSeatId, viewMode } = useOfficeStore();
+  const { editorMode, showAvatarSelector, currentUser, currentSeatId, viewMode, kickedNotification } = useOfficeStore();
   const [showSpaceWizard, setShowSpaceWizard] = useState(false);
   const [joined, setJoined] = useState(false);
   const [wsOptions, setWsOptions] = useState<{
@@ -214,6 +214,28 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
       {showAvatarSelector && <AvatarSelector />}
       {showSpaceWizard && <SpaceWizard onClose={() => setShowSpaceWizard(false)} />}
       <NotificationToast />
+      {/* Kick notification overlay */}
+      {kickedNotification && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: '32px 40px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            textAlign: 'center', maxWidth: 360,
+          }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🚫</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#1f2937', marginBottom: 8 }}>
+              フロアオーナーにより退出されました
+            </div>
+            <div style={{ fontSize: 13, color: '#6b7280' }}>
+              2秒後にトップページへ移動します...
+            </div>
+          </div>
+        </div>
+      )}
       {/* WS connection indicator - minimal, only show when disconnected */}
       {!connected && (
         <div className="fixed bottom-2 left-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs bg-red-50 border border-red-200 shadow-sm">

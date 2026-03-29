@@ -52,6 +52,10 @@ interface OfficeState {
   isFloorOwner: boolean;
   setIsFloorOwner: (v: boolean) => void;
 
+  // Kick notification overlay
+  kickedNotification: boolean;
+  setKickedNotification: (v: boolean) => void;
+
   // Search
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -144,6 +148,10 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   // Permissions
   isFloorOwner: false,
   setIsFloorOwner: (v) => set({ isFloorOwner: v }),
+
+  // Kick notification overlay
+  kickedNotification: false,
+  setKickedNotification: (v) => set({ kickedNotification: v }),
 
   // Search
   searchQuery: '',
@@ -254,7 +262,7 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
     state.addNotification(`${state.currentUser.name}: ${text}`);
     set((s) => ({
       chatMessages: [
-        ...s.chatMessages.filter((m) => Date.now() - m.timestamp < 10000),
+        ...s.chatMessages,
         { userId: s.currentUser.id, text, timestamp: Date.now() },
       ],
     }));
