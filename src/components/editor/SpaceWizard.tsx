@@ -74,9 +74,12 @@ function roomBox(name: string, x: number, y: number, w: number, h: number): RawE
 
 function generateDeskArea(config: SpaceConfig, ox: number, oy: number): { elements: RawEl[]; chairs: RawEl[] } {
   const { rows, cols, spacing, name } = config;
-  const deskW = getAsset('fur-desk').width;
+  const deskW = getAsset('fur-desk').width;  // 90
+  const deskH = getAsset('fur-desk').height; // 51
+  const chairH = getAsset('fur-chair-up').height; // 50
+  const chairGap = 25; // gap between desk bottom and chair top
   const cellW = deskW + spacing;
-  const cellH = 80 + spacing;
+  const cellH = deskH + chairGap + chairH + spacing;
   const roomW = cols * cellW + 40;
   const roomH = rows * cellH + 50;
 
@@ -87,12 +90,9 @@ function generateDeskArea(config: SpaceConfig, ox: number, oy: number): { elemen
     for (let c = 0; c < cols; c++) {
       const dx = ox + 20 + c * cellW;
       const dy = oy + 35 + r * cellH;
-      // Desk
       elements.push(furEl('fur-desk', dx, dy));
-      // Monitor on desk
       elements.push(furEl('fur-monitor', dx + 30, dy + 5));
-      // Chair below desk (facing up toward desk)
-      const chairEl = furEl('fur-chair-up', dx + 29, dy + 55);
+      const chairEl = furEl('fur-chair-up', dx + 29, dy + deskH + chairGap);
       elements.push(chairEl);
       chairs.push(chairEl);
     }
@@ -108,50 +108,46 @@ function generateDeskArea(config: SpaceConfig, ox: number, oy: number): { elemen
 
 function generateMeeting(config: SpaceConfig, ox: number, oy: number): { elements: RawEl[]; chairs: RawEl[] } {
   const seats = config.cols; // seats per long side
-  const roomW = Math.max(240, seats * 50 + 120);
-  const roomH = 220;
+  const tblW = 65, tblH = 65;
+  const vChairW = 32, vChairH = 50;
+  const hChairW = 50, hChairH = 32;
+  const gap = 15; // gap between table edge and chair edge
+  const roomW = Math.max(280, seats * 40 + tblW + hChairW * 2 + gap * 2 + 80);
+  const roomH = tblH + vChairH * 2 + gap * 2 + 80;
   const elements: RawEl[] = [...roomBox(config.name, ox, oy, roomW, roomH)];
   const chairs: RawEl[] = [];
 
-  // Table centered in room
-  const tblW = 65, tblH = 65;
+  // Table centered
   const tblX = ox + (roomW - tblW) / 2;
   const tblY = oy + (roomH - tblH) / 2;
   elements.push(furEl('fur-table-round', tblX, tblY));
 
-  // Center of table
-  const cx = tblX + tblW / 2;
-  const cy = tblY + tblH / 2;
-  const dist = 55; // distance from table center to chair center
-  const vChairW = 32, vChairH = 50; // vertical chair (up/down)
-  const hChairW = 50, hChairH = 32; // horizontal chair (left/right)
-
-  // Place chairs evenly around the table
+  // Chairs placed relative to table edges with gap
   // Top row (facing down)
   for (let i = 0; i < Math.min(seats, 3); i++) {
     const spread = Math.min(seats, 3);
-    const startX = cx - (spread * 35) / 2 + 2;
-    const el = furEl('fur-chair', startX + i * 35, cy - dist - vChairH / 2);
+    const startX = tblX + (tblW - spread * 38) / 2;
+    const el = furEl('fur-chair', startX + i * 38, tblY - vChairH - gap);
     elements.push(el);
     chairs.push(el);
   }
   // Bottom row (facing up)
   for (let i = 0; i < Math.min(seats, 3); i++) {
     const spread = Math.min(seats, 3);
-    const startX = cx - (spread * 35) / 2 + 2;
-    const el = furEl('fur-chair-up', startX + i * 35, cy + dist - vChairH / 2);
+    const startX = tblX + (tblW - spread * 38) / 2;
+    const el = furEl('fur-chair-up', startX + i * 38, tblY + tblH + gap);
     elements.push(el);
     chairs.push(el);
   }
   // Left (facing right)
   if (seats > 3) {
-    const el = furEl('fur-chair-right', cx - dist - hChairW / 2, cy - hChairH / 2);
+    const el = furEl('fur-chair-right', tblX - hChairW - gap, tblY + (tblH - hChairH) / 2);
     elements.push(el);
     chairs.push(el);
   }
   // Right (facing left)
   if (seats > 3) {
-    const el = furEl('fur-chair-left', cx + dist - hChairW / 2, cy - hChairH / 2);
+    const el = furEl('fur-chair-left', tblX + tblW + gap, tblY + (tblH - hChairH) / 2);
     elements.push(el);
     chairs.push(el);
   }

@@ -115,60 +115,79 @@ export function generateIsometricDemoFloor() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elements: any[] = [];
 
+  // Desk dimensions: 90x51, Chair(up): 32x50, Monitor: 30x29
+  const deskH = 51;
+  const chairGap = 25; // gap between desk bottom and chair top
+  const rowGap = 40;   // gap between rows
+
   // ===== Workspace (4 desk+chair sets in 2 rows) =====
-  elements.push(...room('ワークスペース', 30, 30, 380, 310));
+  const ws = { x: 30, y: 30, w: 420, h: 380 };
+  elements.push(...room('ワークスペース', ws.x, ws.y, ws.w, ws.h));
 
-  // Row 1: 2 desks with chairs facing up toward desk
-  elements.push(fur('fur-desk', 55, 60));
-  elements.push(fur('fur-monitor', 85, 65));
-  elements.push(fur('fur-chair-up', 84, 120));
+  // Row 1
+  const r1y = ws.y + 40;
+  elements.push(fur('fur-desk', 55, r1y));
+  elements.push(fur('fur-monitor', 85, r1y + 5));
+  elements.push(fur('fur-chair-up', 84, r1y + deskH + chairGap));
 
-  elements.push(fur('fur-desk', 215, 60));
-  elements.push(fur('fur-monitor', 245, 65));
-  elements.push(fur('fur-chair-up', 244, 120));
+  elements.push(fur('fur-desk', 240, r1y));
+  elements.push(fur('fur-monitor', 270, r1y + 5));
+  elements.push(fur('fur-chair-up', 269, r1y + deskH + chairGap));
 
   // Row 2
-  elements.push(fur('fur-desk', 55, 190));
-  elements.push(fur('fur-monitor', 85, 195));
-  elements.push(fur('fur-chair-up', 84, 250));
+  const r2y = r1y + deskH + chairGap + 50 + rowGap;
+  elements.push(fur('fur-desk', 55, r2y));
+  elements.push(fur('fur-monitor', 85, r2y + 5));
+  elements.push(fur('fur-chair-up', 84, r2y + deskH + chairGap));
 
-  elements.push(fur('fur-desk', 215, 190));
-  elements.push(fur('fur-monitor', 245, 195));
-  elements.push(fur('fur-chair-up', 244, 250));
+  elements.push(fur('fur-desk', 240, r2y));
+  elements.push(fur('fur-monitor', 270, r2y + 5));
+  elements.push(fur('fur-chair-up', 269, r2y + deskH + chairGap));
 
   // Decorations
-  elements.push(fur('fur-plant', 175, 55));
-  elements.push(fur('fur-plant', 370, 40));
+  elements.push(fur('fur-plant', 185, r1y));
+  elements.push(fur('fur-plant', ws.x + ws.w - 45, ws.y + 10));
 
   // ===== Meeting Room =====
-  elements.push(...room('会議室', 440, 30, 310, 220));
+  const mr = { x: 480, y: 30, w: 320, h: 250 };
+  elements.push(...room('会議室', mr.x, mr.y, mr.w, mr.h));
 
-  // Table centered in room
+  // Table centered
   const tblW = 65, tblH = 65;
-  const tblX = 440 + (310 - tblW) / 2;  // room center
-  const tblY = 30 + (220 - tblH) / 2;
+  const tblX = mr.x + (mr.w - tblW) / 2;
+  const tblY = mr.y + (mr.h - tblH) / 2;
   elements.push(fur('fur-table-round', tblX, tblY));
-  // Chairs equidistant from table center
-  const cx = tblX + tblW / 2, cy = tblY + tblH / 2;
-  const dist = 50;  // distance from center to chair center
-  const chW = 32, chH = 50, chWh = 50, chHh = 32;  // vertical / horizontal chair sizes
-  elements.push(fur('fur-chair', cx - chW / 2, cy - dist - chH / 2));        // top
-  elements.push(fur('fur-chair-up', cx - chW / 2, cy + dist - chH / 2));     // bottom
-  elements.push(fur('fur-chair-right', cx - dist - chWh / 2, cy - chHh / 2)); // left
-  elements.push(fur('fur-chair-left', cx + dist - chWh / 2, cy - chHh / 2));  // right
-  elements.push(fur('fur-whiteboard', 460, 190));
-  elements.push(fur('fur-plant', 710, 40));
+
+  // Chairs at generous distance from table edges
+  const gap = 15;
+  const chW = 32, chH = 50, chWh = 50, chHh = 32;
+  elements.push(fur('fur-chair', tblX + (tblW - chW) / 2, tblY - chH - gap));           // top
+  elements.push(fur('fur-chair-up', tblX + (tblW - chW) / 2, tblY + tblH + gap));       // bottom
+  elements.push(fur('fur-chair-right', tblX - chWh - gap, tblY + (tblH - chHh) / 2));   // left
+  elements.push(fur('fur-chair-left', tblX + tblW + gap, tblY + (tblH - chHh) / 2));    // right
+
+  elements.push(fur('fur-whiteboard', mr.x + 15, mr.y + mr.h - 60));
+  elements.push(textEl(mr.x + 20, mr.y + mr.h - 8, 'ホワイトボード'));
+  elements.push(fur('fur-plant', mr.x + mr.w - 45, mr.y + 10));
 
   // ===== Lounge =====
-  elements.push(...room('ラウンジ', 440, 280, 310, 220));
+  const lg = { x: 480, y: 310, w: 320, h: 240 };
+  elements.push(...room('ラウンジ', lg.x, lg.y, lg.w, lg.h));
 
-  elements.push(fur('fur-sofa', 480, 320));
-  elements.push(fur('fur-sofa', 480, 420));
-  elements.push(fur('fur-armchair', 620, 350));
-  elements.push(fur('fur-armchair', 620, 410));
-  elements.push(fur('fur-bookshelf', 555, 300));
-  elements.push(fur('fur-coffee', 460, 460));
-  elements.push(fur('fur-plant', 710, 290));
+  elements.push(fur('fur-sofa', lg.x + 30, lg.y + 50));
+  elements.push(fur('fur-sofa', lg.x + 30, lg.y + 150));
+  elements.push(fur('fur-armchair', lg.x + 180, lg.y + 80));
+  elements.push(fur('fur-armchair', lg.x + 180, lg.y + 150));
+  elements.push(fur('fur-bookshelf', lg.x + 120, lg.y + 40));
+  elements.push(textEl(lg.x + 130, lg.y + 98, '本棚'));
+  elements.push(fur('fur-coffee', lg.x + 250, lg.y + 40));
+  elements.push(textEl(lg.x + 240, lg.y + 65, 'コーヒー'));
+  elements.push(fur('fur-plant', lg.x + lg.w - 45, lg.y + 10));
+  elements.push(fur('fur-plant', lg.x + 20, lg.y + lg.h - 40));
 
   return elements;
+}
+
+function textEl(x: number, y: number, text: string) {
+  return { type: 'text', x, y, text, fontSize: 10, strokeColor: '#94a3b8' };
 }
