@@ -15,6 +15,7 @@ import MembersView from '@/components/views/MembersView';
 import ProfileView from '@/components/views/ProfileView';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useIdleDetection } from '@/hooks/useIdleDetection';
 
 const SpaceWizard = dynamic(() => import('@/components/editor/SpaceWizard'), { ssr: false });
 
@@ -84,6 +85,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   }, [slug]);
 
   const { send, connected } = useWebSocket(wsOptions);
+  useIdleDetection();
 
   const handleJoin = (name: string, avatarStyle: string, avatarSeed: string) => {
     // Set current user info in store
