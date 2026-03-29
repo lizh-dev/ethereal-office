@@ -11,18 +11,18 @@ export interface FurnitureAsset {
 }
 
 export const FURNITURE_ASSETS: FurnitureAsset[] = [
-  { id: 'fur-desk', name: 'デスク', src: '/assets/furniture-topdown/desk.png', width: 90, height: 53, isSeat: false },
-  { id: 'fur-chair', name: 'オフィスチェア', src: '/assets/furniture-topdown/chair.png', width: 40, height: 25, isSeat: true },
-  { id: 'fur-table-round', name: '丸テーブル', src: '/assets/furniture-topdown/table-round.png', width: 70, height: 45, isSeat: false },
-  { id: 'fur-table-rect', name: '長テーブル', src: '/assets/furniture-topdown/table-rect.png', width: 90, height: 58, isSeat: false },
-  { id: 'fur-sofa', name: 'ソファ', src: '/assets/furniture-topdown/sofa.png', width: 80, height: 51, isSeat: true },
-  { id: 'fur-armchair', name: 'アームチェア', src: '/assets/furniture-topdown/armchair.png', width: 45, height: 31, isSeat: true },
-  { id: 'fur-plant', name: '観葉植物', src: '/assets/furniture-topdown/plant.png', width: 35, height: 24, isSeat: false },
-  { id: 'fur-bookshelf', name: '本棚', src: '/assets/furniture-topdown/bookshelf.png', width: 70, height: 48, isSeat: false },
-  { id: 'fur-whiteboard', name: 'ホワイトボード', src: '/assets/furniture-topdown/whiteboard.png', width: 70, height: 48, isSeat: false },
-  { id: 'fur-coffee', name: 'コーヒーマシン', src: '/assets/furniture-topdown/coffee-machine.png', width: 30, height: 20, isSeat: false },
-  { id: 'fur-monitor', name: 'モニター', src: '/assets/furniture-topdown/monitor.png', width: 40, height: 27, isSeat: false },
-  { id: 'fur-partition', name: 'パーティション', src: '/assets/furniture-topdown/partition.png', width: 80, height: 55, isSeat: false },
+  { id: 'fur-desk', name: 'デスク', src: '/assets/furniture-topdown/desk.png', width: 90, height: 51, isSeat: false },
+  { id: 'fur-chair', name: 'オフィスチェア', src: '/assets/furniture-topdown/chair.png', width: 32, height: 50, isSeat: true },
+  { id: 'fur-table-round', name: '丸テーブル', src: '/assets/furniture-topdown/table-round.png', width: 65, height: 65, isSeat: false },
+  { id: 'fur-table-rect', name: '長テーブル', src: '/assets/furniture-topdown/table-rect.png', width: 90, height: 62, isSeat: false },
+  { id: 'fur-sofa', name: 'ソファ', src: '/assets/furniture-topdown/sofa.png', width: 55, height: 54, isSeat: true },
+  { id: 'fur-armchair', name: 'アームチェア', src: '/assets/furniture-topdown/armchair.png', width: 40, height: 40, isSeat: true },
+  { id: 'fur-plant', name: '観葉植物', src: '/assets/furniture-topdown/plant.png', width: 35, height: 33, isSeat: false },
+  { id: 'fur-bookshelf', name: '本棚', src: '/assets/furniture-topdown/bookshelf.png', width: 70, height: 55, isSeat: false },
+  { id: 'fur-whiteboard', name: 'ホワイトボード', src: '/assets/furniture-topdown/whiteboard.png', width: 80, height: 49, isSeat: false },
+  { id: 'fur-coffee', name: 'コーヒーマシン', src: '/assets/furniture-topdown/coffee-machine.png', width: 25, height: 24, isSeat: false },
+  { id: 'fur-monitor', name: 'モニター', src: '/assets/furniture-topdown/monitor.png', width: 30, height: 29, isSeat: false },
+  { id: 'fur-partition', name: 'パーティション', src: '/assets/furniture-topdown/partition.png', width: 90, height: 16, isSeat: false },
 ];
 
 async function fetchAsDataURL(src: string): Promise<string> {
@@ -92,46 +92,53 @@ export function generateIsometricDemoFloor() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elements: any[] = [];
 
-  // ===== Workspace (4 desk sets) =====
-  elements.push(...room('ワークスペース', 30, 30, 400, 280));
+  // ===== Workspace (4 desk+chair sets in 2 rows) =====
+  elements.push(...room('ワークスペース', 30, 30, 380, 310));
 
-  // Desk row 1
-  elements.push(fur('fur-desk', 50, 55));
-  elements.push(fur('fur-chair', 75, 115));
-  elements.push(fur('fur-desk', 220, 55));
-  elements.push(fur('fur-chair', 245, 115));
+  // Row 1: 2 desks facing down with chairs below
+  elements.push(fur('fur-desk', 55, 60));
+  elements.push(fur('fur-monitor', 85, 65));
+  elements.push(fur('fur-chair', 84, 120));
 
-  // Desk row 2
-  elements.push(fur('fur-desk', 50, 170));
-  elements.push(fur('fur-chair', 75, 230));
-  elements.push(fur('fur-desk', 220, 170));
-  elements.push(fur('fur-chair', 245, 230));
+  elements.push(fur('fur-desk', 215, 60));
+  elements.push(fur('fur-monitor', 245, 65));
+  elements.push(fur('fur-chair', 244, 120));
+
+  // Row 2
+  elements.push(fur('fur-desk', 55, 190));
+  elements.push(fur('fur-monitor', 85, 195));
+  elements.push(fur('fur-chair', 84, 250));
+
+  elements.push(fur('fur-desk', 215, 190));
+  elements.push(fur('fur-monitor', 245, 195));
+  elements.push(fur('fur-chair', 244, 250));
 
   // Decorations
-  elements.push(fur('fur-plant', 180, 60));
-  elements.push(fur('fur-plant', 390, 40));
+  elements.push(fur('fur-plant', 175, 55));
+  elements.push(fur('fur-plant', 370, 40));
 
   // ===== Meeting Room =====
-  elements.push(...room('会議室', 460, 30, 280, 200));
+  elements.push(...room('会議室', 440, 30, 310, 220));
 
-  elements.push(fur('fur-table-round', 555, 85));
-  elements.push(fur('fur-chair', 540, 60));
-  elements.push(fur('fur-chair', 610, 60));
-  elements.push(fur('fur-chair', 540, 140));
-  elements.push(fur('fur-chair', 610, 140));
-  elements.push(fur('fur-whiteboard', 470, 170));
-  elements.push(fur('fur-plant', 700, 40));
+  elements.push(fur('fur-table-round', 545, 90));
+  // Chairs around table
+  elements.push(fur('fur-chair', 565, 55));
+  elements.push(fur('fur-chair', 520, 100));
+  elements.push(fur('fur-chair', 610, 100));
+  elements.push(fur('fur-chair', 565, 160));
+  elements.push(fur('fur-whiteboard', 460, 190));
+  elements.push(fur('fur-plant', 710, 40));
 
   // ===== Lounge =====
-  elements.push(...room('ラウンジ', 460, 260, 280, 200));
+  elements.push(...room('ラウンジ', 440, 280, 310, 220));
 
-  elements.push(fur('fur-sofa', 490, 300));
-  elements.push(fur('fur-sofa', 490, 390));
-  elements.push(fur('fur-armchair', 650, 330));
-  elements.push(fur('fur-armchair', 650, 390));
-  elements.push(fur('fur-bookshelf', 590, 280));
-  elements.push(fur('fur-coffee', 470, 420));
-  elements.push(fur('fur-plant', 700, 270));
+  elements.push(fur('fur-sofa', 480, 320));
+  elements.push(fur('fur-sofa', 480, 420));
+  elements.push(fur('fur-armchair', 620, 350));
+  elements.push(fur('fur-armchair', 620, 410));
+  elements.push(fur('fur-bookshelf', 555, 300));
+  elements.push(fur('fur-coffee', 460, 460));
+  elements.push(fur('fur-plant', 710, 290));
 
   return elements;
 }

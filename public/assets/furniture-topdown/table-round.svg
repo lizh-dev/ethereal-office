@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" width="50" height="50">
-  <!-- Table shadow -->
-  <ellipse cx="26" cy="27" rx="22" ry="22" fill="#00000010"/>
-  <!-- Table top -->
-  <circle cx="25" cy="25" r="22" fill="#ddd8d2" stroke="#bbb5ac" stroke-width="1.5"/>
-  <!-- Center detail -->
-  <circle cx="25" cy="25" r="3" fill="#ccc7c0" stroke="#bbb5ac" stroke-width="0.5"/>
-</svg>
