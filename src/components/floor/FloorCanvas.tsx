@@ -722,54 +722,52 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             );
           })}
 
-          {/* Seat indicators with labels */}
+          {/* Seat indicators — small label badge below each chair */}
           {zones.flatMap(z => z.seats).map((seat: any, i) => {
             if (seat.occupied && seat.occupiedBy !== currentUser.id) return null;
             const zoom = appState.zoom?.value || 1;
-            const sw = (seat.w || 22) * zoom;
-            const sh = (seat.h || 22) * zoom;
             const pos = sceneToScreen(seat.x, seat.y, appState);
             const isEmpty = !seat.occupied;
+            const size = 18 * zoom;
             return (
-              <div key={`seat-${seat.id}-${i}`} title={isEmpty ? `${seat.label || seat.id} - クリックして座る` : seat.label || seat.id} style={{
-                position: 'absolute', left: pos.x - 2, top: pos.y - 2, width: sw + 4, height: sh + 4,
-                borderRadius: '50%',
-                border: isEmpty ? '2px solid rgba(99,102,241,0.25)' : 'none',
-                background: isEmpty ? 'rgba(99,102,241,0.06)' : 'transparent',
-                cursor: isEmpty ? 'pointer' : 'default', pointerEvents: isEmpty ? 'auto' : 'none', zIndex: 5,
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={isEmpty ? (e => { e.currentTarget.style.border = '2px solid rgba(99,102,241,0.6)'; e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.transform = 'scale(1.15)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(99,102,241,0.3)'; }) : undefined}
-              onMouseLeave={isEmpty ? (e => { e.currentTarget.style.border = '2px solid rgba(99,102,241,0.25)'; e.currentTarget.style.background = 'rgba(99,102,241,0.06)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }) : undefined}
-              onClick={isEmpty ? (e => { e.stopPropagation(); if (currentSeatId) { standUp(); wsSend.stand(); } sitAt(seat.id); moveCurrentUser(seat.x, seat.y); wsSend.sit(seat.id, seat.x, seat.y); }) : undefined}
+              <div key={`seat-${seat.id}-${i}`}
+                title={isEmpty ? `${seat.label || seat.id} - クリックして座る` : seat.label || seat.id}
+                style={{
+                  position: 'absolute',
+                  left: pos.x - size / 2,
+                  top: pos.y - size / 2,
+                  width: size,
+                  height: size,
+                  cursor: isEmpty ? 'pointer' : 'default',
+                  pointerEvents: isEmpty ? 'auto' : 'none',
+                  zIndex: 5,
+                }}
+                onClick={isEmpty ? (e => {
+                  e.stopPropagation();
+                  if (currentSeatId) { standUp(); wsSend.stand(); }
+                  sitAt(seat.id);
+                  moveCurrentUser(seat.x, seat.y);
+                  wsSend.sit(seat.id, seat.x, seat.y);
+                }) : undefined}
               >
-                {/* Empty seat icon */}
-                {isEmpty && zoom > 0.3 && (
+                {/* Seat label badge */}
+                {seat.label && zoom > 0.35 && (
                   <div style={{
-                    position: 'absolute', inset: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    position: 'absolute',
+                    left: '50%',
+                    top: '100%',
+                    transform: 'translateX(-50%)',
+                    whiteSpace: 'nowrap',
+                    fontSize: Math.max(8, 10 * zoom),
+                    fontWeight: 600,
+                    color: isEmpty ? '#fff' : '#9CA3AF',
+                    background: isEmpty ? 'rgba(56,189,248,0.85)' : 'rgba(200,200,200,0.7)',
+                    borderRadius: 6,
+                    padding: '1px 6px',
+                    marginTop: 2,
                     pointerEvents: 'none',
-                  }}>
-                    <div style={{
-                      width: sw * 0.5, height: sw * 0.5, borderRadius: '50%',
-                      background: 'rgba(99,102,241,0.15)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: sw * 0.35, color: 'rgba(99,102,241,0.5)', fontWeight: 700,
-                    }}>
-                      +
-                    </div>
-                  </div>
-                )}
-                {/* Seat label */}
-                {seat.label && zoom > 0.4 && (
-                  <div style={{
-                    position: 'absolute', top: sh + 3, left: '50%', transform: 'translateX(-50%)',
-                    whiteSpace: 'nowrap', fontSize: 9, fontWeight: 600,
-                    color: isEmpty ? '#4F46E5' : '#9CA3AF',
-                    background: isEmpty ? 'rgba(238,242,255,0.95)' : 'rgba(243,244,246,0.9)',
-                    borderRadius: 4, padding: '1px 5px',
-                    border: isEmpty ? '1px solid rgba(99,102,241,0.2)' : 'none',
-                    pointerEvents: 'none',
+                    boxShadow: isEmpty ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
+                    transition: 'all 0.15s ease',
                   }}>
                     {seat.label}
                   </div>
