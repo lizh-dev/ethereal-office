@@ -2,7 +2,7 @@
 
 import { useOfficeStore } from '@/store/officeStore';
 import { useWsSend } from '@/contexts/WebSocketContext';
-import { initSeatsFromElements } from '@/components/floor/ExcalidrawEditor';
+import { initSeatsFromElements } from '@/lib/seatDetection';
 import { useRef, useState } from 'react';
 
 const ISLAND_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
