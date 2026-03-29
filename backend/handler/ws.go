@@ -34,6 +34,7 @@ func HandleWebSocket(hub *ws.Hub) http.HandlerFunc {
 		name := r.URL.Query().Get("name")
 		avatarStyle := r.URL.Query().Get("avatar")
 		avatarSeed := r.URL.Query().Get("seed")
+		requestedUserID := r.URL.Query().Get("userId")
 
 		if floor == "" || name == "" {
 			http.Error(w, "floor and name are required", http.StatusBadRequest)
@@ -46,7 +47,16 @@ func HandleWebSocket(hub *ws.Hub) http.HandlerFunc {
 			return
 		}
 
-		userID := fmt.Sprintf("user-%s", uuid.New().String()[:8])
+		// Reuse the previous userId if the client was recently disconnected
+		userID := ""
+		if requestedUserID != "" && hub.HasRecentlyDisconnected(floor, requestedUserID) {
+			userID = requestedUserID
+			log.Printf("[%s] reusing userId %s for reconnecting user %s", floor, userID, name)
+		}
+		if userID == "" {
+			userID = fmt.Sprintf("user-%s", uuid.New().String()[:8])
+		}
+
 		info := ws.UserInfo{
 			ID:          userID,
 			Name:        name,

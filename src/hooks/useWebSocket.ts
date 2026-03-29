@@ -104,7 +104,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
       const currentUserId = useOfficeStore.getState().currentUser.id;
 
       switch (msg.type) {
-        case 'welcome':
+        case 'welcome': {
           // Server assigned us a userId
           if (msg.userId) {
             useOfficeStore.setState((state) => ({
@@ -123,12 +123,30 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
               updateRemoteUserSeat(u.id, u.seatId, u.x ?? 200, u.y ?? 200);
             }
           }
+          // Restore own seat if server sent one back (reconnection recovery)
+          if (msg.seatId) {
+            const store = useOfficeStore.getState();
+            store.sitAt(msg.seatId);
+            // Also update position if server provided it
+            if (msg.x !== undefined && msg.y !== undefined) {
+              useOfficeStore.setState((state) => ({
+                currentUser: {
+                  ...state.currentUser,
+                  position: { x: msg.x, y: msg.y },
+                  targetPosition: { x: msg.x, y: msg.y },
+                },
+              }));
+            }
+          }
           if (msg.chatHistory) {
+            // Clear existing chat messages before loading from server to avoid duplicates on reconnect
+            useOfficeStore.setState({ chatMessages: [] });
             for (const chatMsg of msg.chatHistory) {
               addChatMessage(chatMsg.userId, chatMsg.text, chatMsg.timestamp);
             }
           }
           break;
+        }
 
         case 'user_joined':
           if (msg.user.id !== currentUserId) {
@@ -239,7 +257,8 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
       console.log('[WS] Disconnected, will reconnect...');
       setConnected(false);
       setWsConnected(false);
-      setRemoteUsers([]); // Clear stale users on disconnect
+      // Clear stale remote users but preserve own seat/state for reconnection recovery
+      setRemoteUsers([]);
       wsRef.current = null;
       reconnectTimerRef.current = setTimeout(connect, RECONNECT_INTERVAL);
     };

@@ -68,6 +68,7 @@ type UserInfo struct {
 
 type ChatMessage struct {
 	UserID    string `json:"userId"`
+	UserName  string `json:"userName,omitempty"`
 	Text      string `json:"text"`
 	Timestamp int64  `json:"timestamp"`
 }
