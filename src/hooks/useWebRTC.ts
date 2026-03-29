@@ -202,20 +202,21 @@ export function useWebRTC(): WebRTCState {
     [createPeerConnection, wsSend, removePeer],
   );
 
-  // Acquire local audio stream
+  // Acquire local audio stream (returns null if mic unavailable — still allows listening)
   const acquireLocalStream = useCallback(async () => {
     if (localStreamRef.current) return localStreamRef.current;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      // Start muted
       for (const track of stream.getAudioTracks()) {
-        track.enabled = false;
+        track.enabled = false; // Start muted
       }
       localStreamRef.current = stream;
       return stream;
     } catch (err) {
-      console.error('[WebRTC] Failed to acquire audio:', err);
-      return null;
+      console.warn('[WebRTC] Mic not available, joining as listener:', err);
+      // Create empty stream so peer connections still work
+      localStreamRef.current = new MediaStream();
+      return localStreamRef.current;
     }
   }, []);
 
@@ -368,8 +369,7 @@ export function useWebRTC(): WebRTCState {
   const joinVoice = useCallback(async () => {
     if (!currentUser.id || currentUser.id === 'pending') return;
     const allUsers = useOfficeStore.getState().users;
-    const stream = await acquireLocalStream();
-    if (!stream) return;
+    await acquireLocalStream(); // OK if null (listener mode)
 
     setIsVoiceActive(true);
 

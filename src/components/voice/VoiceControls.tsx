@@ -50,17 +50,17 @@ export default function VoiceControls({ webrtc }: VoiceControlsProps) {
     // Show "join voice" button if there are peers in the same zone
     if (!canJoinVoice) return null;
     return (
-      <div className="fixed bottom-20 md:bottom-4 left-1/2 -translate-x-1/2 z-50">
+      <div className="fixed bottom-24 md:bottom-16 right-4 z-50">
         <button
           onClick={joinVoice}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl shadow-lg border text-sm font-medium text-white transition-all hover:scale-105"
-          style={{ background: 'rgba(34, 197, 94, 0.9)', borderColor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)' }}
+          className="flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white transition-all hover:scale-105"
+          style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', boxShadow: '0 4px 15px rgba(34,197,94,0.4)' }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="currentColor" />
             <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          🎙 通話に参加
+          通話に参加
         </button>
       </div>
     );
@@ -79,7 +79,7 @@ export default function VoiceControls({ webrtc }: VoiceControlsProps) {
 
   return (
     <div
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-2xl shadow-lg border"
+      className="fixed bottom-24 md:bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-2xl shadow-lg border"
       style={{
         background: 'rgba(17, 24, 39, 0.92)',
         borderColor: 'rgba(255,255,255,0.1)',
