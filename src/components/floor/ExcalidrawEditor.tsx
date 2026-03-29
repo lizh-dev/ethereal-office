@@ -91,7 +91,7 @@ const SOFA_FILE_IDS = new Set(['fur-sofa', 'fur-armchair']);
 const DESK_FILE_IDS = new Set(['fur-desk']);
 const TABLE_FILE_IDS = new Set(['fur-table-round', 'fur-table-rect']);
 
-function initSeatsFromElements(elements: readonly unknown[]) {
+export function initSeatsFromElements(elements: readonly unknown[]) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const els = elements as any[];
 
@@ -411,9 +411,8 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         .excalidraw-view-mode .excalidraw [class*="popover"] {
           display: none !important;
         }
-        /* Edit mode: hide file menu but keep drawing toolbar */
-        .excalidraw-edit-mode .excalidraw .App-menu,
-        .excalidraw-edit-mode .excalidraw .layer-ui__wrapper__top-right {
+        /* Edit mode: only hide the hamburger file menu */
+        .excalidraw-edit-mode .excalidraw .App-menu {
           display: none !important;
         }
       `}</style>
