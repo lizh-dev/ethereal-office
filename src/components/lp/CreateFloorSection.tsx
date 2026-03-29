@@ -94,7 +94,7 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
     <section
       id="create"
       ref={setRefs}
-      className="scroll-reveal relative py-24 sm:py-32 px-4"
+      className="scroll-reveal relative py-16 sm:py-24 px-4"
     >
       <div className="max-w-xl mx-auto">
         {/* Section header */}

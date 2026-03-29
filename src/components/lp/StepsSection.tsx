@@ -45,7 +45,7 @@ export default function StepsSection() {
   const ref = useScrollReveal<HTMLElement>();
 
   return (
-    <section ref={ref} className="scroll-reveal relative py-24 sm:py-32 px-4 bg-sky-50/50">
+    <section ref={ref} className="scroll-reveal relative py-16 sm:py-24 px-4 bg-sky-50/50">
       <div className="max-w-5xl mx-auto">
         {/* Section header */}
         <div className="text-center mb-16">

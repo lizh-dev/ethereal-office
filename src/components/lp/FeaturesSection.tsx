@@ -56,7 +56,7 @@ export default function FeaturesSection() {
   const ref = useScrollReveal<HTMLElement>();
 
   return (
-    <section id="features" ref={ref} className="scroll-reveal relative py-24 sm:py-32 px-4">
+    <section id="features" ref={ref} className="scroll-reveal relative py-16 sm:py-24 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Section header */}
         <div className="text-center mb-16">

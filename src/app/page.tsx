@@ -5,6 +5,7 @@ import HeroSection from '@/components/lp/HeroSection';
 import ProblemSection from '@/components/lp/ProblemSection';
 import FeaturesSection from '@/components/lp/FeaturesSection';
 import StepsSection from '@/components/lp/StepsSection';
+import FAQSection from '@/components/lp/FAQSection';
 import CreateFloorSection from '@/components/lp/CreateFloorSection';
 import Footer from '@/components/lp/Footer';
 
@@ -25,6 +26,7 @@ export default function LandingPage() {
       <FeaturesSection />
       <StepsSection />
       <CreateFloorSection ref={createRef} />
+      <FAQSection />
       <Footer />
     </div>
   );

@@ -42,6 +42,10 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
     e.target.value = '';
   };
 
+  const handleRenameZone = (zoneId: string, newName: string) => {
+    setZones(zones.map(z => z.id === zoneId ? { ...z, name: newName } : z));
+  };
+
   const handleApplyPrefix = (zoneId: string, prefix: string) => {
     setZones(zones.map(z => {
       if (z.id !== zoneId) return z;
@@ -277,8 +281,26 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
             {zones.map((zone) => (
               <div key={zone.id} className="bg-gray-50 rounded-lg p-2.5">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-gray-700">{zone.name}</span>
-                  <span className="text-[10px] text-gray-400">{zone.seats.length}席</span>
+                  {editingZoneName === zone.id ? (
+                    <input
+                      type="text"
+                      value={zoneName}
+                      onChange={e => setZoneName(e.target.value)}
+                      onBlur={() => { if (zoneName.trim()) handleRenameZone(zone.id, zoneName.trim()); setEditingZoneName(null); }}
+                      onKeyDown={e => { if (e.key === 'Enter') { if (zoneName.trim()) handleRenameZone(zone.id, zoneName.trim()); setEditingZoneName(null); } if (e.key === 'Escape') setEditingZoneName(null); }}
+                      className="text-xs font-medium text-gray-700 px-1 py-0.5 border border-indigo-300 rounded flex-1 focus:outline-none"
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      className="text-xs font-medium text-gray-700 cursor-pointer hover:text-indigo-600 transition-colors"
+                      onClick={() => { setEditingZoneName(zone.id); setZoneName(zone.name); }}
+                      title="クリックで名前変更"
+                    >
+                      {zone.name} <span className="text-gray-400">✎</span>
+                    </span>
+                  )}
+                  <span className="text-[10px] text-gray-400 ml-1 flex-shrink-0">{zone.seats.length}席</span>
                 </div>
 
                 <div className="flex flex-wrap gap-1 mb-2">

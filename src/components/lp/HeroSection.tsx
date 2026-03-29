@@ -1,9 +1,134 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 interface HeroSectionProps {
   onCtaClick: () => void;
+}
+
+// Full-screen animated network canvas - people connecting
+function NetworkCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Nodes representing people across the full canvas
+    const nodes = Array.from({ length: 20 }, (_, i) => ({
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      vx: (Math.random() - 0.5) * 0.12,
+      vy: (Math.random() - 0.5) * 0.12,
+      radius: 4 + Math.random() * 5,
+      hue: [195, 200, 210, 220, 230, 180, 240, 185][i % 8],
+      online: i < 14,
+      pulse: Math.random() * Math.PI * 2,
+    }));
+
+    const animate = () => {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      ctx.clearRect(0, 0, w, h);
+
+      for (const node of nodes) {
+        node.x += node.vx;
+        node.y += node.vy;
+        node.pulse += 0.015;
+        if (node.x < 3 || node.x > 97) node.vx *= -1;
+        if (node.y < 3 || node.y > 97) node.vy *= -1;
+      }
+
+      // Draw connections
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i];
+          const b = nodes[j];
+          const dx = (a.x - b.x) * w / 100;
+          const dy = (a.y - b.y) * h / 100;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const maxDist = w * 0.22;
+          if (dist < maxDist && a.online && b.online) {
+            const alpha = (1 - dist / maxDist) * 0.18;
+            ctx.beginPath();
+            ctx.moveTo(a.x * w / 100, a.y * h / 100);
+            ctx.lineTo(b.x * w / 100, b.y * h / 100);
+            ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw nodes
+      for (const node of nodes) {
+        const nx = node.x * w / 100;
+        const ny = node.y * h / 100;
+        const pulseScale = node.online ? 1 + Math.sin(node.pulse) * 0.12 : 1;
+
+        if (node.online) {
+          const glow = ctx.createRadialGradient(nx, ny, 0, nx, ny, node.radius * 3.5 * pulseScale);
+          glow.addColorStop(0, `hsla(${node.hue}, 80%, 65%, 0.12)`);
+          glow.addColorStop(1, `hsla(${node.hue}, 80%, 65%, 0)`);
+          ctx.beginPath();
+          ctx.arc(nx, ny, node.radius * 3.5 * pulseScale, 0, Math.PI * 2);
+          ctx.fillStyle = glow;
+          ctx.fill();
+        }
+
+        ctx.beginPath();
+        ctx.arc(nx, ny, node.radius * pulseScale, 0, Math.PI * 2);
+        if (node.online) {
+          const grad = ctx.createRadialGradient(nx - 2, ny - 2, 0, nx, ny, node.radius);
+          grad.addColorStop(0, `hsla(${node.hue}, 85%, 72%, 0.85)`);
+          grad.addColorStop(1, `hsla(${node.hue}, 75%, 58%, 0.85)`);
+          ctx.fillStyle = grad;
+        } else {
+          ctx.fillStyle = 'rgba(200, 215, 225, 0.25)';
+        }
+        ctx.fill();
+
+        if (node.online) {
+          ctx.beginPath();
+          ctx.arc(nx + node.radius * 0.6, ny - node.radius * 0.6, 2, 0, Math.PI * 2);
+          ctx.fillStyle = '#4ade80';
+          ctx.fill();
+        }
+      }
+
+      animRef.current = requestAnimationFrame(animate);
+    };
+
+    animRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animRef.current);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      style={{ display: 'block' }}
+    />
+  );
 }
 
 export default function HeroSection({ onCtaClick }: HeroSectionProps) {
@@ -14,25 +139,19 @@ export default function HeroSection({ onCtaClick }: HeroSectionProps) {
       ref={ref}
       className="scroll-reveal relative min-h-screen flex items-center justify-center overflow-hidden px-4"
     >
-      {/* Animated background blobs */}
+      {/* Full-screen network animation as background */}
+      <NetworkCanvas />
+
+      {/* Soft gradient blobs behind */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-sky-200/40 blur-[120px] animate-blob-1" />
-        <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-blue-200/30 blur-[120px] animate-blob-2" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-sky-100/40 blur-[100px] animate-blob-3" />
+        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-sky-200/30 blur-[120px] animate-blob-1" />
+        <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-blue-200/20 blur-[120px] animate-blob-2" />
       </div>
 
-      {/* Grid pattern overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage: 'linear-gradient(rgba(0,100,200,.15) 1px, transparent 1px), linear-gradient(90deg, rgba(0,100,200,.15) 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
-        }}
-      />
-
+      {/* Content on top */}
       <div className="relative z-10 text-center max-w-4xl mx-auto">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-50 border border-sky-200 text-sm text-sky-600 mb-8">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-sm border border-sky-200 text-sm text-sky-600 mb-8">
           <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
           無料で使えるバーチャルオフィス
         </div>
@@ -70,37 +189,22 @@ export default function HeroSection({ onCtaClick }: HeroSectionProps) {
           </a>
         </div>
 
-        {/* Stylized office visual */}
-        <div className="mt-16 relative">
-          <div className="relative mx-auto max-w-2xl rounded-2xl border border-sky-100 bg-white/80 backdrop-blur-sm p-6 shadow-xl shadow-sky-100/50">
-            {/* Mock office floor */}
-            <div className="grid grid-cols-4 gap-3">
-              {[...Array(8)].map((_, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-lg bg-gradient-to-br from-sky-50 to-blue-50 border border-sky-100 flex items-center justify-center animate-desk-pop"
-                  style={{ animationDelay: `${i * 0.1}s` }}
-                >
-                  <div className={`w-6 h-6 rounded-full ${i < 5 ? 'bg-gradient-to-br from-sky-400 to-blue-500' : 'bg-gray-100'} flex items-center justify-center`}>
-                    {i < 5 && (
-                      <div className="w-2 h-2 rounded-full bg-white/80" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Status bar */}
-            <div className="mt-4 flex items-center gap-3 text-xs text-gray-400">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-400" />
-                5人がオンライン
-              </span>
-              <span className="w-px h-3 bg-gray-200" />
-              <span>開発チームのオフィス</span>
-            </div>
+        {/* Stats / social proof */}
+        <div className="mt-16 flex items-center justify-center gap-8 sm:gap-12">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-900">30秒</div>
+            <div className="text-xs text-gray-400 mt-1">でオフィス開設</div>
           </div>
-          {/* Glow effect behind the card */}
-          <div className="absolute -inset-4 bg-gradient-to-r from-sky-200/20 via-blue-200/20 to-sky-200/20 rounded-3xl blur-xl -z-10" />
+          <div className="w-px h-10 bg-gray-200" />
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-900">0円</div>
+            <div className="text-xs text-gray-400 mt-1">完全無料</div>
+          </div>
+          <div className="w-px h-10 bg-gray-200" />
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-900">登録不要</div>
+            <div className="text-xs text-gray-400 mt-1">URL共有のみ</div>
+          </div>
         </div>
       </div>
 
