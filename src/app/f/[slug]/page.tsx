@@ -134,13 +134,16 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
     setWsOptions({ floor: slug, name, avatarStyle, avatarSeed });
     setJoined(true);
 
-    // If owner and floor has no furniture, show setup guide
-    setTimeout(() => {
+    // If owner and floor has no furniture, show setup guide (wait for owner check to complete)
+    const checkGuide = () => {
       const store = useOfficeStore.getState();
       if (store.isFloorOwner && store.zones.length === 0) {
         setShowSetupGuide(true);
       }
-    }, 2000);
+    };
+    // Check at 2s and 4s (owner verification may take time)
+    setTimeout(checkGuide, 2000);
+    setTimeout(checkGuide, 4000);
 
     // Save to visit history
     const history = JSON.parse(localStorage.getItem('ethereal-visit-history') || '[]');
