@@ -2,6 +2,7 @@ package ws
 
 import (
 	"log"
+	"math"
 	"sync"
 	"time"
 
@@ -514,5 +515,48 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 		default:
 		}
 		log.Printf("[%s] DM from %s to %s", client.room, client.info.Name, target.info.Name)
+
+	case MsgWhisper:
+		if msg.Text == "" {
+			return
+		}
+		h.mu.RLock()
+		room := h.rooms[client.room]
+		h.mu.RUnlock()
+		if room == nil {
+			return
+		}
+		// Find all clients in the same room within 150 scene units
+		const whisperDist = 150.0
+		ts := time.Now().UTC().Format(time.RFC3339)
+		whisperMsg := OutgoingMessage{
+			Type:      MsgUserWhisper,
+			UserID:    client.info.ID,
+			Name:      client.info.Name,
+			Text:      msg.Text,
+			Timestamp: ts,
+		}
+		data := MarshalMessage(whisperMsg)
+		h.mu.RLock()
+		for _, c := range room.clients {
+			if c.info.ID == client.info.ID {
+				// Also send to sender so they see their own whisper
+				select {
+				case c.send <- data:
+				default:
+				}
+				continue
+			}
+			dx := c.info.X - client.info.X
+			dy := c.info.Y - client.info.Y
+			dist := math.Sqrt(dx*dx + dy*dy)
+			if dist <= whisperDist {
+				select {
+				case c.send <- data:
+				default:
+				}
+			}
+		}
+		h.mu.RUnlock()
 	}
 }

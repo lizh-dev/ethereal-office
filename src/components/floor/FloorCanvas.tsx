@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from './assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
@@ -17,6 +17,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const PROXIMITY_DIST = 120; // scene units
+const WHISPER_DIST = 150; // scene units for whisper range
 const ACTION_EMOJI: Record<string, string> = {
   working: '💻', meeting: '🤝', break: '☕', away: '💤', idle: '',
 };
@@ -186,7 +187,9 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
   const chatMessages = useOfficeStore((s) => s.chatMessages);
   const sendMessage = useOfficeStore((s) => s.sendMessage);
+  const whisperMessages = useOfficeStore((s) => s.whisperMessages);
   const [chatInput, setChatInput] = useState('');
+  const [whisperInput, setWhisperInput] = useState('');
   const [hoveredUser, setHoveredUser] = useState<{ user: User; screenX: number; screenY: number } | null>(null);
   const [contextMenu, setContextMenu] = useState<{ userId: string; userName: string; x: number; y: number } | null>(null);
 
@@ -222,6 +225,20 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
   const reactions = useOfficeStore((s) => s.reactions);
   const allUsers = [...users, currentUser];
 
+  // Check if there are nearby users for whisper input visibility
+  const hasNearbyUsers = useMemo(() => {
+    return users.some((u) => {
+      const dist = Math.hypot(u.position.x - currentUser.position.x, u.position.y - currentUser.position.y);
+      return dist <= WHISPER_DIST && u.status !== 'offline';
+    });
+  }, [users, currentUser.position.x, currentUser.position.y]);
+
+  const handleWhisperSend = () => {
+    if (!whisperInput.trim()) return;
+    wsSend.whisper(whisperInput.trim());
+    setWhisperInput('');
+  };
+
   return (
     <div ref={ref} style={{ width: '100%', height: '100%', position: 'relative' }}>
       <style>{`
@@ -233,6 +250,15 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
         @keyframes search-pulse {
           0%, 100% { box-shadow: 0 0 8px 2px rgba(245,158,11,0.4); }
           50% { box-shadow: 0 0 16px 6px rgba(245,158,11,0.7); }
+        }
+        @keyframes whisper-fade-in {
+          0% { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.9); }
+          100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+        }
+        @keyframes whisper-fade-out {
+          0% { opacity: 1; }
+          80% { opacity: 1; }
+          100% { opacity: 0; }
         }
       `}</style>
       {/* Excalidraw — always mounted, viewMode toggled */}
@@ -282,74 +308,48 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             window.addEventListener('mouseup', handleUp);
           }}
           onWheel={(e) => {
-            // Pass wheel events through to Excalidraw for zoom/pan
-            const canvas = ref.current?.querySelector('.excalidraw canvas') as HTMLElement;
-            if (canvas) {
-              canvas.dispatchEvent(new WheelEvent('wheel', {
-                deltaX: e.deltaX, deltaY: e.deltaY, deltaMode: e.deltaMode,
-                clientX: e.clientX, clientY: e.clientY,
-                ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey,
-                bubbles: true, cancelable: true,
-              }));
-            }
+            // Temporarily disable pointer-events so wheel goes directly to Excalidraw
+            const el = e.currentTarget as HTMLElement;
+            el.style.pointerEvents = 'none';
+            requestAnimationFrame(() => { el.style.pointerEvents = 'auto'; });
           }}
           style={{ position: 'absolute', inset: 0, zIndex: 2, cursor: isPanning ? 'grab' : 'crosshair', pointerEvents: 'auto' }}
         />
       )}
 
       {/* Zoom controls */}
-      {isViewMode && appState && (
+      {isViewMode && appState && (() => {
+        const zoomBtnStyle = {
+          width: 36, height: 36, borderRadius: 10, border: '1px solid #e5e7eb',
+          background: 'rgba(255,255,255,0.95)', cursor: 'pointer' as const,
+          display: 'flex', alignItems: 'center' as const, justifyContent: 'center' as const,
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)', color: '#374151',
+        };
+        const currentZoom = Math.round((appState.zoom?.value || 1) * 100);
+        const setZoom = (v: number) => {
+          const api = excalidrawAPI;
+          if (!api) return;
+          api.updateScene({ appState: { ...api.getAppState(), zoom: { value: v } } });
+        };
+        return (
         <div style={{
           position: 'absolute', bottom: 12, right: 12, zIndex: 60,
-          display: 'flex', flexDirection: 'column', gap: 4,
+          display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center',
           pointerEvents: 'auto',
         }}>
-          <button
-            onClick={() => {
-              const api = excalidrawAPI;
-              if (!api) return;
-              const st = api.getAppState();
-              const newZoom = Math.min((st.zoom?.value || 1) * 1.3, 5);
-              api.updateScene({ appState: { ...st, zoom: { value: newZoom } } });
-            }}
-            style={{
-              width: 36, height: 36, borderRadius: 10, border: '1px solid #e5e7eb',
-              background: 'rgba(255,255,255,0.95)', cursor: 'pointer',
-              fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.08)', color: '#374151',
-            }}
-            title="拡大"
-          >+</button>
-          <button
-            onClick={() => {
-              const api = excalidrawAPI;
-              if (!api) return;
-              const st = api.getAppState();
-              const newZoom = Math.max((st.zoom?.value || 1) / 1.3, 0.1);
-              api.updateScene({ appState: { ...st, zoom: { value: newZoom } } });
-            }}
-            style={{
-              width: 36, height: 36, borderRadius: 10, border: '1px solid #e5e7eb',
-              background: 'rgba(255,255,255,0.95)', cursor: 'pointer',
-              fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.08)', color: '#374151',
-            }}
-            title="縮小"
-          >−</button>
-          <button
-            onClick={() => {
-              const api = excalidrawAPI;
-              if (!api) return;
-              api.scrollToContent(api.getSceneElements(), { fitToViewport: true, viewportZoomFactor: 0.9 });
-            }}
-            style={{
-              width: 36, height: 36, borderRadius: 10, border: '1px solid #e5e7eb',
-              background: 'rgba(255,255,255,0.95)', cursor: 'pointer',
-              fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.08)', color: '#374151', fontWeight: 600,
-            }}
-            title="全体表示"
-          >⊞</button>
+          {/* Zoom percentage */}
+          <div
+            onClick={() => setZoom(1)}
+            style={{ ...zoomBtnStyle, fontSize: 10, fontWeight: 600, width: 'auto', padding: '0 8px', cursor: 'pointer' }}
+            title="100%にリセット"
+          >{currentZoom}%</div>
+          <button onClick={() => setZoom(Math.min((appState.zoom?.value || 1) * 1.3, 5))} style={{ ...zoomBtnStyle, fontSize: 18 }} title="拡大">+</button>
+          <button onClick={() => setZoom(Math.max((appState.zoom?.value || 1) / 1.3, 0.1))} style={{ ...zoomBtnStyle, fontSize: 18 }} title="縮小">−</button>
+          <button onClick={() => {
+            const api = excalidrawAPI;
+            if (!api) return;
+            api.scrollToContent(api.getSceneElements(), { fitToViewport: true, viewportZoomFactor: 0.9 });
+          }} style={{ ...zoomBtnStyle, fontSize: 12, fontWeight: 600 }} title="全体表示">⊞</button>
           <button
             onClick={() => setShowHelp(v => !v)}
             style={{
@@ -361,7 +361,8 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             title="操作ヘルプ"
           >?</button>
         </div>
-      )}
+        );
+      })()}
 
       {/* Help overlay */}
       {showHelp && isViewMode && (
@@ -518,9 +519,57 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                     {m.text}
                   </div>
                 ))}
+                {/* Whisper bubble */}
+                {whisperMessages.filter(m => m.userId === user.id).slice(-1).map(m => (
+                  <div key={`w-${m.timestamp}`} style={{
+                    position: 'absolute', bottom: size + 22, left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: 'rgba(139, 92, 246, 0.12)', borderRadius: 10, padding: '3px 8px', fontSize: 10,
+                    whiteSpace: 'nowrap', maxWidth: 140,
+                    overflow: 'hidden', textOverflow: 'ellipsis', zIndex: 31,
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    color: '#6D28D9', fontStyle: 'italic',
+                    animation: 'whisper-fade-in 0.3s ease-out, whisper-fade-out 5s ease-in forwards',
+                    backdropFilter: 'blur(4px)',
+                  }}>
+                    <span style={{ fontSize: 9, marginRight: 3, opacity: 0.7 }}>&#x1f4ac;</span>
+                    {m.text}
+                  </div>
+                ))}
               </div>
             );
           })}
+
+          {/* Whisper input - only visible when nearby users exist */}
+          {hasNearbyUsers && (
+            <div style={{
+              position: 'fixed', bottom: 66, left: '50%', transform: 'translateX(-50%)',
+              zIndex: 49, pointerEvents: 'auto',
+              animation: 'whisper-fade-in 0.3s ease-out',
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <input
+                  type="text" value={whisperInput}
+                  onChange={e => setWhisperInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleWhisperSend(); }}
+                  placeholder="近くの人にささやく..."
+                  style={{
+                    width: 200, padding: '6px 12px', borderRadius: 16,
+                    border: '1px solid rgba(139, 92, 246, 0.3)', fontSize: 12, outline: 'none',
+                    background: 'rgba(255,255,255,0.9)', boxShadow: '0 1px 6px rgba(139, 92, 246, 0.1)',
+                    color: '#6D28D9',
+                  }}
+                />
+                <button onClick={handleWhisperSend} style={{
+                  width: 28, height: 28, borderRadius: '50%', border: 'none',
+                  background: '#8B5CF6', color: '#fff', cursor: 'pointer', fontSize: 12,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 1px 4px rgba(139, 92, 246, 0.3)',
+                  opacity: whisperInput.trim() ? 1 : 0.5,
+                }}>&#x1f4ac;</button>
+              </div>
+            </div>
+          )}
 
           {/* Chat + Stamp bar */}
           <div style={{

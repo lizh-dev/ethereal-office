@@ -7,6 +7,20 @@ interface ChatMessage {
   timestamp: number;
 }
 
+export interface WhisperMessage {
+  userId: string;
+  name: string;
+  text: string;
+  timestamp: number;
+}
+
+export interface ActivityItem {
+  id: string;
+  type: string;
+  message: string;
+  timestamp: number;
+}
+
 export interface Notification {
   id: string;
   text: string;
@@ -67,6 +81,14 @@ interface OfficeState {
   // Kick notification overlay
   kickedNotification: boolean;
   setKickedNotification: (v: boolean) => void;
+
+  // Whisper (proximity chat)
+  whisperMessages: WhisperMessage[];
+  addWhisperMessage: (msg: WhisperMessage) => void;
+
+  // Activity feed
+  activityFeed: ActivityItem[];
+  addActivity: (type: string, message: string) => void;
 
   // Search
   searchQuery: string;
@@ -207,6 +229,29 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   // Kick notification overlay
   kickedNotification: false,
   setKickedNotification: (v) => set({ kickedNotification: v }),
+
+  // Whisper (proximity chat)
+  whisperMessages: [],
+  addWhisperMessage: (msg) => {
+    set((state) => ({
+      whisperMessages: [...state.whisperMessages, msg],
+    }));
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      set((state) => ({
+        whisperMessages: state.whisperMessages.filter((m) => m.timestamp !== msg.timestamp || m.userId !== msg.userId),
+      }));
+    }, 5000);
+  },
+
+  // Activity feed
+  activityFeed: [],
+  addActivity: (type, message) => {
+    const id = `activity-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    set((state) => ({
+      activityFeed: [...state.activityFeed.slice(-49), { id, type, message, timestamp: Date.now() }],
+    }));
+  },
 
   // Search
   searchQuery: '',

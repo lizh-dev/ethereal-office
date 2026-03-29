@@ -30,6 +30,7 @@ interface WsSend {
   rtcOffer: (targetUserId: string, sdp: string) => void;
   rtcAnswer: (targetUserId: string, sdp: string) => void;
   rtcCandidate: (targetUserId: string, candidate: string) => void;
+  whisper: (text: string) => void;
 }
 
 interface UseWebSocketOptions {
@@ -165,6 +166,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
             const user = toUser(msg.user);
             addRemoteUser(user);
             addNotification(`${user.name} が入室しました`);
+            useOfficeStore.getState().addActivity('join', `${user.name} が入室しました`);
           }
           break;
 
@@ -173,6 +175,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           removeRemoteUser(msg.userId);
           if (leftUser) {
             addNotification(`${leftUser.name} が退室しました`);
+            useOfficeStore.getState().addActivity('leave', `${leftUser.name} が退室しました`);
           }
           break;
         }
@@ -181,9 +184,14 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           updateRemoteUserPosition(msg.userId, msg.x, msg.y);
           break;
 
-        case 'user_sat':
+        case 'user_sat': {
           updateRemoteUserSeat(msg.userId, msg.seatId, msg.x, msg.y);
+          const satUser = useOfficeStore.getState().users.find(u => u.id === msg.userId);
+          if (satUser) {
+            useOfficeStore.getState().addActivity('seat', `${satUser.name} が着席しました`);
+          }
           break;
+        }
 
         case 'user_stood':
           updateRemoteUserStand(msg.userId);
@@ -193,9 +201,15 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           addChatMessage(msg.message.userId, msg.message.text, msg.message.timestamp);
           break;
 
-        case 'user_status':
+        case 'user_status': {
+          const statusLabels: Record<string, string> = { online: 'オンライン', busy: 'ビジー', focusing: '集中モード', offline: 'オフライン' };
+          const statusUser = useOfficeStore.getState().users.find(u => u.id === msg.userId);
           updateRemoteUserStatus(msg.userId, msg.status, msg.statusMessage);
+          if (statusUser) {
+            useOfficeStore.getState().addActivity('status', `${statusUser.name} が${statusLabels[msg.status] || msg.status}に変更`);
+          }
           break;
+        }
 
         case 'dm_received': {
           const dmMessage = {
@@ -249,6 +263,17 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
             ),
           }));
           break;
+
+        case 'user_whisper': {
+          const whisperMsg = {
+            userId: msg.userId,
+            name: msg.name,
+            text: msg.text,
+            timestamp: Date.now(),
+          };
+          useOfficeStore.getState().addWhisperMessage(whisperMsg);
+          break;
+        }
 
         case 'user_reaction':
           // Store reaction for display (auto-clear after 3s)
@@ -373,6 +398,10 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     ),
     rtcCandidate: useCallback(
       (targetUserId: string, candidate: string) => sendRaw({ type: 'rtc_candidate', targetUserId, candidate }),
+      [sendRaw],
+    ),
+    whisper: useCallback(
+      (text: string) => sendRaw({ type: 'whisper', text }),
       [sendRaw],
     ),
   };

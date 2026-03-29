@@ -18,6 +18,7 @@ const (
 	MsgRTCOffer      = "rtc_offer"
 	MsgRTCAnswer     = "rtc_answer"
 	MsgRTCCandidate  = "rtc_candidate"
+	MsgWhisper       = "whisper"
 )
 
 // Server→Client message types
@@ -39,6 +40,7 @@ const (
 	MsgRTCOfferRelay      = "rtc_offer"
 	MsgRTCAnswerRelay     = "rtc_answer"
 	MsgRTCCandidateRelay  = "rtc_candidate"
+	MsgUserWhisper        = "user_whisper"
 )
 
 type IncomingMessage struct {
