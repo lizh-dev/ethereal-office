@@ -16,6 +16,10 @@ async function joinFloor(page: any, slug: string) {
   await page.fill('input[placeholder*="名前"]', 'tester');
   await page.click('button:has-text("入室")');
   await page.waitForSelector('input[placeholder*="メンバーを検索"]', { timeout: 15000 });
+  await page.waitForTimeout(2000);
+  const skipBtn = page.locator('text=あとで');
+  if (await skipBtn.isVisible()) await skipBtn.click();
+  await page.waitForTimeout(500);
 }
 
 async function enterEditMode(page: any, slug: string) {
@@ -26,6 +30,10 @@ async function enterEditMode(page: any, slug: string) {
   }, slug);
   await page.reload();
   await page.waitForSelector('input[placeholder*="メンバーを検索"]', { timeout: 15000 });
+  await page.waitForTimeout(2000);
+  const skip2 = page.locator('text=あとで');
+  if (await skip2.isVisible()) await skip2.click();
+  await page.waitForTimeout(500);
   await page.click('[title*="フロアを編集"]');
   await page.waitForSelector('text=スペースを追加', { timeout: 5000 });
 }

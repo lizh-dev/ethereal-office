@@ -41,6 +41,11 @@ async function joinFloor(page: Page, slug: string, userName: string, asOwner = f
   await page.click('button:has-text("入室する")');
   // Wait for the office UI to load (TopBar search input confirms successful join)
   await page.waitForSelector('input[placeholder*="メンバーを検索"]', { timeout: 15000 });
+  // Dismiss setup guide if it appears
+  await page.waitForTimeout(2000);
+  const skipBtn = page.locator('text=あとで');
+  if (await skipBtn.isVisible()) await skipBtn.click();
+  await page.waitForTimeout(500);
   if (asOwner) {
     await page.waitForSelector('[title*="フロアを編集"]', { timeout: 5000 });
   }

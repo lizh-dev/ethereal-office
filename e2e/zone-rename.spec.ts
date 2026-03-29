@@ -32,6 +32,11 @@ test.describe('スペース名変更', () => {
     await page.fill('input[placeholder*="名前"]', 'テスター');
     await page.click('button:has-text("入室する")');
     await page.waitForSelector('[title*="フロアを編集"]', { timeout: 10000 });
+    // Dismiss setup guide
+    await page.waitForTimeout(2000);
+    const skip = page.locator('text=あとで');
+    if (await skip.isVisible()) await skip.click();
+    await page.waitForTimeout(500);
 
     // Enter edit mode
     await page.click('[title*="フロアを編集"]');
@@ -93,6 +98,10 @@ test.describe('スペース名変更', () => {
     await page.fill('input[placeholder*="名前"]', 'ラベルテスト');
     await page.click('button:has-text("入室する")');
     await page.waitForSelector('[title*="フロアを編集"]', { timeout: 10000 });
+    await page.waitForTimeout(2000);
+    const skip2 = page.locator('text=あとで');
+    if (await skip2.isVisible()) await skip2.click();
+    await page.waitForTimeout(500);
 
     // Enter edit mode
     await page.click('[title*="フロアを編集"]');
