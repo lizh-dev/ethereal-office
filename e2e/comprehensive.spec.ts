@@ -12,13 +12,19 @@ async function createFloor(request: any, name = 'テストフロア'): Promise<s
   return body.slug;
 }
 
-// Helper: join a floor with given name
-async function joinFloor(page: Page, slug: string, userName: string) {
+// Helper: join a floor with given name. asOwner=true sets this browser as floor creator.
+async function joinFloor(page: Page, slug: string, userName: string, asOwner = false) {
   await page.goto(`${BASE}/f/${slug}`);
+  if (asOwner) {
+    await page.evaluate((s) => {
+      const owners = JSON.parse(localStorage.getItem('ethereal-floor-owners') || '[]');
+      if (!owners.includes(s)) { owners.push(s); localStorage.setItem('ethereal-floor-owners', JSON.stringify(owners)); }
+    }, slug);
+    await page.reload();
+  }
   await page.waitForSelector('input[placeholder*="名前"]', { timeout: 10000 });
   await page.fill('input[placeholder*="名前"]', userName);
   await page.click('button:has-text("入室する")');
-  // Wait for office UI to fully load
   await page.waitForSelector('[title*="WebSocket"]', { timeout: 15000 });
 }
 
@@ -172,17 +178,17 @@ test.describe('D. オフィスUI基本', () => {
   });
 
   test('D-2: サイドバー編集モード切り替え', async ({ page }) => {
-    await joinFloor(page, slug, '編集テスター');
+    await joinFloor(page, slug, '編集テスター', true);
 
     // 編集ボタンクリック
-    await page.click('[title="Edit Floor"]');
+    await page.click('[title="フロアを編集"]');
     // 編集モードバッジが表示
     await expect(page.getByText('編集モード')).toBeVisible();
     // フロアエディターパネルが表示
     await expect(page.getByText('フロアエディター')).toBeVisible();
 
     // 戻る
-    await page.click('[title="Exit Editor"]');
+    await page.click('[title="編集終了"]');
     await expect(page.getByText('フロアエディター')).not.toBeVisible();
   });
 
@@ -343,22 +349,22 @@ test.describe('F. エディターモード', () => {
   });
 
   test('F-1: エディターパネル表示', async ({ page }) => {
-    await joinFloor(page, slug, 'エディター');
-    await page.click('[title="Edit Floor"]');
+    await joinFloor(page, slug, 'エディター', true);
+    await page.click('[title="フロアを編集"]');
 
     await expect(page.getByText('フロアエディター')).toBeVisible();
     await expect(page.getByText('スペースを追加')).toBeVisible();
   });
 
   test('F-2: TopBarにJSONエクスポートボタン', async ({ page }) => {
-    await joinFloor(page, slug, 'エクスポーター');
-    await page.click('[title="Edit Floor"]');
+    await joinFloor(page, slug, 'エクスポーター', true);
+    await page.click('[title="フロアを編集"]');
     await expect(page.getByText('JSONエクスポート')).toBeVisible();
   });
 
   test('F-3: スペースウィザード表示', async ({ page }) => {
-    await joinFloor(page, slug, 'ウィザード');
-    await page.click('[title="Edit Floor"]');
+    await joinFloor(page, slug, 'ウィザード', true);
+    await page.click('[title="フロアを編集"]');
     await page.click('text=スペースを追加');
 
     // ウィザードモーダルが表示
@@ -371,8 +377,8 @@ test.describe('F. エディターモード', () => {
   });
 
   test('F-4: スペースウィザードのキャンセル', async ({ page }) => {
-    await joinFloor(page, slug, 'キャンセラー');
-    await page.click('[title="Edit Floor"]');
+    await joinFloor(page, slug, 'キャンセラー', true);
+    await page.click('[title="フロアを編集"]');
     await page.click('text=スペースを追加');
     await page.click('button:has-text("キャンセル")');
     await expect(page.getByText('デスクエリア')).not.toBeVisible();

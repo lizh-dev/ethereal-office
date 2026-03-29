@@ -11,7 +11,7 @@ const navItems: { mode: ViewMode; label: string; icon: string }[] = [
 ];
 
 export default function Sidebar() {
-  const { viewMode, setViewMode, editorMode, setEditorMode, chatMessages } = useOfficeStore();
+  const { viewMode, setViewMode, editorMode, setEditorMode, chatMessages, isFloorOwner } = useOfficeStore();
 
   const unreadCount = chatMessages.length;
 
@@ -46,18 +46,20 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Edit mode */}
-      <button
-        onClick={() => setEditorMode(editorMode === 'view' ? 'edit' : 'view')}
-        className={`w-11 h-11 rounded-xl flex items-center justify-center mb-2 transition-all ${
-          editorMode === 'edit'
-            ? 'bg-amber-100 text-amber-600'
-            : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
-        }`}
-        title={editorMode === 'edit' ? 'Exit Editor' : 'Edit Floor'}
-      >
-        <span className="text-lg">✏️</span>
-      </button>
+      {/* Edit mode - owner only */}
+      {isFloorOwner && (
+        <button
+          onClick={() => setEditorMode(editorMode === 'view' ? 'edit' : 'view')}
+          className={`w-11 h-11 rounded-xl flex items-center justify-center mb-2 transition-all ${
+            editorMode === 'edit'
+              ? 'bg-amber-100 text-amber-600'
+              : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+          }`}
+          title={editorMode === 'edit' ? '編集終了' : 'フロアを編集'}
+        >
+          <span className="text-lg">✏️</span>
+        </button>
+      )}
     </aside>
   );
 }

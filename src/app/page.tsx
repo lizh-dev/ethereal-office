@@ -32,6 +32,10 @@ export default function LandingPage() {
       if (!res.ok) throw new Error('Failed to create floor');
 
       const floor = await res.json();
+      // Mark this browser as the floor creator
+      const owners = JSON.parse(localStorage.getItem('ethereal-floor-owners') || '[]');
+      owners.push(floor.slug);
+      localStorage.setItem('ethereal-floor-owners', JSON.stringify(owners));
       router.push(`/f/${floor.slug}`);
     } catch {
       setError('フロアの作成に失敗しました');

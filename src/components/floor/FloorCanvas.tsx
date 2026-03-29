@@ -284,14 +284,30 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                   border: '2px solid #fff',
                 }} />
                 {/* Mute indicator */}
-                {!isCurrent && user.isMuted && (
+                {/* Media state indicators for other users */}
+                {!isCurrent && (user.isMuted || user.isCameraOn === false) && (
                   <div style={{
-                    position: 'absolute', top: -4, left: -4,
-                    fontSize: 10, background: '#FEE2E2', borderRadius: '50%',
-                    width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.15)', zIndex: 25,
+                    position: 'absolute', top: -6, left: -6,
+                    display: 'flex', gap: 1, zIndex: 25,
                   }}>
-                    🔇
+                    {user.isMuted && (
+                      <div title={`${user.name} はミュート中`} style={{
+                        fontSize: 9, background: '#FEE2E2', borderRadius: '50%',
+                        width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.15)', border: '1px solid #FECACA',
+                      }}>
+                        🔇
+                      </div>
+                    )}
+                    {user.isCameraOn === false && (
+                      <div title={`${user.name} はカメラOFF`} style={{
+                        fontSize: 9, background: '#FEE2E2', borderRadius: '50%',
+                        width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.15)', border: '1px solid #FECACA',
+                      }}>
+                        🚫
+                      </div>
+                    )}
                   </div>
                 )}
                 {/* Name */}
@@ -418,6 +434,12 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                     📍 {seatInfo.zoneName}
                   </div>
                 )}
+                {(hoveredUser.user.isMuted || hoveredUser.user.isCameraOn === false) && (
+                  <div style={{ fontSize: 10, color: '#DC2626', marginTop: 2, display: 'flex', gap: 6 }}>
+                    {hoveredUser.user.isMuted && <span>🔇 ミュート中</span>}
+                    {hoveredUser.user.isCameraOn === false && <span>🚫 カメラOFF</span>}
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -446,46 +468,49 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             {/* Mute toggle */}
             <button
               onClick={() => { const next = !isMuted; setIsMuted(next); const ws = (window as unknown as Record<string, any>).__wsSend; ws?.media?.(next, isCameraOn); }}
+              title={isMuted ? 'クリックでミュート解除（他のメンバーに状態が共有されます）' : 'クリックでミュート（他のメンバーに状態が共有されます）'}
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
-                padding: '5px 10px', borderRadius: 8, border: 'none',
+                padding: '5px 10px', borderRadius: 8,
+                border: isMuted ? '1px solid #FECACA' : '1px solid transparent',
                 background: isMuted ? '#FEE2E2' : '#F3F4F6',
                 color: isMuted ? '#DC2626' : '#374151',
                 fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                transition: 'background 0.15s, color 0.15s',
+                transition: 'all 0.15s',
               }}
             >
-              {isMuted ? '🔇' : '🎤'} ミュート{isMuted ? '中' : ''}
+              {isMuted ? '🔇' : '🎤'} {isMuted ? 'ミュート中' : 'マイク'}
             </button>
 
             {/* Camera toggle */}
             <button
               onClick={() => { const next = !isCameraOn; setIsCameraOn(next); const ws = (window as unknown as Record<string, any>).__wsSend; ws?.media?.(isMuted, next); }}
+              title={isCameraOn ? 'クリックでカメラOFF（他のメンバーに状態が共有されます）' : 'クリックでカメラON（他のメンバーに状態が共有されます）'}
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
-                padding: '5px 10px', borderRadius: 8, border: 'none',
+                padding: '5px 10px', borderRadius: 8,
+                border: !isCameraOn ? '1px solid #FECACA' : '1px solid transparent',
                 background: !isCameraOn ? '#FEE2E2' : '#F3F4F6',
                 color: !isCameraOn ? '#DC2626' : '#374151',
                 fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                transition: 'background 0.15s, color 0.15s',
+                transition: 'all 0.15s',
               }}
             >
-              {isCameraOn ? '📷' : '📷'} カメラ{!isCameraOn ? 'OFF' : ''}
+              {isCameraOn ? '📹' : '🚫'} {isCameraOn ? 'カメラ' : 'カメラOFF'}
             </button>
 
-            {/* Screen share */}
+            {/* Screen share - coming soon */}
             <button
+              title="画面共有は今後のアップデートで対応予定です"
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '5px 10px', borderRadius: 8, border: 'none',
-                background: '#F3F4F6', color: '#374151',
-                fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                transition: 'background 0.15s',
+                background: '#F3F4F6', color: '#9CA3AF',
+                fontSize: 12, fontWeight: 500, cursor: 'not-allowed',
+                opacity: 0.6,
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#E5E7EB'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#F3F4F6'; }}
             >
-              🖥️ 画面共有
+              🖥️ 画面共有 <span style={{ fontSize: 9, background: '#E5E7EB', padding: '1px 4px', borderRadius: 4 }}>準備中</span>
             </button>
           </div>
 

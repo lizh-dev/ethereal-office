@@ -41,6 +41,10 @@ interface OfficeState {
   addNotification: (text: string) => void;
   removeNotification: (id: string) => void;
 
+  // Permissions
+  isFloorOwner: boolean;
+  setIsFloorOwner: (v: boolean) => void;
+
   // Search
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -122,6 +126,10 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   excalidrawAPI: null,
   excalidrawAppState: null,
   setExcalidrawAppState: (state) => set({ excalidrawAppState: state }),
+
+  // Permissions
+  isFloorOwner: false,
+  setIsFloorOwner: (v) => set({ isFloorOwner: v }),
 
   // Search
   searchQuery: '',

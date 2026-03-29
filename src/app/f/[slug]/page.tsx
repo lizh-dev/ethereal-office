@@ -39,6 +39,15 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   const [floorData, setFloorData] = useState<FloorData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+
+  // Check if current browser is the floor creator
+  useEffect(() => {
+    const owners = JSON.parse(localStorage.getItem('ethereal-floor-owners') || '[]');
+    const owns = owners.includes(slug);
+    setIsOwner(owns);
+    useOfficeStore.getState().setIsFloorOwner(owns);
+  }, [slug]);
 
   // Fetch floor data
   useEffect(() => {
