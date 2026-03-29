@@ -130,8 +130,8 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
     }
 
     function getRoomName(room: any): string | null {
-      const textEl = els.find((el: any) => el.type === 'text' && el.x >= room.x && el.x <= room.x + room.width && el.y >= room.y && el.y <= room.y + 40);
-      return textEl?.text || null;
+      const textEls = els.filter((el: any) => el.type === 'text' && el.x >= room.x - 5 && el.x <= room.x + room.width + 5 && el.y >= room.y - 5 && el.y <= room.y + room.height).sort((a: any, b: any) => a.y - b.y);
+      return textEls[0]?.text || null;
     }
 
     const sortChairs = (arr: any[]) => [...arr].sort((a: any, b: any) => {

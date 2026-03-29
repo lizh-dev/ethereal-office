@@ -126,15 +126,17 @@ function initSeatsFromElements(elements: readonly unknown[]) {
     return 'open';
   }
 
-  // Get room name from text element inside the room
+  // Get room name from text element inside the room (search full room area)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function getRoomName(room: any): string | null {
-    const textEl = els.find((el) =>
+    // Find all text elements within the room bounds
+    const textEls = els.filter((el) =>
       el.type === 'text' && !el.isDeleted &&
-      el.x >= room.x && el.x <= room.x + room.width &&
-      el.y >= room.y && el.y <= room.y + 40
-    );
-    return textEl?.text || null;
+      el.x >= room.x - 5 && el.x <= room.x + room.width + 5 &&
+      el.y >= room.y - 5 && el.y <= room.y + room.height
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ).sort((a: any, b: any) => a.y - b.y); // topmost text first
+    return textEls[0]?.text || null;
   }
 
   // Sort chairs within a room: top-to-bottom, left-to-right

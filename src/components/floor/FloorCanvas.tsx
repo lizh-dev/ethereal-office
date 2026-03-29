@@ -340,19 +340,6 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             );
           })}
 
-          {/* Stand up button */}
-          {currentSeatId && (
-            <button onClick={(e) => { e.stopPropagation(); standUp(); const ws = (window as unknown as Record<string, any>).__wsSend; ws?.stand?.(); }} style={{
-              position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)',
-              zIndex: 50, pointerEvents: 'auto', padding: '6px 16px', borderRadius: 16,
-              border: '1px solid #e5e5e5', background: 'rgba(255,255,255,0.95)', cursor: 'pointer',
-              fontSize: 12, color: '#6B7280', boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              📍 {(() => { const s = zones.flatMap(z => z.seats).find(s => s.id === currentSeatId); return s?.label || '席'; })()}から離れる（Esc）
-            </button>
-          )}
-
           {/* Chat input */}
           <div style={{
             position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)',
