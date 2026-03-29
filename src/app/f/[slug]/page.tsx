@@ -21,6 +21,7 @@ import { useIdleDetection } from '@/hooks/useIdleDetection';
 import { WebSocketProvider } from '@/contexts/WebSocketContext';
 
 const SpaceWizard = dynamic(() => import('@/components/editor/SpaceWizard'), { ssr: false });
+import SetupGuide from '@/components/editor/SetupGuide';
 
 interface FloorData {
   slug: string;
@@ -35,6 +36,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   const { slug } = use(params);
   const { editorMode, showAvatarSelector, currentUser, currentSeatId, viewMode, kickedNotification, activeDMUserId } = useOfficeStore();
   const [showSpaceWizard, setShowSpaceWizard] = useState(false);
+  const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [joined, setJoined] = useState(false);
   const [wsOptions, setWsOptions] = useState<{
     floor: string;
@@ -132,12 +134,11 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
     setWsOptions({ floor: slug, name, avatarStyle, avatarSeed });
     setJoined(true);
 
-    // If owner and floor has no furniture, auto-enter edit mode + open SpaceWizard
+    // If owner and floor has no furniture, show setup guide
     setTimeout(() => {
       const store = useOfficeStore.getState();
       if (store.isFloorOwner && store.zones.length === 0) {
-        store.setEditorMode('edit');
-        setShowSpaceWizard(true);
+        setShowSetupGuide(true);
       }
     }, 2000);
 
@@ -229,6 +230,16 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
             {viewMode === 'profile' && <ProfileView />}
           </div>
         </div>
+        {showSetupGuide && (
+          <SetupGuide
+            onStartSetup={() => {
+              setShowSetupGuide(false);
+              useOfficeStore.getState().setEditorMode('edit');
+              setShowSpaceWizard(true);
+            }}
+            onSkip={() => setShowSetupGuide(false)}
+          />
+        )}
         {showAvatarSelector && <AvatarSelector />}
         {showSpaceWizard && <SpaceWizard onClose={() => setShowSpaceWizard(false)} />}
         <NotificationToast />
