@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 const BASE = 'http://localhost:3000';
 const API = 'http://localhost:8080';
 
-test.describe('Ethereal Office E2E', () => {
+test.describe('SmartOffice E2E', () => {
   let floorSlug: string;
 
   test.beforeAll(async ({ request }) => {
@@ -19,20 +19,22 @@ test.describe('Ethereal Office E2E', () => {
 
   test('landing page loads and has create button', async ({ page }) => {
     await page.goto(BASE);
-    await expect(page.locator('h1')).toContainText('Ethereal Office');
+    await expect(page.locator('h1')).toContainText('チームの距離を、ゼロにする。');
+    // The create button is in the CreateFloorSection further down the page
     await expect(page.getByRole('button', { name: 'フロアを作成' })).toBeVisible();
   });
 
   test('create floor from landing page', async ({ page }) => {
     await page.goto(BASE);
-    await page.fill('input[placeholder*="開発チーム"]', 'ブラウザテストフロア');
-    await page.fill('input[placeholder*="田中"]', 'テスト太郎');
+    // Scroll to create section and fill form
+    await page.fill('input[placeholder*="開発チームのオフィス"]', 'ブラウザテストフロア');
+    await page.fill('input[placeholder*="田中太郎"]', 'テスト太郎');
     await page.click('button:has-text("フロアを作成")');
 
     // Should redirect to /f/{slug}
     await page.waitForURL(/\/f\/[a-z0-9]+/, { timeout: 10000 });
     // Should show join dialog
-    await expect(page.locator('text=フロアに参加するには')).toBeVisible();
+    await expect(page.locator('text=フロアに参加するには名前を入力してください')).toBeVisible();
   });
 
   test('join floor and see office view', async ({ page }) => {
@@ -46,7 +48,8 @@ test.describe('Ethereal Office E2E', () => {
     await page.click('button:has-text("入室する")');
 
     // Should see office view (sidebar, floor canvas)
-    await expect(page.locator('text=Online').or(page.locator('text=Offline'))).toBeVisible({ timeout: 10000 });
+    // The app shows the TopBar with SmartOffice branding and search input when joined
+    await expect(page.locator('input[placeholder*="メンバーを検索"]')).toBeVisible({ timeout: 10000 });
   });
 
   test('two users in same floor can see each other', async ({ browser }) => {
@@ -56,7 +59,7 @@ test.describe('Ethereal Office E2E', () => {
     await pageA.goto(`${BASE}/f/${floorSlug}`);
     await pageA.fill('input[placeholder*="名前"]', 'ユーザーA');
     await pageA.click('button:has-text("入室する")');
-    await pageA.waitForSelector('text=Online', { timeout: 10000 });
+    await pageA.waitForSelector('input[placeholder*="メンバーを検索"]', { timeout: 10000 });
 
     // User B
     const contextB = await browser.newContext();
@@ -64,7 +67,7 @@ test.describe('Ethereal Office E2E', () => {
     await pageB.goto(`${BASE}/f/${floorSlug}`);
     await pageB.fill('input[placeholder*="名前"]', 'ユーザーB');
     await pageB.click('button:has-text("入室する")');
-    await pageB.waitForSelector('text=Online', { timeout: 10000 });
+    await pageB.waitForSelector('input[placeholder*="メンバーを検索"]', { timeout: 10000 });
 
     // Wait for WebSocket sync
     await pageA.waitForTimeout(2000);
@@ -99,7 +102,7 @@ test.describe('Ethereal Office E2E', () => {
     await pageA.goto(`${BASE}/f/${floorSlug}`);
     await pageA.fill('input[placeholder*="名前"]', 'フロア1ユーザー');
     await pageA.click('button:has-text("入室する")');
-    await pageA.waitForSelector('text=Online', { timeout: 10000 });
+    await pageA.waitForSelector('input[placeholder*="メンバーを検索"]', { timeout: 10000 });
 
     // User in floor 2
     const ctxB = await browser.newContext();
@@ -107,7 +110,7 @@ test.describe('Ethereal Office E2E', () => {
     await pageB.goto(`${BASE}/f/${floor2.slug}`);
     await pageB.fill('input[placeholder*="名前"]', 'フロア2ユーザー');
     await pageB.click('button:has-text("入室する")');
-    await pageB.waitForSelector('text=Online', { timeout: 10000 });
+    await pageB.waitForSelector('input[placeholder*="メンバーを検索"]', { timeout: 10000 });
 
     await pageA.waitForTimeout(2000);
 

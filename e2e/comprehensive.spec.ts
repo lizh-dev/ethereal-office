@@ -20,6 +20,7 @@ function getEditToken(slug: string): string {
 }
 
 // Helper: join a floor with given name. asOwner=true sets the real editToken.
+// After joining, waits for the TopBar search input to confirm the office view is loaded.
 async function joinFloor(page: Page, slug: string, userName: string, asOwner = false) {
   if (asOwner) {
     const token = getEditToken(slug);
@@ -38,9 +39,10 @@ async function joinFloor(page: Page, slug: string, userName: string, asOwner = f
   await page.waitForSelector('input[placeholder*="名前"]', { timeout: 10000 });
   await page.fill('input[placeholder*="名前"]', userName);
   await page.click('button:has-text("入室する")');
-  await page.waitForSelector('[title*="WebSocket"]', { timeout: 15000 });
+  // Wait for the office UI to load (TopBar search input confirms successful join)
+  await page.waitForSelector('input[placeholder*="メンバーを検索"]', { timeout: 15000 });
   if (asOwner) {
-    await page.waitForSelector('[title="フロアを編集"]', { timeout: 5000 });
+    await page.waitForSelector('[title*="フロアを編集"]', { timeout: 5000 });
   }
 }
 
@@ -50,18 +52,18 @@ async function joinFloor(page: Page, slug: string, userName: string, asOwner = f
 test.describe('A. ランディングページ', () => {
   test('A-1: ページ表示とUI要素', async ({ page }) => {
     await page.goto(BASE);
-    // タイトル
-    await expect(page.locator('h1')).toContainText('Ethereal Office');
+    // タイトル（新しいLP: "チームの距離を、ゼロにする。"）
+    await expect(page.locator('h1')).toContainText('チームの距離を、ゼロにする。');
     // サブタイトル
-    await expect(page.getByText('バーチャルオフィスを作成して、チームとつながろう')).toBeVisible();
-    // フロア名入力
-    await expect(page.locator('input[placeholder*="開発チーム"]')).toBeVisible();
+    await expect(page.getByText('ログイン不要、URLを共有するだけ。')).toBeVisible();
+    // フロア名入力（CreateFloorSectionにスクロールして確認）
+    await expect(page.locator('input[placeholder*="開発チームのオフィス"]')).toBeVisible();
     // 名前入力（任意）
-    await expect(page.locator('input[placeholder*="田中"]')).toBeVisible();
+    await expect(page.locator('input[placeholder*="田中太郎"]')).toBeVisible();
     // 作成ボタン
     await expect(page.getByRole('button', { name: 'フロアを作成' })).toBeVisible();
-    // フッターテキスト
-    await expect(page.getByText('URLを共有するだけで誰でも参加')).toBeVisible();
+    // フッターテキスト（CreateFloorSection内）
+    await expect(page.getByText('作成後、URLを共有するだけで誰でも参加できます')).toBeVisible();
   });
 
   test('A-2: 空のフロア名ではエラー表示', async ({ page }) => {
@@ -72,7 +74,7 @@ test.describe('A. ランディングページ', () => {
 
   test('A-3: フロア作成してリダイレクト', async ({ page }) => {
     await page.goto(BASE);
-    await page.fill('input[placeholder*="開発チーム"]', 'ランディングテスト');
+    await page.fill('input[placeholder*="開発チームのオフィス"]', 'ランディングテスト');
     await page.click('button:has-text("フロアを作成")');
     await page.waitForURL(/\/f\/[a-z0-9]+/, { timeout: 10000 });
     expect(page.url()).toMatch(/\/f\/[a-z0-9]+/);
@@ -80,8 +82,8 @@ test.describe('A. ランディングページ', () => {
 
   test('A-4: Enterキーでフロア作成', async ({ page }) => {
     await page.goto(BASE);
-    await page.fill('input[placeholder*="開発チーム"]', 'Enterテスト');
-    await page.locator('input[placeholder*="開発チーム"]').press('Enter');
+    await page.fill('input[placeholder*="開発チームのオフィス"]', 'Enterテスト');
+    await page.locator('input[placeholder*="開発チームのオフィス"]').press('Enter');
     await page.waitForURL(/\/f\/[a-z0-9]+/, { timeout: 10000 });
   });
 });
@@ -127,7 +129,8 @@ test.describe('B. 入室ダイアログ', () => {
     await page.goto(`${BASE}/f/${slug}`);
     await page.fill('input[placeholder*="名前"]', 'ストレージテスト');
     await page.click('button:has-text("入室する")');
-    await page.waitForSelector('[title*="WebSocket"]', { timeout: 15000 });
+    // Wait for office UI to confirm join
+    await page.waitForSelector('input[placeholder*="メンバーを検索"]', { timeout: 15000 });
 
     const saved = await page.evaluate(() => localStorage.getItem('ethereal-office-user'));
     expect(saved).toBeTruthy();
@@ -145,9 +148,10 @@ test.describe('B. 入室ダイアログ', () => {
       }));
     });
     await page.reload();
-    // Should auto-join without showing JoinDialog
-    await page.waitForSelector('[title*="WebSocket"]', { timeout: 15000 });
-    await expect(page.getByText('Online')).toBeVisible();
+    // Should auto-join without showing JoinDialog - office UI loads with search input
+    await page.waitForSelector('input[placeholder*="メンバーを検索"]', { timeout: 15000 });
+    // Verify the user name appears in the TopBar
+    await expect(page.getByText('復元テスト')).toBeVisible();
   });
 });
 
@@ -182,21 +186,19 @@ test.describe('D. オフィスUI基本', () => {
   test('D-1: メインレイアウト要素の表示', async ({ page }) => {
     await joinFloor(page, slug, 'UIテスター');
 
-    // サイドバー
-    await expect(page.locator('text=W').first()).toBeVisible();
-    // TopBar
-    await expect(page.locator('input[placeholder*="メンバー"]')).toBeVisible();
-    // WS接続インジケーター
-    await expect(page.getByText('Online')).toBeVisible();
-    // WS connection indicator
-    await expect(page.getByText('Online')).toBeVisible();
+    // サイドバー（フロアアイコンが存在）
+    await expect(page.locator('button[title="フロア"]')).toBeVisible();
+    // TopBar（SmartOfficeブランド名）
+    await expect(page.getByText('SmartOffice')).toBeVisible();
+    // 検索入力
+    await expect(page.locator('input[placeholder*="メンバーを検索"]')).toBeVisible();
   });
 
   test('D-2: サイドバー編集モード切り替え', async ({ page }) => {
     await joinFloor(page, slug, '編集テスター', true);
 
     // 編集ボタンクリック
-    await page.click('[title="フロアを編集"]');
+    await page.click('[title*="フロアを編集"]');
     // 編集モードバッジが表示
     await expect(page.getByText('編集モード')).toBeVisible();
     // フロアエディターパネルが表示
@@ -364,7 +366,7 @@ test.describe('F. エディターモード', () => {
 
   test('F-1: エディターパネル表示', async ({ page }) => {
     await joinFloor(page, slug, 'エディター', true);
-    await page.click('[title="フロアを編集"]');
+    await page.click('[title*="フロアを編集"]');
 
     await expect(page.getByText('フロアエディター')).toBeVisible();
     await expect(page.getByText('スペースを追加')).toBeVisible();
@@ -372,14 +374,14 @@ test.describe('F. エディターモード', () => {
 
   test('F-2: TopBarにJSONエクスポートボタン', async ({ page }) => {
     await joinFloor(page, slug, 'エクスポーター', true);
-    await page.click('[title="フロアを編集"]');
+    await page.click('[title*="フロアを編集"]');
     await expect(page.getByText('エクスポート')).toBeVisible();
     await expect(page.getByText('インポート')).toBeVisible();
   });
 
   test('F-3: スペースウィザード表示', async ({ page }) => {
     await joinFloor(page, slug, 'ウィザード', true);
-    await page.click('[title="フロアを編集"]');
+    await page.click('[title*="フロアを編集"]');
     await page.click('button:has-text("スペースを追加")');
 
     // ウィザードモーダルが表示
@@ -389,7 +391,7 @@ test.describe('F. エディターモード', () => {
 
   test('F-4: スペースウィザードのキャンセル', async ({ page }) => {
     await joinFloor(page, slug, 'キャンセラー', true);
-    await page.click('[title="フロアを編集"]');
+    await page.click('[title*="フロアを編集"]');
     await page.click('button:has-text("スペースを追加")');
     // Click the wizard's cancel button (not the editor panel's)
     await page.locator('.fixed button:has-text("キャンセル")').click();
@@ -632,8 +634,10 @@ test.describe('K. パスワード保護', () => {
     await page.fill('input[placeholder*="名前"]', 'テスター');
     await page.fill('input[type="password"]', 'secret123');
     await page.click('button:has-text("入室する")');
-    await page.waitForSelector('[title*="WebSocket"]', { timeout: 15000 });
-    await expect(page.getByText('Online')).toBeVisible();
+    // Wait for office UI to confirm successful join
+    await page.waitForSelector('input[placeholder*="メンバーを検索"]', { timeout: 15000 });
+    // Verify user name appears in TopBar
+    await expect(page.getByText('テスター')).toBeVisible();
   });
 
   test('K-4: パスワードなしフロアではパスワード欄が出ない', async ({ page, request }) => {
@@ -654,8 +658,11 @@ test.describe('J. WebSocket接続', () => {
     slug = await createFloor(request, 'WS接続テスト');
   });
 
-  test('J-1: 入室後にOnline表示', async ({ page }) => {
+  test('J-1: 入室後にオフィスUIが表示される', async ({ page }) => {
     await joinFloor(page, slug, 'WS確認');
-    await expect(page.getByText('Online')).toBeVisible({ timeout: 10000 });
+    // Office UI is visible (TopBar with SmartOffice branding)
+    await expect(page.getByText('SmartOffice')).toBeVisible({ timeout: 10000 });
+    // The disconnection indicator should NOT be visible when connected
+    await expect(page.getByText('接続中...')).not.toBeVisible();
   });
 });
