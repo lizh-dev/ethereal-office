@@ -79,22 +79,22 @@ function generateDeskArea(config: SpaceConfig, ox: number, oy: number): { elemen
   const { rows, cols, spacing, name, deskLayout } = config;
   const deskW = getAsset('fur-desk').width;   // 90
   const deskH = getAsset('fur-desk').height;  // 51
-  const chairH = getAsset('fur-chair-up').height; // 50
+  const chairW = getAsset('fur-chair-up').width;  // 22
+  const chairH = getAsset('fur-chair-up').height; // 35
   const monW = getAsset('fur-monitor').width;  // 30
   const monH = getAsset('fur-monitor').height; // 29
-  const chairGap = 10; // gap between desk edge and chair
   const cellW = deskW + spacing;
 
   const elements: RawEl[] = [];
   const chairs: RawEl[] = [];
 
   if (deskLayout === 'facing') {
-    // 対面配置: 2つのデスクが向かい合い、椅子が上下に
-    // 1ペアの高さ = chair + gap + desk + deskGap + desk + gap + chair
-    const deskGap = 0; // facing desks touch each other
-    const pairH = chairH + chairGap + deskH + deskGap + deskH + chairGap + chairH;
+    // 対面配置: 椅子→デスク→デスク→椅子（デスク同士はくっつく、椅子は近接）
+    const chairDeskGap = 3; // 椅子とデスクの間（ほぼくっつく）
+    const pairH = chairH + chairDeskGap + deskH + deskH + chairDeskGap + chairH;
     const cellH = pairH + spacing;
-    const pairRows = rows; // rows = number of facing pairs
+    const chairCenterX = (deskW - chairW) / 2; // 椅子をデスク中央に
+    const pairRows = rows;
     const roomW = cols * cellW + 40;
     const roomH = pairRows * cellH + 50;
     elements.push(...roomBox(name, ox, oy, roomW, roomH));
@@ -104,23 +104,23 @@ function generateDeskArea(config: SpaceConfig, ox: number, oy: number): { elemen
         const dx = ox + 20 + c * cellW;
         const baseY = oy + 35 + r * cellH;
 
-        // Top person: chair(down) → desk(monitor at top) → gap
+        // Top: chair(down) → desk → | → desk → chair(up)
         const topChairY = baseY;
-        const topDeskY = topChairY + chairH + chairGap;
-        const topChairEl = furEl('fur-chair', dx + 29, topChairY);
+        const topDeskY = topChairY + chairH + chairDeskGap;
+        const bottomDeskY = topDeskY + deskH; // desks touch
+        const bottomChairY = bottomDeskY + deskH + chairDeskGap;
+
+        // Top person
+        const topChairEl = furEl('fur-chair', dx + chairCenterX, topChairY);
         elements.push(topChairEl);
         chairs.push(topChairEl);
         elements.push(furEl('fur-desk', dx, topDeskY));
-        // Monitor near the top person (top edge of desk)
         elements.push(furEl('fur-monitor', dx + (deskW - monW) / 2, topDeskY + 3));
 
-        // Bottom person: gap → desk(monitor at bottom) → chair(up)
-        const bottomDeskY = topDeskY + deskH + deskGap;
-        const bottomChairY = bottomDeskY + deskH + chairGap;
+        // Bottom person
         elements.push(furEl('fur-desk', dx, bottomDeskY));
-        // Monitor near the bottom person (bottom edge of desk)
         elements.push(furEl('fur-monitor', dx + (deskW - monW) / 2, bottomDeskY + deskH - monH - 3));
-        const bottomChairEl = furEl('fur-chair-up', dx + 29, bottomChairY);
+        const bottomChairEl = furEl('fur-chair-up', dx + chairCenterX, bottomChairY);
         elements.push(bottomChairEl);
         chairs.push(bottomChairEl);
       }
@@ -131,7 +131,9 @@ function generateDeskArea(config: SpaceConfig, ox: number, oy: number): { elemen
     }
   } else {
     // 片面配置 (single): デスク + 下に椅子
-    const cellH = deskH + chairGap + chairH + spacing;
+    const singleGap = 3;
+    const cellH = deskH + singleGap + chairH + spacing;
+    const chairCenterXs = (deskW - chairW) / 2;
     const roomW = cols * cellW + 40;
     const roomH = rows * cellH + 50;
     elements.push(...roomBox(name, ox, oy, roomW, roomH));
@@ -142,7 +144,7 @@ function generateDeskArea(config: SpaceConfig, ox: number, oy: number): { elemen
         const dy = oy + 35 + r * cellH;
         elements.push(furEl('fur-desk', dx, dy));
         elements.push(furEl('fur-monitor', dx + (deskW - monW) / 2, dy + 5));
-        const chairEl = furEl('fur-chair-up', dx + 29, dy + deskH + chairGap);
+        const chairEl = furEl('fur-chair-up', dx + chairCenterXs, dy + deskH + singleGap);
         elements.push(chairEl);
         chairs.push(chairEl);
       }
