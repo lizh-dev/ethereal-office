@@ -12,8 +12,9 @@ const (
 	MsgMedia    = "media"
 	MsgReaction    = "reaction"
 	MsgSceneUpdate = "scene_update"
-	MsgKick           = "kick"
-	MsgProfileUpdate  = "profile_update"
+	MsgKick          = "kick"
+	MsgProfileUpdate = "profile_update"
+	MsgDM            = "dm"
 )
 
 // Server→Client message types
@@ -31,6 +32,7 @@ const (
 	MsgSceneUpdated     = "scene_updated"
 	MsgKicked             = "kicked"
 	MsgUserProfileUpdated = "user_profile_updated"
+	MsgDMReceived         = "dm_received"
 )
 
 type IncomingMessage struct {
@@ -40,6 +42,7 @@ type IncomingMessage struct {
 	SeatID   string  `json:"seatId,omitempty"`
 	Text     string  `json:"text,omitempty"`
 	Status   string  `json:"status,omitempty"`
+	StatusMessage string `json:"statusMessage,omitempty"`
 	IsMuted  *bool   `json:"isMuted,omitempty"`
 	IsCamOn  *bool   `json:"isCameraOn,omitempty"`
 	Emoji        string  `json:"emoji,omitempty"`
@@ -50,16 +53,17 @@ type IncomingMessage struct {
 }
 
 type UserInfo struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	AvatarStyle string  `json:"avatarStyle,omitempty"`
-	AvatarSeed  string  `json:"avatarSeed,omitempty"`
-	Status      string  `json:"status"`
-	X           float64 `json:"x"`
-	Y           float64 `json:"y"`
-	SeatID      string  `json:"seatId,omitempty"`
-	IsMuted     bool    `json:"isMuted"`
-	IsCamOn     bool    `json:"isCameraOn"`
+	ID            string  `json:"id"`
+	Name          string  `json:"name"`
+	AvatarStyle   string  `json:"avatarStyle,omitempty"`
+	AvatarSeed    string  `json:"avatarSeed,omitempty"`
+	Status        string  `json:"status"`
+	StatusMessage string  `json:"statusMessage,omitempty"`
+	X             float64 `json:"x"`
+	Y             float64 `json:"y"`
+	SeatID        string  `json:"seatId,omitempty"`
+	IsMuted       bool    `json:"isMuted"`
+	IsCamOn       bool    `json:"isCameraOn"`
 }
 
 type ChatMessage struct {
@@ -69,22 +73,27 @@ type ChatMessage struct {
 }
 
 type OutgoingMessage struct {
-	Type        string        `json:"type"`
-	UserID      string        `json:"userId,omitempty"`
-	User        *UserInfo     `json:"user,omitempty"`
-	Users       []UserInfo    `json:"users,omitempty"`
-	X           float64       `json:"x,omitempty"`
-	Y           float64       `json:"y,omitempty"`
-	SeatID      string        `json:"seatId,omitempty"`
-	Status      string        `json:"status,omitempty"`
-	Message     *ChatMessage  `json:"message,omitempty"`
-	ChatHistory []ChatMessage `json:"chatHistory,omitempty"`
-	IsMuted     *bool         `json:"isMuted,omitempty"`
-	IsCamOn     *bool         `json:"isCameraOn,omitempty"`
-	Emoji       string        `json:"emoji,omitempty"`
-	Name        string        `json:"name,omitempty"`
-	AvatarStyle string        `json:"avatarStyle,omitempty"`
-	AvatarSeed  string        `json:"avatarSeed,omitempty"`
+	Type          string        `json:"type"`
+	UserID        string        `json:"userId,omitempty"`
+	User          *UserInfo     `json:"user,omitempty"`
+	Users         []UserInfo    `json:"users,omitempty"`
+	X             float64       `json:"x,omitempty"`
+	Y             float64       `json:"y,omitempty"`
+	SeatID        string        `json:"seatId,omitempty"`
+	Status        string        `json:"status,omitempty"`
+	StatusMessage string        `json:"statusMessage,omitempty"`
+	Message       *ChatMessage  `json:"message,omitempty"`
+	ChatHistory   []ChatMessage `json:"chatHistory,omitempty"`
+	IsMuted       *bool         `json:"isMuted,omitempty"`
+	IsCamOn       *bool         `json:"isCameraOn,omitempty"`
+	Emoji         string        `json:"emoji,omitempty"`
+	Name          string        `json:"name,omitempty"`
+	AvatarStyle   string        `json:"avatarStyle,omitempty"`
+	AvatarSeed    string        `json:"avatarSeed,omitempty"`
+	From          string        `json:"from,omitempty"`
+	To            string        `json:"to,omitempty"`
+	Text          string        `json:"text,omitempty"`
+	Timestamp     string        `json:"timestamp,omitempty"`
 }
 
 func MarshalMessage(msg OutgoingMessage) []byte {

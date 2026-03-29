@@ -11,12 +11,13 @@ interface WsSend {
   sit: (seatId: string, x: number, y: number) => void;
   stand: () => void;
   chat: (text: string) => void;
-  status: (status: PresenceStatus) => void;
+  status: (status: PresenceStatus, statusMessage?: string) => void;
   media: (isMuted: boolean, isCameraOn: boolean) => void;
   reaction: (emoji: string) => void;
   sceneUpdate: () => void;
   kick: (targetUserId: string) => void;
   profileUpdate: (name: string, avatarStyle: string, avatarSeed: string) => void;
+  dm: (targetUserId: string, text: string) => void;
 }
 
 interface UseWebSocketOptions {
@@ -36,6 +37,7 @@ function toUser(raw: any) {
     avatarColor: raw.avatarColor || '#4F46E5',
     initials: raw.name ? raw.name[0] : 'G',
     status: raw.status || 'online',
+    statusMessage: raw.statusMessage || '',
     position: { x: raw.x ?? 200, y: raw.y ?? 200 },
     avatarStyle: raw.avatarStyle || 'notionists',
     avatarSeed: raw.avatarSeed || 'default',
@@ -162,8 +164,20 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           break;
 
         case 'user_status':
-          updateRemoteUserStatus(msg.userId, msg.status);
+          updateRemoteUserStatus(msg.userId, msg.status, msg.statusMessage);
           break;
+
+        case 'dm_received': {
+          const dmMessage = {
+            id: `dm-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            from: msg.from,
+            to: msg.to,
+            text: msg.text,
+            timestamp: msg.timestamp,
+          };
+          useOfficeStore.getState().addDMMessage(dmMessage);
+          break;
+        }
 
         case 'user_media':
           useOfficeStore.setState((state) => ({
@@ -281,7 +295,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
       [sendRaw],
     ),
     status: useCallback(
-      (status: PresenceStatus) => sendRaw({ type: 'status', status }),
+      (status: PresenceStatus, statusMessage?: string) => sendRaw({ type: 'status', status, statusMessage: statusMessage ?? '' }),
       [sendRaw],
     ),
     media: useCallback(
@@ -303,6 +317,10 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     profileUpdate: useCallback(
       (name: string, avatarStyle: string, avatarSeed: string) =>
         sendRaw({ type: 'profile_update', name, avatarStyle, avatarSeed }),
+      [sendRaw],
+    ),
+    dm: useCallback(
+      (targetUserId: string, text: string) => sendRaw({ type: 'dm', targetUserId, text }),
       [sendRaw],
     ),
   };

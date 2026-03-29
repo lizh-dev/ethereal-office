@@ -21,9 +21,10 @@ const STATUS_OPTIONS: { value: PresenceStatus; label: string; color: string }[] 
 ];
 
 export default function TopBar() {
-  const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode } = useOfficeStore();
+  const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, setStatusMessage, statusMessage, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode } = useOfficeStore();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [statusMsgInput, setStatusMsgInput] = useState(statusMessage || '');
   const statusMenuRef = useRef<HTMLDivElement>(null);
 
   // Close status menu when clicking outside
@@ -155,7 +156,7 @@ export default function TopBar() {
               <div className="text-[12px] font-semibold text-gray-800">{currentUser.name}</div>
               <div className="text-[10px] font-medium flex items-center gap-1" style={{ color: STATUS_COLORS[currentUser.status] }}>
                 <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: STATUS_COLORS[currentUser.status] }} />
-                {STATUS_LABELS[currentUser.status]}
+                {statusMessage ? statusMessage : STATUS_LABELS[currentUser.status]}
               </div>
             </div>
             <span className="text-gray-400 text-xs ml-0.5">▾</span>
@@ -169,7 +170,12 @@ export default function TopBar() {
               {STATUS_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
-                  onClick={() => { setCurrentUserStatus(opt.value); setShowStatusMenu(false); }}
+                  onClick={() => {
+                    setCurrentUserStatus(opt.value);
+                    const wsSend = (window as unknown as Record<string, any>).__wsSend;
+                    wsSend?.status?.(opt.value, statusMsgInput);
+                    setShowStatusMenu(false);
+                  }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors text-left"
                 >
                   <span
@@ -184,6 +190,29 @@ export default function TopBar() {
                   )}
                 </button>
               ))}
+              <div className="border-t border-gray-100 mt-1 pt-1 px-3 py-2">
+                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">ステータスメッセージ</div>
+                <input
+                  type="text"
+                  value={statusMsgInput}
+                  onChange={e => setStatusMsgInput(e.target.value)}
+                  onBlur={() => {
+                    setStatusMessage(statusMsgInput);
+                    const wsSend = (window as unknown as Record<string, any>).__wsSend;
+                    wsSend?.status?.(currentUser.status, statusMsgInput);
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      setStatusMessage(statusMsgInput);
+                      const wsSend = (window as unknown as Record<string, any>).__wsSend;
+                      wsSend?.status?.(currentUser.status, statusMsgInput);
+                      setShowStatusMenu(false);
+                    }
+                  }}
+                  placeholder="ステータスメッセージ（任意）"
+                  className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[12px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-blue-300 focus:bg-white transition-colors"
+                />
+              </div>
               <div className="border-t border-gray-100 mt-1 pt-1">
                 <button
                   onClick={() => { window.location.href = '/'; }}

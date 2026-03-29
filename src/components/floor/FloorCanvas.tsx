@@ -416,6 +416,11 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                   }} />
                   {STATUS_LABELS[hoveredUser.user.status]}
                 </div>
+                {hoveredUser.user.statusMessage && (
+                  <div style={{ fontSize: 11, color: '#4F46E5', fontStyle: 'italic', marginBottom: 4, padding: '2px 0' }}>
+                    {hoveredUser.user.statusMessage}
+                  </div>
+                )}
                 {actionLabel && (
                   <div style={{ fontSize: 11, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4 }}>
                     {ACTION_EMOJI[isCur ? currentAction : (seatInfo?.action || 'idle')]} {actionLabel}

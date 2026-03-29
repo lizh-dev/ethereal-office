@@ -218,10 +218,12 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 
 	case MsgStatus:
 		client.info.Status = msg.Status
+		client.info.StatusMessage = msg.StatusMessage
 		h.broadcastToRoom(client.room, OutgoingMessage{
-			Type:   MsgUserStatus,
-			UserID: client.info.ID,
-			Status: msg.Status,
+			Type:          MsgUserStatus,
+			UserID:        client.info.ID,
+			Status:        msg.Status,
+			StatusMessage: msg.StatusMessage,
 		}, client.info.ID)
 
 	case MsgKick:
@@ -299,5 +301,42 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 			AvatarStyle: client.info.AvatarStyle,
 			AvatarSeed:  client.info.AvatarSeed,
 		}, client.info.ID)
+
+	case MsgDM:
+		if msg.TargetUserID == "" || msg.Text == "" {
+			return
+		}
+		h.mu.RLock()
+		room := h.rooms[client.room]
+		h.mu.RUnlock()
+		if room == nil {
+			return
+		}
+		h.mu.RLock()
+		target, ok := room.clients[msg.TargetUserID]
+		h.mu.RUnlock()
+		if !ok {
+			return
+		}
+		ts := time.Now().UTC().Format(time.RFC3339)
+		dmMsg := OutgoingMessage{
+			Type:      MsgDMReceived,
+			From:      client.info.ID,
+			To:        msg.TargetUserID,
+			Text:      msg.Text,
+			Timestamp: ts,
+		}
+		data := MarshalMessage(dmMsg)
+		// Send to target
+		select {
+		case target.send <- data:
+		default:
+		}
+		// Echo back to sender
+		select {
+		case client.send <- data:
+		default:
+		}
+		log.Printf("[%s] DM from %s to %s", client.room, client.info.Name, target.info.Name)
 	}
 }

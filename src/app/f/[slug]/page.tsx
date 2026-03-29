@@ -14,6 +14,7 @@ import JoinDialog from '@/components/JoinDialog';
 import ChatView from '@/components/views/ChatView';
 import MembersView from '@/components/views/MembersView';
 import ProfileView from '@/components/views/ProfileView';
+import DMPanel from '@/components/chat/DMPanel';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useIdleDetection } from '@/hooks/useIdleDetection';
@@ -31,7 +32,7 @@ interface FloorData {
 
 export default function FloorPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
-  const { editorMode, showAvatarSelector, currentUser, currentSeatId, viewMode, kickedNotification } = useOfficeStore();
+  const { editorMode, showAvatarSelector, currentUser, currentSeatId, viewMode, kickedNotification, activeDMUserId } = useOfficeStore();
   const [showSpaceWizard, setShowSpaceWizard] = useState(false);
   const [joined, setJoined] = useState(false);
   const [wsOptions, setWsOptions] = useState<{
@@ -151,13 +152,15 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
 
   // Broadcast status changes
   const prevStatusRef = useRef(currentUser.status);
+  const prevStatusMsgRef = useRef(currentUser.statusMessage);
   useEffect(() => {
     if (!joined) return;
-    if (currentUser.status !== prevStatusRef.current) {
+    if (currentUser.status !== prevStatusRef.current || currentUser.statusMessage !== prevStatusMsgRef.current) {
       prevStatusRef.current = currentUser.status;
-      sendRef.current.status(currentUser.status);
+      prevStatusMsgRef.current = currentUser.statusMessage;
+      sendRef.current.status(currentUser.status, currentUser.statusMessage);
     }
-  }, [currentUser.status, joined]);
+  }, [currentUser.status, currentUser.statusMessage, joined]);
 
   // Expose send functions for child components
   useEffect(() => {
@@ -221,6 +224,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
       {showAvatarSelector && <AvatarSelector />}
       {showSpaceWizard && <SpaceWizard onClose={() => setShowSpaceWizard(false)} />}
       <NotificationToast />
+      {activeDMUserId && <DMPanel />}
       {/* Kick notification overlay */}
       {kickedNotification && (
         <div style={{

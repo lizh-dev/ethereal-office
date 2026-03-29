@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { FloorPlan, User, ViewMode, EditorMode, Camera, Furniture, Room, FurnitureType, RoomType, Zone, UserAction, PresenceStatus } from '@/types';
+import { FloorPlan, User, ViewMode, EditorMode, Camera, Furniture, Room, FurnitureType, RoomType, Zone, UserAction, PresenceStatus, DMMessage } from '@/types';
 
 interface ChatMessage {
   userId: string;
@@ -44,6 +44,18 @@ interface OfficeState {
   // Reactions (userId -> emoji, auto-clears)
   reactions: Record<string, string>;
 
+  // Custom status message
+  statusMessage: string;
+  setStatusMessage: (msg: string) => void;
+
+  // DM
+  dmMessages: Record<string, DMMessage[]>;
+  dmUnreadCount: Record<string, number>;
+  activeDMUserId: string | null;
+  addDMMessage: (msg: DMMessage) => void;
+  setActiveDM: (userId: string | null) => void;
+  clearDMUnread: (userId: string) => void;
+
   // Chat unread tracking
   unreadChatCount: number;
   markChatRead: () => void;
@@ -69,7 +81,7 @@ interface OfficeState {
   updateRemoteUserSeat: (userId: string, seatId: string, x: number, y: number) => void;
   updateRemoteUserStand: (userId: string) => void;
   addChatMessage: (userId: string, text: string, timestamp?: number) => void;
-  updateRemoteUserStatus: (userId: string, status: PresenceStatus) => void;
+  updateRemoteUserStatus: (userId: string, status: PresenceStatus, statusMessage?: string) => void;
   setRemoteUsers: (users: User[]) => void;
 
   setViewMode: (mode: ViewMode) => void;
@@ -137,6 +149,49 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   excalidrawAPI: null,
   excalidrawAppState: null,
   setExcalidrawAppState: (state) => set({ excalidrawAppState: state }),
+
+  // Custom status message
+  statusMessage: '',
+  setStatusMessage: (msg) =>
+    set((state) => ({
+      statusMessage: msg,
+      currentUser: { ...state.currentUser, statusMessage: msg },
+    })),
+
+  // DM
+  dmMessages: {},
+  dmUnreadCount: {},
+  activeDMUserId: null,
+  addDMMessage: (msg) =>
+    set((state) => {
+      const otherUserId = msg.from === state.currentUser.id ? msg.to : msg.from;
+      const existing = state.dmMessages[otherUserId] || [];
+      const dmUnreadCount = { ...state.dmUnreadCount };
+      // Increment unread if the DM panel for this user is not open and the message is from someone else
+      if (state.activeDMUserId !== otherUserId && msg.from !== state.currentUser.id) {
+        dmUnreadCount[otherUserId] = (dmUnreadCount[otherUserId] || 0) + 1;
+      }
+      return {
+        dmMessages: {
+          ...state.dmMessages,
+          [otherUserId]: [...existing, msg],
+        },
+        dmUnreadCount,
+      };
+    }),
+  setActiveDM: (userId) =>
+    set((state) => {
+      if (userId) {
+        const dmUnreadCount = { ...state.dmUnreadCount };
+        dmUnreadCount[userId] = 0;
+        return { activeDMUserId: userId, dmUnreadCount };
+      }
+      return { activeDMUserId: null };
+    }),
+  clearDMUnread: (userId) =>
+    set((state) => ({
+      dmUnreadCount: { ...state.dmUnreadCount, [userId]: 0 },
+    })),
 
   // Reactions
   reactions: {},
@@ -236,10 +291,10 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
       unreadChatCount: state.viewMode === 'chat' ? state.unreadChatCount : state.unreadChatCount + 1,
     })),
 
-  updateRemoteUserStatus: (userId, status) =>
+  updateRemoteUserStatus: (userId, status, statusMessage) =>
     set((state) => ({
       users: state.users.map((u) =>
-        u.id === userId ? { ...u, status } : u,
+        u.id === userId ? { ...u, status, statusMessage: statusMessage ?? u.statusMessage } : u,
       ),
     })),
 

@@ -12,7 +12,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function MembersView() {
-  const { currentUser, users, searchQuery, isFloorOwner } = useOfficeStore();
+  const { currentUser, users, searchQuery, isFloorOwner, dmUnreadCount, setActiveDM } = useOfficeStore();
 
   const [kickTarget, setKickTarget] = useState<{ id: string; name: string } | null>(null);
 
@@ -74,8 +74,24 @@ export default function MembersView() {
                     {user.name}
                     {user.id === currentUser.id && <span className="text-gray-400 text-xs ml-1">(自分)</span>}
                   </div>
-                  <div className="text-xs text-gray-400">{STATUS_LABELS[user.status] || user.status}</div>
+                  <div className="text-xs text-gray-400">
+                    {user.statusMessage || STATUS_LABELS[user.status] || user.status}
+                  </div>
                 </div>
+                {user.id !== currentUser.id && (
+                  <button
+                    onClick={() => setActiveDM(user.id)}
+                    className="relative text-[14px] p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors flex-shrink-0"
+                    title={`${user.name} にDMを送る`}
+                  >
+                    💬
+                    {(dmUnreadCount[user.id] || 0) > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {dmUnreadCount[user.id]}
+                      </span>
+                    )}
+                  </button>
+                )}
                 {isFloorOwner && user.id !== currentUser.id && (
                   <button
                     onClick={() => setKickTarget({ id: user.id, name: user.name })}

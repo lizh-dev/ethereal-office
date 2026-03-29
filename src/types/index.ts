@@ -60,12 +60,21 @@ export interface User {
   avatarColor: string;
   initials: string;
   status: PresenceStatus;
+  statusMessage?: string;
   position: Point;
   targetPosition?: Point;
   avatarStyle?: string;
   avatarSeed?: string;
   isMuted?: boolean;
   isCameraOn?: boolean;
+}
+
+export interface DMMessage {
+  id: string;
+  from: string;
+  to: string;
+  text: string;
+  timestamp: string;
 }
 
 export interface Seat {
