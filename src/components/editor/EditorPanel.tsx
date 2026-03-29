@@ -20,6 +20,8 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
 
   const [editingZone, setEditingZone] = useState<string | null>(null);
   const [zonePrefix, setZonePrefix] = useState('');
+  const [editingZoneName, setEditingZoneName] = useState<string | null>(null);
+  const [zoneName, setZoneName] = useState('');
   const [saving, setSaving] = useState(false);
 
   if (editorMode !== 'edit') return null;
