@@ -704,23 +704,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             </div>
           )}
 
-          {/* Zone name labels */}
-          {zones.filter(z => z.x > 0 && z.w > 0).map(zone => {
-            const zoom = appState.zoom?.value || 1;
-            const pos = sceneToScreen(zone.x + 8, zone.y + 8, appState);
-            if (zoom < 0.3) return null;
-            return (
-              <div key={`zone-label-${zone.id}`} style={{
-                position: 'absolute', left: pos.x, top: pos.y,
-                fontSize: Math.max(10, 12 * zoom), fontWeight: 700,
-                color: 'rgba(99,102,241,0.6)',
-                pointerEvents: 'none', zIndex: 3,
-                whiteSpace: 'nowrap',
-              }}>
-                {zone.name}
-              </div>
-            );
-          })}
+          {/* Zone name labels — removed: Excalidraw text elements already show zone names */}
 
           {/* Seat indicators — small label badge below each chair */}
           {zones.flatMap(z => z.seats).map((seat: any, i) => {
