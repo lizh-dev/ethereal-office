@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
 
@@ -14,10 +14,13 @@ const STATUS_LABELS: Record<string, string> = {
 export default function MembersView() {
   const { currentUser, users, searchQuery, isFloorOwner } = useOfficeStore();
 
-  const handleKick = (userId: string, userName: string) => {
-    if (!confirm(`${userName} をフロアから退出させますか？`)) return;
+  const [kickTarget, setKickTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const doKick = () => {
+    if (!kickTarget) return;
     const wsSend = (window as unknown as Record<string, any>).__wsSend;
-    wsSend?.kick?.(userId);
+    wsSend?.kick?.(kickTarget.id);
+    setKickTarget(null);
   };
 
   const allUsers = useMemo(() => {
@@ -75,7 +78,7 @@ export default function MembersView() {
                 </div>
                 {isFloorOwner && user.id !== currentUser.id && (
                   <button
-                    onClick={() => handleKick(user.id, user.name)}
+                    onClick={() => setKickTarget({ id: user.id, name: user.name })}
                     className="text-[10px] px-2 py-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
                     title={`${user.name} を退出させる`}
                   >
@@ -117,6 +120,25 @@ export default function MembersView() {
           </div>
         )}
       </div>
+
+      {/* Kick confirmation modal */}
+      {kickTarget && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999]" onClick={() => setKickTarget(null)}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-xs w-full mx-4 text-center" onClick={e => e.stopPropagation()}>
+            <div className="text-3xl mb-3">🚫</div>
+            <p className="text-sm font-semibold text-gray-800 mb-1">{kickTarget.name} を退出させますか？</p>
+            <p className="text-xs text-gray-500 mb-4">退出させるとフロアから即座に切断されます</p>
+            <div className="flex gap-2">
+              <button onClick={() => setKickTarget(null)} className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl text-sm">
+                キャンセル
+              </button>
+              <button onClick={doKick} className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl text-sm">
+                退出させる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
