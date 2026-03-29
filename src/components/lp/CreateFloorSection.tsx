@@ -3,7 +3,6 @@
 import { useState, useEffect, forwardRef } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { getTemplateElements } from '@/lib/templates';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 const QRScannerModal = dynamic(() => import('@/components/QRScannerModal'), { ssr: false });
@@ -22,7 +21,6 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
   const [creatorName, setCreatorName] = useState('');
   const [password, setPassword] = useState('');
   const [ownerPassword, setOwnerPassword] = useState('');
-  const [template, setTemplate] = useState('isometric');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [showScanner, setShowScanner] = useState(false);
@@ -34,10 +32,7 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
     } catch { /* ignore */ }
   }, []);
 
-  const templates = [
-    { id: 'isometric', name: 'スタンダード', desc: 'デスク+会議室+ラウンジ', icon: '🏢' },
-    { id: 'empty', name: '空のフロア', desc: '自由にデザイン', icon: '📐' },
-  ];
+  const template = 'empty'; // Always empty — user builds via SpaceWizard after joining
 
   const handleCreate = async () => {
     if (!floorName.trim()) {
@@ -57,14 +52,10 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
           creatorName: creatorName.trim() || undefined,
           password: password.trim() || undefined,
           ownerPassword: ownerPassword.trim() || undefined,
-          excalidrawScene: template !== 'empty' ? {
-            elements: getTemplateElements(template),
-            appState: {
-              viewBackgroundColor: template === 'isometric' ? '#f0f9ff' : '#f5f5f5',
-              gridSize: 20,
-              ...(template === 'isometric' ? { templateId: 'isometric' } : {}),
-            },
-          } : undefined,
+          excalidrawScene: {
+            elements: [],
+            appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
+          },
         }),
       });
 
@@ -126,32 +117,6 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
           <h3 className="text-xl font-semibold text-gray-900 mb-6">新しいフロアを作成</h3>
 
           <div className="space-y-5">
-            {/* Template selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">テンプレート</label>
-              <div className="grid grid-cols-2 gap-2">
-                {templates.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTemplate(t.id)}
-                    className={`p-3 rounded-xl border text-left transition-all duration-300 ${
-                      template === t.id
-                        ? 'border-sky-300 bg-sky-50'
-                        : 'border-gray-200 bg-white hover:border-sky-200 hover:bg-sky-50/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{t.icon}</span>
-                      <div>
-                        <div className="text-xs font-semibold text-gray-800">{t.name}</div>
-                        <div className="text-[10px] text-gray-500">{t.desc}</div>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Floor name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
