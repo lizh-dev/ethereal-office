@@ -132,6 +132,15 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
     setWsOptions({ floor: slug, name, avatarStyle, avatarSeed });
     setJoined(true);
 
+    // If owner and floor has no furniture, auto-enter edit mode + open SpaceWizard
+    setTimeout(() => {
+      const store = useOfficeStore.getState();
+      if (store.isFloorOwner && store.zones.length === 0) {
+        store.setEditorMode('edit');
+        setShowSpaceWizard(true);
+      }
+    }, 2000);
+
     // Save to visit history
     const history = JSON.parse(localStorage.getItem('ethereal-visit-history') || '[]');
     const entry = { slug, name: floorData?.name || slug, visitedAt: new Date().toISOString() };
