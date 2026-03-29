@@ -195,11 +195,17 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
   }, [zones]);
 
   const searchQuery = useOfficeStore((s) => s.searchQuery);
+  const reactions = useOfficeStore((s) => s.reactions);
   const allUsers = [...users, currentUser];
 
   return (
     <div ref={ref} style={{ width: '100%', height: '100%', position: 'relative' }}>
       <style>{`
+        @keyframes reaction-pop {
+          0% { transform: translateX(-50%) scale(0) translateY(10px); opacity: 0; }
+          50% { transform: translateX(-50%) scale(1.3) translateY(-5px); }
+          100% { transform: translateX(-50%) scale(1) translateY(0); opacity: 1; }
+        }
         @keyframes search-pulse {
           0%, 100% { box-shadow: 0 0 8px 2px rgba(245,158,11,0.4); }
           50% { box-shadow: 0 0 16px 6px rgba(245,158,11,0.7); }
@@ -282,7 +288,17 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                   border: '2px solid #fff',
                 }} />
                 {/* Mute indicator */}
-                {/* Reserved for future media indicators */}
+                {/* Reaction bubble */}
+                {reactions[user.id] && (
+                  <div style={{
+                    position: 'absolute', top: -20, left: '50%', transform: 'translateX(-50%)',
+                    fontSize: 24, animation: 'reaction-pop 0.3s ease-out',
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+                    zIndex: 30, pointerEvents: 'none',
+                  }}>
+                    {reactions[user.id]}
+                  </div>
+                )}
                 {/* Name */}
                 {(zoom > 0.5 || isMatch) && (
                   <div style={{
@@ -441,6 +457,31 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                 </div>
               ) : null;
             })()}
+          </div>
+
+          {/* Stamp palette */}
+          <div style={{
+            position: 'fixed', bottom: currentSeatId ? 110 : 60, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 50, pointerEvents: 'auto',
+            display: 'flex', gap: 4, background: 'rgba(255,255,255,0.95)', borderRadius: 12,
+            padding: '4px 8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: '1px solid #f0f0f0',
+          }} onClick={e => e.stopPropagation()}>
+            {['👋', '👍', '👏', '😂', '❤️', '🎉', '🤔', '☕'].map(emoji => (
+              <button key={emoji} onClick={() => {
+                const wsSend = (window as unknown as Record<string, any>).__wsSend;
+                wsSend?.reaction?.(emoji);
+                // Also show own reaction
+                useOfficeStore.setState(s => ({ reactions: { ...s.reactions, [currentUser.id]: emoji } }));
+                setTimeout(() => useOfficeStore.setState(s => { const { [currentUser.id]: _, ...rest } = s.reactions; return { reactions: rest }; }), 3000);
+              }} style={{
+                width: 32, height: 32, borderRadius: 8, border: 'none', background: 'transparent',
+                cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'transform 0.1s, background 0.1s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.transform = 'scale(1.2)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'scale(1)'; }}
+              >{emoji}</button>
+            ))}
           </div>
 
           {/* Seat indicators with labels */}

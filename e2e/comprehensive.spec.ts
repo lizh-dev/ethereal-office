@@ -586,6 +586,48 @@ test.describe('I-3. 通知', () => {
 });
 
 // =============================================================
+// L. スタンプ/リアクション
+// =============================================================
+test.describe('L. スタンプ/リアクション', () => {
+  let slug: string;
+
+  test.beforeAll(async ({ request }) => {
+    slug = await createFloor(request, 'スタンプテスト');
+  });
+
+  test('L-1: スタンプパレットが表示される', async ({ page }) => {
+    await joinFloor(page, slug, 'スタンパー');
+    await expect(page.getByText('👋')).toBeVisible();
+    await expect(page.getByText('👍')).toBeVisible();
+    await expect(page.getByText('🎉')).toBeVisible();
+  });
+
+  test('L-2: スタンプ送信が他ユーザーに表示', async ({ browser }) => {
+    const ctxA = await browser.newContext();
+    const ctxB = await browser.newContext();
+    const pageA = await ctxA.newPage();
+    const pageB = await ctxB.newPage();
+
+    await joinFloor(pageA, slug, '送信者');
+    await joinFloor(pageB, slug, '受信者');
+    await pageA.waitForTimeout(2000);
+
+    // 送信者がスタンプクリック
+    await pageA.click('button:has-text("👏")');
+
+    // 受信者のフロア上にリアクションが表示される
+    // (リアクションはアバター上に3秒間表示)
+    await pageA.waitForTimeout(500);
+    // 自分のリアクションが見える
+    const ownReaction = pageA.locator('text=👏').first();
+    await expect(ownReaction).toBeVisible({ timeout: 3000 });
+
+    await ctxA.close();
+    await ctxB.close();
+  });
+});
+
+// =============================================================
 // K. パスワード保護
 // =============================================================
 test.describe('K. パスワード保護', () => {

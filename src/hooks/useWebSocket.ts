@@ -13,6 +13,7 @@ interface WsSend {
   chat: (text: string) => void;
   status: (status: PresenceStatus) => void;
   media: (isMuted: boolean, isCameraOn: boolean) => void;
+  reaction: (emoji: string) => void;
 }
 
 interface UseWebSocketOptions {
@@ -156,6 +157,19 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
             ),
           }));
           break;
+
+        case 'user_reaction':
+          // Store reaction for display (auto-clear after 3s)
+          useOfficeStore.setState((state) => ({
+            reactions: { ...state.reactions, [msg.userId]: msg.emoji },
+          }));
+          setTimeout(() => {
+            useOfficeStore.setState((state) => {
+              const { [msg.userId]: _, ...rest } = state.reactions;
+              return { reactions: rest };
+            });
+          }, 3000);
+          break;
       }
     };
 
@@ -223,6 +237,10 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     ),
     media: useCallback(
       (isMuted: boolean, isCameraOn: boolean) => sendRaw({ type: 'media', isMuted, isCameraOn }),
+      [sendRaw],
+    ),
+    reaction: useCallback(
+      (emoji: string) => sendRaw({ type: 'reaction', emoji }),
       [sendRaw],
     ),
   };

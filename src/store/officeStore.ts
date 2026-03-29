@@ -41,6 +41,9 @@ interface OfficeState {
   addNotification: (text: string) => void;
   removeNotification: (id: string) => void;
 
+  // Reactions (userId -> emoji, auto-clears)
+  reactions: Record<string, string>;
+
   // Permissions
   isFloorOwner: boolean;
   setIsFloorOwner: (v: boolean) => void;
@@ -126,6 +129,9 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   excalidrawAPI: null,
   excalidrawAppState: null,
   setExcalidrawAppState: (state) => set({ excalidrawAppState: state }),
+
+  // Reactions
+  reactions: {},
 
   // Permissions
   isFloorOwner: false,

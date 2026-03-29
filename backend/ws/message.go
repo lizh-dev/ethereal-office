@@ -9,7 +9,8 @@ const (
 	MsgStand  = "stand"
 	MsgChat   = "chat"
 	MsgStatus = "status"
-	MsgMedia  = "media"
+	MsgMedia    = "media"
+	MsgReaction = "reaction"
 )
 
 // Server→Client message types
@@ -22,7 +23,8 @@ const (
 	MsgUserStood  = "user_stood"
 	MsgUserChat   = "user_chat"
 	MsgUserStatus = "user_status"
-	MsgUserMedia  = "user_media"
+	MsgUserMedia     = "user_media"
+	MsgUserReaction  = "user_reaction"
 )
 
 type IncomingMessage struct {
@@ -34,6 +36,7 @@ type IncomingMessage struct {
 	Status   string  `json:"status,omitempty"`
 	IsMuted  *bool   `json:"isMuted,omitempty"`
 	IsCamOn  *bool   `json:"isCameraOn,omitempty"`
+	Emoji    string  `json:"emoji,omitempty"`
 }
 
 type UserInfo struct {
@@ -68,6 +71,7 @@ type OutgoingMessage struct {
 	ChatHistory []ChatMessage `json:"chatHistory,omitempty"`
 	IsMuted     *bool         `json:"isMuted,omitempty"`
 	IsCamOn     *bool         `json:"isCameraOn,omitempty"`
+	Emoji       string        `json:"emoji,omitempty"`
 }
 
 func MarshalMessage(msg OutgoingMessage) []byte {

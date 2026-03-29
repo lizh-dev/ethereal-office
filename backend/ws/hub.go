@@ -205,6 +205,15 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 			Status: msg.Status,
 		}, client.info.ID)
 
+	case MsgReaction:
+		if msg.Emoji != "" {
+			h.broadcastToRoom(client.room, OutgoingMessage{
+				Type:   MsgUserReaction,
+				UserID: client.info.ID,
+				Emoji:  msg.Emoji,
+			}, "")
+		}
+
 	case MsgMedia:
 		if msg.IsMuted != nil {
 			client.info.IsMuted = *msg.IsMuted
