@@ -408,7 +408,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                 onMouseEnter={() => setHoveredUser({ user, screenX: pos.x, screenY: pos.y })}
                 onMouseLeave={() => setHoveredUser(null)}
                 onContextMenu={(e) => {
-                  if (isFloorOwner && !isCurrent) {
+                  if (!isCurrent) {
                     e.preventDefault();
                     e.stopPropagation();
                     setContextMenu({ userId: user.id, userName: user.name, x: e.clientX, y: e.clientY });
@@ -692,7 +692,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
           </div>
 
 
-          {/* Right-click context menu for kicking users */}
+          {/* Right-click context menu on user avatars */}
           {contextMenu && (
             <div
               style={{
@@ -702,31 +702,59 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                 zIndex: 200,
                 pointerEvents: 'auto',
                 background: '#fff',
-                borderRadius: 8,
-                boxShadow: '0 4px 16px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)',
+                borderRadius: 10,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)',
                 border: '1px solid #e5e7eb',
-                minWidth: 160,
+                minWidth: 180,
                 overflow: 'hidden',
+                padding: '4px 0',
               }}
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Header */}
+              <div style={{ padding: '8px 14px', borderBottom: '1px solid #f3f4f6', fontSize: 12, fontWeight: 600, color: '#374151' }}>
+                {contextMenu.userName}
+              </div>
+              {/* Call */}
               <button
                 onClick={() => {
-                  wsSend.kick(contextMenu.userId);
+                  wsSend.callRequest(contextMenu.userId);
+                  useOfficeStore.getState().setCallRequestStatus('pending');
+                  useOfficeStore.getState().setCallTargetUserId(contextMenu.userId);
                   setContextMenu(null);
                 }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  width: '100%', padding: '10px 14px',
-                  border: 'none', background: 'transparent',
-                  cursor: 'pointer', fontSize: 13, color: '#DC2626',
-                  textAlign: 'left',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2'; }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 14px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, color: '#059669', textAlign: 'left' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#ECFDF5'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
               >
-                🚫 退出させる
+                📞 通話をリクエスト
               </button>
+              {/* DM */}
+              <button
+                onClick={() => {
+                  useOfficeStore.getState().setActiveDM(contextMenu.userId);
+                  setContextMenu(null);
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 14px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, color: '#2563EB', textAlign: 'left' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#EFF6FF'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                💬 メッセージを送る
+              </button>
+              {/* Kick (owner only) */}
+              {isFloorOwner && (
+                <button
+                  onClick={() => {
+                    wsSend.kick(contextMenu.userId);
+                    setContextMenu(null);
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 14px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 13, color: '#DC2626', textAlign: 'left', borderTop: '1px solid #f3f4f6' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  🚫 退出させる
+                </button>
+              )}
             </div>
           )}
 
