@@ -356,8 +356,13 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         api.addFiles(Object.values(furnitureFiles));
       }
 
-      // Initialize seats
+      // Initialize seats — only if zones are not already loaded from DB
       setTimeout(() => {
+        const existingZones = useOfficeStore.getState().zones;
+        if (existingZones.length > 0) {
+          // Zones already loaded from DB, skip re-detection
+          return;
+        }
         const elements = api.getSceneElements();
         if (elements && elements.length > 0) {
           initSeatsFromElements(elements);

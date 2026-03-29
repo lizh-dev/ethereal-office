@@ -632,29 +632,6 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             })()}
           </div>
 
-          {/* Stamp palette */}
-          <div style={{
-            position: 'fixed', bottom: currentSeatId ? 110 : 60, left: '50%', transform: 'translateX(-50%)',
-            zIndex: 50, pointerEvents: 'auto',
-            display: 'flex', gap: 4, background: 'rgba(255,255,255,0.95)', borderRadius: 12,
-            padding: '4px 8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: '1px solid #f0f0f0',
-          }} onClick={e => e.stopPropagation()}>
-            {['👋', '👍', '👏', '😂', '❤️', '🎉', '🤔', '☕'].map(emoji => (
-              <button key={emoji} onClick={() => {
-                wsSend.reaction(emoji);
-                // Also show own reaction
-                useOfficeStore.setState(s => ({ reactions: { ...s.reactions, [currentUser.id]: emoji } }));
-                setTimeout(() => useOfficeStore.setState(s => { const { [currentUser.id]: _, ...rest } = s.reactions; return { reactions: rest }; }), 3000);
-              }} style={{
-                width: 32, height: 32, borderRadius: 8, border: 'none', background: 'transparent',
-                cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'transform 0.1s, background 0.1s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.transform = 'scale(1.2)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'scale(1)'; }}
-              >{emoji}</button>
-            ))}
-          </div>
 
           {/* Right-click context menu for kicking users */}
           {contextMenu && (
