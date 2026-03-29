@@ -12,7 +12,10 @@ export interface FurnitureAsset {
 
 export const FURNITURE_ASSETS: FurnitureAsset[] = [
   { id: 'fur-desk', name: 'デスク', src: '/assets/furniture-topdown/desk.png', width: 90, height: 51, isSeat: false },
-  { id: 'fur-chair', name: 'オフィスチェア', src: '/assets/furniture-topdown/chair.png', width: 32, height: 50, isSeat: true },
+  { id: 'fur-chair', name: 'チェア(下向き)', src: '/assets/furniture-topdown/chair-down.png', width: 32, height: 50, isSeat: true },
+  { id: 'fur-chair-up', name: 'チェア(上向き)', src: '/assets/furniture-topdown/chair-up.png', width: 32, height: 50, isSeat: true },
+  { id: 'fur-chair-left', name: 'チェア(左向き)', src: '/assets/furniture-topdown/chair-left.png', width: 50, height: 32, isSeat: true },
+  { id: 'fur-chair-right', name: 'チェア(右向き)', src: '/assets/furniture-topdown/chair-right.png', width: 50, height: 32, isSeat: true },
   { id: 'fur-table-round', name: '丸テーブル', src: '/assets/furniture-topdown/table-round.png', width: 65, height: 65, isSeat: false },
   { id: 'fur-table-rect', name: '長テーブル', src: '/assets/furniture-topdown/table-rect.png', width: 90, height: 62, isSeat: false },
   { id: 'fur-sofa', name: 'ソファ', src: '/assets/furniture-topdown/sofa.png', width: 55, height: 54, isSeat: true },
@@ -98,23 +101,23 @@ export function generateIsometricDemoFloor() {
   // ===== Workspace (4 desk+chair sets in 2 rows) =====
   elements.push(...room('ワークスペース', 30, 30, 380, 310));
 
-  // Row 1: 2 desks facing down with chairs below
+  // Row 1: 2 desks with chairs facing up toward desk
   elements.push(fur('fur-desk', 55, 60));
   elements.push(fur('fur-monitor', 85, 65));
-  elements.push(fur('fur-chair', 84, 120));
+  elements.push(fur('fur-chair-up', 84, 120));
 
   elements.push(fur('fur-desk', 215, 60));
   elements.push(fur('fur-monitor', 245, 65));
-  elements.push(fur('fur-chair', 244, 120));
+  elements.push(fur('fur-chair-up', 244, 120));
 
   // Row 2
   elements.push(fur('fur-desk', 55, 190));
   elements.push(fur('fur-monitor', 85, 195));
-  elements.push(fur('fur-chair', 84, 250));
+  elements.push(fur('fur-chair-up', 84, 250));
 
   elements.push(fur('fur-desk', 215, 190));
   elements.push(fur('fur-monitor', 245, 195));
-  elements.push(fur('fur-chair', 244, 250));
+  elements.push(fur('fur-chair-up', 244, 250));
 
   // Decorations
   elements.push(fur('fur-plant', 175, 55));
@@ -124,11 +127,11 @@ export function generateIsometricDemoFloor() {
   elements.push(...room('会議室', 440, 30, 310, 220));
 
   elements.push(fur('fur-table-round', 545, 90));
-  // Chairs around table
-  elements.push(fur('fur-chair', 565, 55));
-  elements.push(fur('fur-chair', 520, 100));
-  elements.push(fur('fur-chair', 610, 100));
-  elements.push(fur('fur-chair', 565, 160));
+  // Chairs facing toward table from each direction
+  elements.push(fur('fur-chair', 565, 55));        // top: facing down toward table
+  elements.push(fur('fur-chair-right', 500, 110));  // left: facing right toward table
+  elements.push(fur('fur-chair-left', 620, 110));   // right: facing left toward table
+  elements.push(fur('fur-chair-up', 565, 160));     // bottom: facing up toward table
   elements.push(fur('fur-whiteboard', 460, 190));
   elements.push(fur('fur-plant', 710, 40));
 
