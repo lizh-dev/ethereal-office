@@ -5,7 +5,8 @@ import '@excalidraw/excalidraw/index.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getFurnitureLibrary } from './furnitureLibrary';
-import { preloadFurnitureFiles, registerFurnitureFiles, generateIsometricDemoFloor } from '@/lib/furnitureAssets';
+import { preloadFurnitureFiles, generateIsometricDemoFloor } from '@/lib/furnitureAssets';
+import { initSeatsFromElements } from '@/lib/seatDetection';
 
 const DEBOUNCE_MS = 2000;
 
@@ -411,8 +412,10 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         .excalidraw-view-mode .excalidraw [class*="popover"] {
           display: none !important;
         }
-        /* Edit mode: only hide the hamburger file menu */
-        .excalidraw-edit-mode .excalidraw .App-menu {
+        /* Edit mode: hide file menu and library button */
+        .excalidraw-edit-mode .excalidraw .App-menu,
+        .excalidraw-edit-mode .excalidraw [class*="library-button"],
+        .excalidraw-edit-mode .excalidraw .library-button {
           display: none !important;
         }
       `}</style>
