@@ -204,5 +204,19 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 			UserID: client.info.ID,
 			Status: msg.Status,
 		}, client.info.ID)
+
+	case MsgMedia:
+		if msg.IsMuted != nil {
+			client.info.IsMuted = *msg.IsMuted
+		}
+		if msg.IsCamOn != nil {
+			client.info.IsCamOn = *msg.IsCamOn
+		}
+		h.broadcastToRoom(client.room, OutgoingMessage{
+			Type:    MsgUserMedia,
+			UserID:  client.info.ID,
+			IsMuted: msg.IsMuted,
+			IsCamOn: msg.IsCamOn,
+		}, client.info.ID)
 	}
 }

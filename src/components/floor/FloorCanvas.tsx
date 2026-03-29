@@ -269,6 +269,17 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                   background: STATUS_COLORS[user.status],
                   border: '2px solid #fff',
                 }} />
+                {/* Mute indicator */}
+                {!isCurrent && user.isMuted && (
+                  <div style={{
+                    position: 'absolute', top: -4, left: -4,
+                    fontSize: 10, background: '#FEE2E2', borderRadius: '50%',
+                    width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.15)', zIndex: 25,
+                  }}>
+                    🔇
+                  </div>
+                )}
                 {/* Name */}
                 {zoom > 0.5 && (
                   <div style={{
@@ -417,7 +428,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
             {/* Mute toggle */}
             <button
-              onClick={() => setIsMuted(!isMuted)}
+              onClick={() => { const next = !isMuted; setIsMuted(next); const ws = (window as unknown as Record<string, any>).__wsSend; ws?.media?.(next, isCameraOn); }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '5px 10px', borderRadius: 8, border: 'none',
@@ -432,7 +443,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
             {/* Camera toggle */}
             <button
-              onClick={() => setIsCameraOn(!isCameraOn)}
+              onClick={() => { const next = !isCameraOn; setIsCameraOn(next); const ws = (window as unknown as Record<string, any>).__wsSend; ws?.media?.(isMuted, next); }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '5px 10px', borderRadius: 8, border: 'none',

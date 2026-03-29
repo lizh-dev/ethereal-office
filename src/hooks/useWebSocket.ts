@@ -12,6 +12,7 @@ interface WsSend {
   stand: () => void;
   chat: (text: string) => void;
   status: (status: PresenceStatus) => void;
+  media: (isMuted: boolean, isCameraOn: boolean) => void;
 }
 
 interface UseWebSocketOptions {
@@ -145,6 +146,16 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
         case 'user_status':
           updateRemoteUserStatus(msg.userId, msg.status);
           break;
+
+        case 'user_media':
+          useOfficeStore.setState((state) => ({
+            users: state.users.map(u =>
+              u.id === msg.userId
+                ? { ...u, isMuted: msg.isMuted ?? u.isMuted, isCameraOn: msg.isCameraOn ?? u.isCameraOn }
+                : u
+            ),
+          }));
+          break;
       }
     };
 
@@ -208,6 +219,10 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     ),
     status: useCallback(
       (status: PresenceStatus) => sendRaw({ type: 'status', status }),
+      [sendRaw],
+    ),
+    media: useCallback(
+      (isMuted: boolean, isCameraOn: boolean) => sendRaw({ type: 'media', isMuted, isCameraOn }),
       [sendRaw],
     ),
   };

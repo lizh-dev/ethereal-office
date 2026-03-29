@@ -10,6 +10,9 @@ import EditorPanel from '@/components/editor/EditorPanel';
 import AvatarSelector from '@/components/profile/AvatarSelector';
 import NotificationToast from '@/components/layout/NotificationToast';
 import JoinDialog from '@/components/JoinDialog';
+import ChatView from '@/components/views/ChatView';
+import MembersView from '@/components/views/MembersView';
+import ProfileView from '@/components/views/ProfileView';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
@@ -24,7 +27,7 @@ interface FloorData {
 
 export default function FloorPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
-  const { editorMode, showAvatarSelector, currentUser, currentSeatId } = useOfficeStore();
+  const { editorMode, showAvatarSelector, currentUser, currentSeatId, viewMode } = useOfficeStore();
   const [showSpaceWizard, setShowSpaceWizard] = useState(false);
   const [joined, setJoined] = useState(false);
   const [wsOptions, setWsOptions] = useState<{
@@ -138,9 +141,16 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar />
         <div className="flex-1 flex min-h-0">
-          <FloorCanvas floorSlug={slug} savedScene={floorData?.excalidrawScene} />
-          {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} />}
-          <RightPanel />
+          {viewMode === 'floor' && (
+            <>
+              <FloorCanvas floorSlug={slug} savedScene={floorData?.excalidrawScene} />
+              {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} />}
+              <RightPanel />
+            </>
+          )}
+          {viewMode === 'meetings' && <MembersView />}
+          {viewMode === 'chat' && <ChatView />}
+          {viewMode === 'profile' && <ProfileView />}
         </div>
       </div>
       {showAvatarSelector && <AvatarSelector />}

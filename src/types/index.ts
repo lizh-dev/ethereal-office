@@ -64,6 +64,8 @@ export interface User {
   targetPosition?: Point;
   avatarStyle?: string;
   avatarSeed?: string;
+  isMuted?: boolean;
+  isCameraOn?: boolean;
 }
 
 export interface Seat {

@@ -20,7 +20,7 @@ const STATUS_OPTIONS: { value: PresenceStatus; label: string; color: string }[] 
 ];
 
 export default function TopBar() {
-  const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, searchQuery, setSearchQuery } = useOfficeStore();
+  const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode } = useOfficeStore();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const statusMenuRef = useRef<HTMLDivElement>(null);
 
@@ -78,13 +78,21 @@ export default function TopBar() {
             JSONエクスポート
           </button>
         )}
-        <button className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center text-gray-400 relative transition-colors">
+        <button onClick={() => setViewMode('chat')} className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center text-gray-400 relative transition-colors" title="チャット">
           💬
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border border-white">1</span>
+          {chatMessages.length > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border border-white">
+              {chatMessages.length > 9 ? '9+' : chatMessages.length}
+            </span>
+          )}
         </button>
-        <button className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center text-gray-400 relative transition-colors">
+        <button onClick={() => setViewMode('meetings')} className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center text-gray-400 relative transition-colors" title="メンバー">
           🔔
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border border-white">3</span>
+          {notifications.length > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border border-white">
+              {notifications.length}
+            </span>
+          )}
         </button>
 
         {/* User avatar - click to change avatar */}

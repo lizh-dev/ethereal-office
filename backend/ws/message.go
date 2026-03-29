@@ -9,6 +9,7 @@ const (
 	MsgStand  = "stand"
 	MsgChat   = "chat"
 	MsgStatus = "status"
+	MsgMedia  = "media"
 )
 
 // Server→Client message types
@@ -21,15 +22,18 @@ const (
 	MsgUserStood  = "user_stood"
 	MsgUserChat   = "user_chat"
 	MsgUserStatus = "user_status"
+	MsgUserMedia  = "user_media"
 )
 
 type IncomingMessage struct {
-	Type   string  `json:"type"`
-	X      float64 `json:"x,omitempty"`
-	Y      float64 `json:"y,omitempty"`
-	SeatID string  `json:"seatId,omitempty"`
-	Text   string  `json:"text,omitempty"`
-	Status string  `json:"status,omitempty"`
+	Type     string  `json:"type"`
+	X        float64 `json:"x,omitempty"`
+	Y        float64 `json:"y,omitempty"`
+	SeatID   string  `json:"seatId,omitempty"`
+	Text     string  `json:"text,omitempty"`
+	Status   string  `json:"status,omitempty"`
+	IsMuted  *bool   `json:"isMuted,omitempty"`
+	IsCamOn  *bool   `json:"isCameraOn,omitempty"`
 }
 
 type UserInfo struct {
@@ -41,6 +45,8 @@ type UserInfo struct {
 	X           float64 `json:"x"`
 	Y           float64 `json:"y"`
 	SeatID      string  `json:"seatId,omitempty"`
+	IsMuted     bool    `json:"isMuted"`
+	IsCamOn     bool    `json:"isCameraOn"`
 }
 
 type ChatMessage struct {
@@ -60,6 +66,8 @@ type OutgoingMessage struct {
 	Status      string        `json:"status,omitempty"`
 	Message     *ChatMessage  `json:"message,omitempty"`
 	ChatHistory []ChatMessage `json:"chatHistory,omitempty"`
+	IsMuted     *bool         `json:"isMuted,omitempty"`
+	IsCamOn     *bool         `json:"isCameraOn,omitempty"`
 }
 
 func MarshalMessage(msg OutgoingMessage) []byte {
