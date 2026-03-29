@@ -24,6 +24,7 @@ export interface WebRTCState {
   leaveVoice: () => void;
   joinVoice: () => void;
   canJoinVoice: boolean;
+  currentZoneName: string;
 }
 
 /**
@@ -365,24 +366,35 @@ export function useWebRTC(): WebRTCState {
     disconnectAll();
   }, [disconnectAll]);
 
-  // Join voice — connect to all users on the floor
+  // Join voice — connect to users in the same zone only
   const joinVoice = useCallback(async () => {
-    if (!currentUser.id || currentUser.id === 'pending') return;
-    const allUsers = useOfficeStore.getState().users;
-    await acquireLocalStream(); // OK if null (listener mode)
+    if (!currentUser.id || currentUser.id === 'pending' || !currentSeatId) return;
+    const zonePeers = getZonePeers(currentUser.id, currentSeatId);
+    if (zonePeers.length === 0) return;
 
+    await acquireLocalStream();
     setIsVoiceActive(true);
 
-    for (const user of allUsers) {
-      if (user.id !== currentUser.id && !peersRef.current.has(user.id) && currentUser.id < user.id) {
-        await connectToPeer(user.id);
+    for (const peerId of zonePeers) {
+      if (!peersRef.current.has(peerId) && currentUser.id < peerId) {
+        await connectToPeer(peerId);
       }
     }
-  }, [currentUser.id, acquireLocalStream, connectToPeer]);
+  }, [currentUser.id, currentSeatId, acquireLocalStream, connectToPeer]);
 
-  // Whether voice can be joined (any other users on the floor)
-  const users = useOfficeStore((s) => s.users);
-  const canJoinVoice = currentUser.id !== 'pending' && users.length > 0;
+  // Can join voice: seated + same zone has other users
+  const zones = useOfficeStore((s) => s.zones);
+  const canJoinVoice = !!currentSeatId && currentUser.id !== 'pending' &&
+    getZonePeers(currentUser.id, currentSeatId).length > 0;
+
+  // Get current zone name for UI
+  const currentZoneName = (() => {
+    if (!currentSeatId) return '';
+    for (const zone of zones) {
+      if (zone.seats.some(s => s.id === currentSeatId)) return zone.name;
+    }
+    return '';
+  })();
 
   return {
     localStream: localStreamRef.current,
@@ -394,5 +406,6 @@ export function useWebRTC(): WebRTCState {
     leaveVoice,
     joinVoice,
     canJoinVoice,
+    currentZoneName,
   };
 }
