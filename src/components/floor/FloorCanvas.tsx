@@ -62,25 +62,28 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
   const appState = useOfficeStore((s) => s.excalidrawAppState);
 
-  // Sync overlay transform with Excalidraw's scroll/zoom via rAF + direct DOM mutation
-  const overlayRef = useRef<HTMLDivElement>(null);
+  // Force re-render at 30fps during view mode so avatars track pan/zoom smoothly
+  const [, forceUpdate] = useState(0);
   useEffect(() => {
     if (!isViewMode || !excalidrawAPI) return;
     let running = true;
-    const sync = () => {
+    let frame = 0;
+    const tick = () => {
       if (!running) return;
-      try {
-        const st = excalidrawAPI.getAppState();
-        if (st && overlayRef.current) {
-          const zoom = st.zoom?.value || 1;
-          const sx = st.scrollX || 0;
-          const sy = st.scrollY || 0;
-          overlayRef.current.style.transform = `scale(${zoom}) translate(${sx}px, ${sy}px)`;
-        }
-      } catch { /* ignore */ }
-      requestAnimationFrame(sync);
+      frame++;
+      // Update appState in store directly from API every 2 frames (~30fps)
+      if (frame % 2 === 0) {
+        try {
+          const st = excalidrawAPI.getAppState();
+          if (st) {
+            useOfficeStore.getState().setExcalidrawAppState(st);
+          }
+        } catch { /* ignore */ }
+      }
+      forceUpdate(f => f + 1);
+      requestAnimationFrame(tick);
     };
-    requestAnimationFrame(sync);
+    requestAnimationFrame(tick);
     return () => { running = false; };
   }, [isViewMode, excalidrawAPI]);
   const setZones = useOfficeStore((s) => s.setZones);
@@ -364,20 +367,18 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
         </div>
       )}
 
-      {/* Avatar overlay in view mode — positioned via CSS transform synced with Excalidraw */}
+      {/* Avatar overlay in view mode */}
       {isViewMode && appState && (
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
         <div
-          ref={overlayRef}
-          style={{ position: 'absolute', transformOrigin: '0 0', pointerEvents: 'none' }}
+          style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}
         >
           {/* Proximity lines between nearby users */}
           <svg style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1 }}>
             {allUsers.map((a, i) => allUsers.slice(i + 1).map(b => {
               const dist = Math.hypot(a.position.x - b.position.x, a.position.y - b.position.y);
               if (dist > PROXIMITY_DIST || a.status === 'offline' || b.status === 'offline') return null;
-              const posA = { x: a.position.x, y: a.position.y };
-              const posB = { x: b.position.x, y: b.position.y };
+              const posA = sceneToScreen(a.position.x, a.position.y, appState);
+              const posB = sceneToScreen(b.position.x, b.position.y, appState);
               const alpha = (1 - dist / PROXIMITY_DIST) * 0.4;
               return (
                 <line key={`${a.id}-${b.id}`}
@@ -389,9 +390,10 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
           </svg>
 
           {allUsers.map((user) => {
-            const pos = { x: user.position.x, y: user.position.y };
+            const pos = sceneToScreen(user.position.x, user.position.y, appState);
             const isCurrent = user.id === currentUser.id;
-            const size = 28; // fixed scene-space size; CSS transform handles zoom
+            const zoom = appState.zoom?.value || 1;
+            const size = Math.max(28, 36 * zoom);
             const sq = searchQuery.trim().toLowerCase();
             const isSearching = sq.length > 0;
             const isMatch = isSearching && user.name.toLowerCase().includes(sq);
@@ -455,7 +457,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                   </div>
                 )}
                 {/* Name */}
-                {(true || isMatch) && (
+                {(zoom > 0.5 || isMatch) && (
                   <div style={{
                     position: 'absolute', top: size + 2, left: '50%', transform: 'translateX(-50%)',
                     whiteSpace: 'nowrap', fontSize: isMatch ? 11 : 10, fontWeight: isMatch ? 700 : 600,
@@ -542,8 +544,6 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
               </div>
             </div>
           )}
-
-          </div>{/* end of transform overlay */}
 
           {/* Chat + Stamp bar */}
           <div className="fixed bottom-[72px] md:bottom-4 left-1/2 -translate-x-1/2 z-50" style={{
@@ -732,9 +732,10 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
           {/* Seat indicators — small label badge below each chair */}
           {zones.flatMap(z => z.seats).map((seat: any, i) => {
             if (seat.occupied && seat.occupiedBy !== currentUser.id) return null;
-            const pos = { x: seat.x, y: seat.y };
+            const zoom = appState.zoom?.value || 1;
+            const pos = sceneToScreen(seat.x, seat.y, appState);
             const isEmpty = !seat.occupied;
-            const size = 18;
+            const size = 18 * zoom;
             return (
               <div key={`seat-${seat.id}-${i}`}
                 title={isEmpty ? `${seat.label || seat.id} - クリックして座る` : seat.label || seat.id}
@@ -757,14 +758,14 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                 }) : undefined}
               >
                 {/* Seat label badge */}
-                {seat.label && (
+                {seat.label && zoom > 0.35 && (
                   <div style={{
                     position: 'absolute',
                     left: '50%',
                     top: '100%',
                     transform: 'translateX(-50%)',
                     whiteSpace: 'nowrap',
-                    fontSize: 9,
+                    fontSize: Math.max(8, 10 * zoom),
                     fontWeight: 600,
                     color: isEmpty ? '#fff' : '#9CA3AF',
                     background: isEmpty ? 'rgba(56,189,248,0.85)' : 'rgba(200,200,200,0.7)',
