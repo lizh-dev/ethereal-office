@@ -23,6 +23,9 @@ export const FURNITURE_ASSETS: FurnitureAsset[] = [
   { id: 'fur-coffee', name: 'コーヒーマシン', src: '/assets/furniture-topdown/coffee-machine.png', width: 25, height: 24, isSeat: false },
   { id: 'fur-monitor', name: 'モニター', src: '/assets/furniture-topdown/monitor.png', width: 30, height: 29, isSeat: false },
   { id: 'fur-partition', name: 'パーティション', src: '/assets/furniture-topdown/partition.png', width: 90, height: 16, isSeat: false },
+  { id: 'fur-rug', name: 'ラグ', src: '/assets/furniture-topdown/rug.png', width: 85, height: 64, isSeat: false },
+  { id: 'fur-laptop', name: 'ラップトップ', src: '/assets/furniture-topdown/laptop.png', width: 35, height: 29, isSeat: false },
+  { id: 'fur-printer', name: 'プリンター', src: '/assets/furniture-topdown/printer.png', width: 35, height: 30, isSeat: false },
 ];
 
 async function fetchAsDataURL(src: string): Promise<string> {
