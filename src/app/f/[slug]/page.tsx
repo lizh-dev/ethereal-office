@@ -100,6 +100,13 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
 
     setWsOptions({ floor: slug, name, avatarStyle, avatarSeed });
     setJoined(true);
+
+    // Save to visit history
+    const history = JSON.parse(localStorage.getItem('ethereal-visit-history') || '[]');
+    const entry = { slug, name: floorData?.name || slug, visitedAt: new Date().toISOString() };
+    const filtered = history.filter((h: { slug: string }) => h.slug !== slug);
+    filtered.unshift(entry); // most recent first
+    localStorage.setItem('ethereal-visit-history', JSON.stringify(filtered.slice(0, 20)));
   };
 
   // Keep refs to avoid stale closures

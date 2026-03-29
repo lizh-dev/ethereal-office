@@ -1,17 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getTemplateElements } from '@/lib/templates';
+
+interface VisitEntry {
+  slug: string;
+  name: string;
+  visitedAt: string;
+}
 
 export default function LandingPage() {
   const router = useRouter();
   const [floorName, setFloorName] = useState('');
+  const [visitHistory, setVisitHistory] = useState<VisitEntry[]>([]);
   const [creatorName, setCreatorName] = useState('');
   const [password, setPassword] = useState('');
   const [template, setTemplate] = useState('default');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    try {
+      const history = JSON.parse(localStorage.getItem('ethereal-visit-history') || '[]');
+      setVisitHistory(history);
+    } catch { /* ignore */ }
+  }, []);
 
   const templates = [
     { id: 'default', name: 'スタンダード', desc: 'デスク+会議室+ラウンジ', icon: '🏢' },
@@ -156,6 +170,35 @@ export default function LandingPage() {
         <p className="text-center text-gray-400 text-sm mt-6">
           作成後、URLを共有するだけで誰でも参加できます
         </p>
+
+        {/* Visit history */}
+        {visitHistory.length > 0 && (
+          <div className="mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">最近のフロア</h3>
+            <div className="space-y-2">
+              {visitHistory.slice(0, 5).map((entry) => {
+                const date = new Date(entry.visitedAt);
+                const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+                return (
+                  <button
+                    key={entry.slug}
+                    onClick={() => router.push(`/f/${entry.slug}`)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-indigo-50 rounded-xl transition-colors text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">🏢</span>
+                      <div>
+                        <div className="text-sm font-medium text-gray-800 group-hover:text-indigo-700">{entry.name}</div>
+                        <div className="text-[10px] text-gray-400">{timeStr}</div>
+                      </div>
+                    </div>
+                    <span className="text-gray-300 group-hover:text-indigo-400 text-sm">→</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
