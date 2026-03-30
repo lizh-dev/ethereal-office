@@ -11,6 +11,8 @@ interface VoiceControlsProps {
 export default function VoiceControls({ webrtc }: VoiceControlsProps) {
   const { isVoiceActive, isMuted, toggleMute, leaveVoice, joinVoice, canJoinVoice, currentZoneName, remoteStreams, activeSpeakers } = webrtc;
   const users = useOfficeStore((s) => s.users);
+  const autoVoiceEnabled = useOfficeStore((s) => s.autoVoiceEnabled);
+  const setAutoVoiceEnabled = useOfficeStore((s) => s.setAutoVoiceEnabled);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
 
   // Attach remote audio streams
@@ -39,22 +41,36 @@ export default function VoiceControls({ webrtc }: VoiceControlsProps) {
     };
   }, []);
 
-  // Not in voice — show join button if available
+  // Not in voice — show join button or auto-voice indicator
   if (!isVoiceActive) {
-    if (!canJoinVoice) return null;
     return (
-      <div className="absolute top-3 right-3 z-20">
+      <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+        {/* Auto Voice toggle */}
         <button
-          onClick={joinVoice}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg shadow-md text-xs font-semibold text-white transition-all hover:shadow-lg"
-          style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}
+          onClick={() => setAutoVoiceEnabled(!autoVoiceEnabled)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shadow-sm text-[10px] font-medium transition-all border ${
+            autoVoiceEnabled
+              ? 'bg-green-50 border-green-200 text-green-700'
+              : 'bg-gray-50 border-gray-200 text-gray-500'
+          }`}
+          title={autoVoiceEnabled ? '自動通話ON: 着席で自動接続' : '自動通話OFF: 手動で接続'}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="currentColor" />
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          {currentZoneName}で通話
+          {autoVoiceEnabled ? '🎙️ 自動通話ON' : '🔇 自動通話OFF'}
         </button>
+        {/* Manual join button */}
+        {canJoinVoice && (
+          <button
+            onClick={joinVoice}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg shadow-md text-xs font-semibold text-white transition-all hover:shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="currentColor" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            {currentZoneName}で通話
+          </button>
+        )}
       </div>
     );
   }

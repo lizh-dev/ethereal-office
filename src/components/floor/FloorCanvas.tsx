@@ -279,8 +279,10 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
     <div ref={ref} style={{ width: '100%', height: '100%', position: 'relative' }}>
       <style>{`
         @keyframes reaction-pop {
-          0% { transform: translateX(-50%) scale(0) translateY(10px); opacity: 0; }
-          50% { transform: translateX(-50%) scale(1.3) translateY(-5px); }
+          0% { transform: translateX(-50%) scale(0) translateY(0); opacity: 0; }
+          15% { transform: translateX(-50%) scale(1.3) translateY(-10px); opacity: 1; }
+          30% { transform: translateX(-50%) scale(1) translateY(-15px); opacity: 1; }
+          100% { transform: translateX(-50%) scale(0.8) translateY(-40px); opacity: 0; }
           100% { transform: translateX(-50%) scale(1) translateY(0); opacity: 1; }
         }
         @keyframes search-pulse {
@@ -462,7 +464,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                 {reactions[user.id] && (
                   <div style={{
                     position: 'absolute', top: -20, left: '50%', transform: 'translateX(-50%)',
-                    fontSize: 24, animation: 'reaction-pop 0.3s ease-out',
+                    fontSize: 24, animation: 'reaction-pop 2.5s ease-out forwards',
                     filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
                     zIndex: 30, pointerEvents: 'none',
                   }}>

@@ -39,6 +39,8 @@ interface OfficeState {
   draggingItem: { type: 'furniture' | 'room'; id: string } | null;
   showGrid: boolean;
   showAvatarSelector: boolean;
+  autoVoiceEnabled: boolean;
+  setAutoVoiceEnabled: (enabled: boolean) => void;
   chatMessages: ChatMessage[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   excalidrawAPI: any | null;
@@ -176,6 +178,7 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   draggingItem: null,
   showGrid: true,
   showAvatarSelector: false,
+  autoVoiceEnabled: typeof window !== 'undefined' ? localStorage.getItem('ethereal-auto-voice') !== 'false' : true,
   chatMessages: [],
   excalidrawAPI: null,
   excalidrawAppState: null,
@@ -529,6 +532,10 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   setDraggingItem: (item) => set({ draggingItem: item }),
   setShowGrid: (show) => set({ showGrid: show }),
   setShowAvatarSelector: (show) => set({ showAvatarSelector: show }),
+  setAutoVoiceEnabled: (enabled) => {
+    try { localStorage.setItem('ethereal-auto-voice', String(enabled)); } catch {}
+    set({ autoVoiceEnabled: enabled });
+  },
   setCurrentUserAvatar: (style, seed) =>
     set((state) => ({
       currentUser: { ...state.currentUser, avatarStyle: style, avatarSeed: seed },
