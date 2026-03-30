@@ -22,7 +22,9 @@ const (
 	MsgCallRequest   = "call_request"
 	MsgCallAccept    = "call_accept"
 	MsgCallDecline   = "call_decline"
-	MsgCallEnd       = "call_end"
+	MsgCallEnd          = "call_end"
+	MsgScreenShareStart = "screen_share_start"
+	MsgScreenShareStop  = "screen_share_stop"
 )
 
 // Server→Client message types
@@ -48,7 +50,9 @@ const (
 	MsgCallRequestReceived   = "call_request_received"
 	MsgCallAcceptReceived    = "call_accept_received"
 	MsgCallDeclineReceived   = "call_decline_received"
-	MsgCallEndReceived       = "call_end_received"
+	MsgCallEndReceived            = "call_end_received"
+	MsgScreenShareStartBroadcast = "screen_share_started"
+	MsgScreenShareStopBroadcast  = "screen_share_stopped"
 )
 
 type IncomingMessage struct {

@@ -41,6 +41,8 @@ interface OfficeState {
   showAvatarSelector: boolean;
   autoVoiceEnabled: boolean;
   setAutoVoiceEnabled: (enabled: boolean) => void;
+  screenShareUserId: string | null;
+  screenShareUserName: string | null;
   chatMessages: ChatMessage[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   excalidrawAPI: any | null;
@@ -179,6 +181,8 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   showGrid: true,
   showAvatarSelector: false,
   autoVoiceEnabled: typeof window !== 'undefined' ? localStorage.getItem('ethereal-auto-voice') !== 'false' : true,
+  screenShareUserId: null,
+  screenShareUserName: null,
   chatMessages: [],
   excalidrawAPI: null,
   excalidrawAppState: null,

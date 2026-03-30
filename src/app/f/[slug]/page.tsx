@@ -16,6 +16,8 @@ import MembersView from '@/components/views/MembersView';
 import ProfileView from '@/components/views/ProfileView';
 import DMPanel from '@/components/chat/DMPanel';
 import VoiceManager from '@/components/voice/VoiceManager';
+import ScreenShareView from '@/components/voice/ScreenShareView';
+import FocusTimerPanel from '@/components/focus/FocusTimerPanel';
 import ActivityFeed from '@/components/views/ActivityFeed';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -38,6 +40,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   const { slug } = use(params);
   const { editorMode, showAvatarSelector, currentUser, currentSeatId, viewMode, kickedNotification, activeDMUserId } = useOfficeStore();
   const [showSpaceWizard, setShowSpaceWizard] = useState(false);
+  const [showFocusTimer, setShowFocusTimer] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [showEditHint, setShowEditHint] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
@@ -306,6 +309,17 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
         <NotificationToast />
         {activeDMUserId && <DMPanel />}
         <VoiceManager />
+        <ScreenShareView />
+        {showFocusTimer && <FocusTimerPanel />}
+        {/* Focus timer toggle button */}
+        {!showFocusTimer && editorMode !== 'edit' && (
+          <button
+            onClick={() => setShowFocusTimer(true)}
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-40 px-3 py-1.5 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm text-xs text-gray-600 hover:text-amber-600 transition-colors backdrop-blur-sm"
+          >
+            🎯 集中モード
+          </button>
+        )}
         {/* Kick notification overlay */}
         {kickedNotification && (
           <div style={{

@@ -35,6 +35,8 @@ interface WsSend {
   callAccept: (targetUserId: string) => void;
   callDecline: (targetUserId: string) => void;
   callEnd: (targetUserId: string) => void;
+  screenShareStart: () => void;
+  screenShareStop: () => void;
 }
 
 interface UseWebSocketOptions {
@@ -335,6 +337,15 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           }
           break;
 
+        case 'screen_share_started':
+          useOfficeStore.setState({ screenShareUserId: msg.userId, screenShareUserName: msg.name });
+          addNotification(`${msg.name} が画面共有を開始しました`);
+          break;
+
+        case 'screen_share_stopped':
+          useOfficeStore.setState({ screenShareUserId: null, screenShareUserName: null });
+          break;
+
         case 'rtc_offer':
         case 'rtc_answer':
         case 'rtc_candidate':
@@ -483,6 +494,14 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     ),
     callEnd: useCallback(
       (targetUserId: string) => sendRaw({ type: 'call_end', targetUserId }),
+      [sendRaw],
+    ),
+    screenShareStart: useCallback(
+      () => sendRaw({ type: 'screen_share_start' }),
+      [sendRaw],
+    ),
+    screenShareStop: useCallback(
+      () => sendRaw({ type: 'screen_share_stop' }),
       [sendRaw],
     ),
   };

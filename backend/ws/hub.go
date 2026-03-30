@@ -669,6 +669,21 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 		default:
 		}
 
+	case MsgScreenShareStart:
+		h.broadcastToRoom(client.room, OutgoingMessage{
+			Type:   MsgScreenShareStartBroadcast,
+			UserID: client.info.ID,
+			Name:   client.info.Name,
+		}, "")
+		log.Printf("[%s] %s started screen sharing", client.room, client.info.Name)
+
+	case MsgScreenShareStop:
+		h.broadcastToRoom(client.room, OutgoingMessage{
+			Type:   MsgScreenShareStopBroadcast,
+			UserID: client.info.ID,
+		}, "")
+		log.Printf("[%s] %s stopped screen sharing", client.room, client.info.Name)
+
 	case MsgWhisper:
 		if msg.Text == "" {
 			return

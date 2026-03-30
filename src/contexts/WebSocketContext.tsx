@@ -22,6 +22,8 @@ export interface WsSend {
   callAccept: (targetUserId: string) => void;
   callDecline: (targetUserId: string) => void;
   callEnd: (targetUserId: string) => void;
+  screenShareStart: () => void;
+  screenShareStop: () => void;
 }
 
 const WebSocketContext = createContext<{ send: WsSend; connected: boolean } | null>(null);
