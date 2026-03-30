@@ -124,10 +124,10 @@ export default function ScreenShareView() {
           className="w-full aspect-video bg-black"
         />
       ) : (
-        <div className="w-full aspect-video bg-black flex items-center justify-center text-gray-500 text-sm">
-          {screenShareUserName} が画面を共有しています
-          <br />
-          <span className="text-xs text-gray-600 mt-1">(P2Pビデオストリームは次のアップデートで対応)</span>
+        <div className="w-full aspect-video bg-gradient-to-b from-gray-900 to-gray-800 flex flex-col items-center justify-center text-center px-4">
+          <div className="text-3xl mb-3">🖥️</div>
+          <div className="text-white text-sm font-medium">{screenShareUserName} が画面を共有中</div>
+          <div className="text-gray-400 text-xs mt-2">同じゾーンで通話に参加すると画面が表示されます</div>
         </div>
       )}
     </div>

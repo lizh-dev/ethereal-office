@@ -20,6 +20,8 @@ export default function VoiceManager() {
   const autoVoiceEnabled = useOfficeStore((s) => s.autoVoiceEnabled);
   const prevStatusRef = useRef(callRequestStatus);
   const prevSeatRef = useRef<string | null>(null);
+  const webrtcRef = useRef(webrtc);
+  webrtcRef.current = webrtc;
 
   // Auto Zone Voice: automatically join/leave voice when sitting/standing
   useEffect(() => {
@@ -32,23 +34,45 @@ export default function VoiceManager() {
     const isSitting = currentSeatId !== null;
 
     if (!wasSitting && isSitting) {
-      // Just sat down → join zone voice (with small delay to let seat sync propagate)
-      const timer = setTimeout(() => {
-        if (webrtc.canJoinVoice && !webrtc.isVoiceActive) {
-          webrtc.joinVoice();
+      // Just sat down → try joining zone voice with retries (wait for seat sync to propagate)
+      let attempts = 0;
+      let cancelled = false;
+      const tryJoin = () => {
+        if (cancelled) return;
+        attempts++;
+        // Directly compute canJoinVoice from latest store state (not stale hook value)
+        const store = useOfficeStore.getState();
+        const seatId = store.currentSeatId;
+        const userId = store.currentUser.id;
+        if (!seatId || userId === 'pending') return;
+        // Find zone peers
+        let hasPeers = false;
+        for (const zone of store.zones) {
+          if (zone.seats.some(s => s.id === seatId)) {
+            hasPeers = zone.seats.some(s => s.occupied && s.occupiedBy && s.occupiedBy !== userId);
+            break;
+          }
         }
-      }, 500);
+        if (hasPeers && !webrtcRef.current.isVoiceActive) {
+          console.log('[AutoVoice] Joining zone voice, attempt', attempts);
+          webrtcRef.current.joinVoice();
+        } else if (attempts < 10) {
+          setTimeout(tryJoin, 500);
+        }
+      };
+      const timer = setTimeout(tryJoin, 1000);
       prevSeatRef.current = currentSeatId;
-      return () => clearTimeout(timer);
+      return () => { cancelled = true; clearTimeout(timer); };
     } else if (wasSitting && !isSitting) {
       // Just stood up → leave voice
-      if (webrtc.isVoiceActive) {
-        webrtc.leaveVoice();
+      if (webrtcRef.current.isVoiceActive) {
+        webrtcRef.current.leaveVoice();
       }
     }
 
     prevSeatRef.current = currentSeatId;
-  }, [currentSeatId, autoVoiceEnabled, webrtc]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSeatId, autoVoiceEnabled]);
 
   // When call is accepted by the other side, start WebRTC connection
   useEffect(() => {
