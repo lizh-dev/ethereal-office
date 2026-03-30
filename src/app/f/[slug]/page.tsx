@@ -315,7 +315,8 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
         {!showFocusTimer && editorMode !== 'edit' && (
           <button
             onClick={() => setShowFocusTimer(true)}
-            className="fixed top-16 left-1/2 -translate-x-1/2 z-40 px-3 py-1.5 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm text-xs text-gray-600 hover:text-amber-600 transition-colors backdrop-blur-sm"
+            className="fixed top-16 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm text-xs text-gray-600 hover:text-amber-600 transition-colors backdrop-blur-sm"
+            style={{ zIndex: 100 }}
           >
             🎯 集中モード
           </button>

@@ -33,9 +33,10 @@ export function useFocusTimer(): FocusTimerState {
     setEndTime(null);
     setBreakEndTime(null);
     setRemainingSeconds(0);
-    // Reset status to online
+    // Reset status to online and clear status message
     const store = useOfficeStore.getState();
     store.setCurrentUserStatus('online');
+    store.setStatusMessage('');
   }, []);
 
   // Timer tick
