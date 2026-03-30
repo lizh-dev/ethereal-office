@@ -16,7 +16,7 @@ import MembersView from '@/components/views/MembersView';
 import ProfileView from '@/components/views/ProfileView';
 import DMPanel from '@/components/chat/DMPanel';
 import VoiceManager from '@/components/voice/VoiceManager';
-import ScreenShareView from '@/components/voice/ScreenShareView';
+// ScreenShareView is now inside VoiceManager
 import FocusTimerPanel from '@/components/focus/FocusTimerPanel';
 import ActivityFeed from '@/components/views/ActivityFeed';
 import { useOfficeStore } from '@/store/officeStore';
@@ -309,16 +309,15 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
         <NotificationToast />
         {activeDMUserId && <DMPanel />}
         <VoiceManager />
-        <ScreenShareView />
         {showFocusTimer && <FocusTimerPanel />}
-        {/* Focus timer toggle button */}
+        {/* Focus timer toggle — positioned left side to avoid voice controls on right */}
         {!showFocusTimer && editorMode !== 'edit' && (
           <button
             onClick={() => setShowFocusTimer(true)}
-            className="fixed top-16 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm text-xs text-gray-600 hover:text-amber-600 transition-colors backdrop-blur-sm"
-            style={{ zIndex: 100 }}
+            className="fixed top-[58px] left-[68px] md:left-[68px] px-2.5 py-1.5 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm text-[10px] text-gray-500 hover:text-amber-600 font-medium transition-colors backdrop-blur-sm"
+            style={{ zIndex: 60 }}
           >
-            🎯 集中モード
+            🎯 集中
           </button>
         )}
         {/* Kick notification overlay */}

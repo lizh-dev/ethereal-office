@@ -6,6 +6,7 @@ import { useProximityVoice } from '@/hooks/useProximityVoice';
 import { useOfficeStore } from '@/store/officeStore';
 import VoiceControls from './VoiceControls';
 import IncomingCallDialog from './IncomingCallDialog';
+import ScreenShareView from './ScreenShareView';
 
 /**
  * VoiceManager must be rendered inside a WebSocketProvider.
@@ -98,6 +99,7 @@ export default function VoiceManager() {
     <>
       <VoiceControls webrtc={webrtc} />
       <IncomingCallDialog onAccept={handleAcceptCall} />
+      <ScreenShareView webrtc={webrtc} />
     </>
   );
 }

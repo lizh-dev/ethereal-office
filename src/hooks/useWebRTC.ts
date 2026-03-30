@@ -19,6 +19,8 @@ interface PeerEntry {
 export interface WebRTCState {
   localStream: MediaStream | null;
   remoteStreams: Map<string, MediaStream>;
+  remoteVideoStream: MediaStream | null;
+  remoteVideoUserId: string | null;
   isMuted: boolean;
   isVoiceActive: boolean;
   activeSpeakers: Set<string>;
@@ -30,6 +32,8 @@ export interface WebRTCState {
   removePeer: (remoteUserId: string) => void;
   setRemoteVolume: (remoteUserId: string, volume: number) => void;
   acquireLocalStream: () => Promise<MediaStream | null>;
+  startScreenShare: () => Promise<MediaStream | null>;
+  stopScreenShare: () => void;
   canJoinVoice: boolean;
   currentZoneName: string;
 }
@@ -73,10 +77,12 @@ export function useWebRTC(): WebRTCState {
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
   const [activeSpeakers, setActiveSpeakers] = useState<Set<string>>(new Set());
   const pendingCandidatesRef = useRef<Map<string, string[]>>(new Map());
-  // Track whether we initiated the connection (offerer) to avoid duplicate negotiations
   const isCleaningUpRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserIntervalsRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  const [remoteVideoStream, setRemoteVideoStream] = useState<MediaStream | null>(null);
+  const [remoteVideoUserId, setRemoteVideoUserId] = useState<string | null>(null);
 
   const currentUser = useOfficeStore((s) => s.currentUser);
   const currentSeatId = useOfficeStore((s) => s.currentSeatId);
@@ -104,7 +110,18 @@ export function useWebRTC(): WebRTCState {
 
       pc.ontrack = (event) => {
         for (const track of event.streams[0]?.getTracks() ?? []) {
-          remoteStream.addTrack(track);
+          if (track.kind === 'video') {
+            // Screen share video track received
+            const videoStream = new MediaStream([track]);
+            setRemoteVideoStream(videoStream);
+            setRemoteVideoUserId(remoteUserId);
+            track.onended = () => {
+              setRemoteVideoStream(null);
+              setRemoteVideoUserId(null);
+            };
+          } else {
+            remoteStream.addTrack(track);
+          }
         }
         syncRemoteStreams();
 
@@ -449,6 +466,42 @@ export function useWebRTC(): WebRTCState {
     }
   }, []);
 
+  // Start screen sharing: add video track to all peer connections
+  const startScreenShare = useCallback(async (): Promise<MediaStream | null> => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      screenStreamRef.current = stream;
+      const videoTrack = stream.getVideoTracks()[0];
+
+      // Add video track to all existing peer connections
+      for (const [, entry] of peersRef.current) {
+        entry.pc.addTrack(videoTrack, stream);
+        // Renegotiate
+        const offer = await entry.pc.createOffer();
+        await entry.pc.setLocalDescription(offer);
+      }
+
+      // Handle user stopping via browser UI
+      videoTrack.onended = () => {
+        stopScreenShare();
+      };
+
+      return stream;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Stop screen sharing: remove video track from all peers
+  const stopScreenShare = useCallback(() => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(t => t.stop());
+      screenStreamRef.current = null;
+    }
+    setRemoteVideoStream(null);
+    setRemoteVideoUserId(null);
+  }, []);
+
   // Can join voice: seated + same zone has other users
   const zones = useOfficeStore((s) => s.zones);
   const canJoinVoice = !!currentSeatId && currentUser.id !== 'pending' &&
@@ -466,6 +519,8 @@ export function useWebRTC(): WebRTCState {
   return {
     localStream: localStreamRef.current,
     remoteStreams,
+    remoteVideoStream,
+    remoteVideoUserId,
     isMuted,
     isVoiceActive,
     activeSpeakers,
@@ -477,6 +532,8 @@ export function useWebRTC(): WebRTCState {
     removePeer,
     setRemoteVolume,
     acquireLocalStream,
+    startScreenShare,
+    stopScreenShare,
     canJoinVoice,
     currentZoneName,
   };
