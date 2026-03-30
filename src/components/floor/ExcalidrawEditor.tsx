@@ -152,9 +152,17 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
 
         // Normal saved scene — pass through as-is (already converted from DB)
         const cleanElements = scene.elements.filter((el: { type: string }) => el.type !== '__isometric_marker__');
+        const baseAppState = scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 };
+        // Restore saved zoom level from localStorage
+        try {
+          const savedZoom = localStorage.getItem('ethereal-zoom');
+          if (savedZoom) {
+            baseAppState.zoom = { value: parseFloat(savedZoom) };
+          }
+        } catch {}
         return {
           elements: cleanElements,
-          appState: scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 },
+          appState: baseAppState,
           scrollToContent: true,
           files: furnitureFiles || {},
         };

@@ -28,15 +28,15 @@ function NetworkCanvas() {
     resize();
     window.addEventListener('resize', resize);
 
-    // Nodes representing people across the full canvas
-    const nodes = Array.from({ length: 20 }, (_, i) => ({
+    // Nodes representing people across the full canvas — subtle grey tones
+    const nodes = Array.from({ length: 15 }, (_, i) => ({
       x: Math.random() * 100,
       y: Math.random() * 100,
-      vx: (Math.random() - 0.5) * 0.12,
-      vy: (Math.random() - 0.5) * 0.12,
-      radius: 4 + Math.random() * 5,
-      hue: [195, 200, 210, 220, 230, 180, 240, 185][i % 8],
-      online: i < 14,
+      vx: (Math.random() - 0.5) * 0.06,
+      vy: (Math.random() - 0.5) * 0.06,
+      radius: 3 + Math.random() * 3,
+      lightness: 75 + Math.random() * 15,
+      online: i < 10,
       pulse: Math.random() * Math.PI * 2,
     }));
 
@@ -54,7 +54,7 @@ function NetworkCanvas() {
         if (node.y < 3 || node.y > 97) node.vy *= -1;
       }
 
-      // Draw connections
+      // Draw connections — very subtle grey lines
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const a = nodes[i];
@@ -64,51 +64,40 @@ function NetworkCanvas() {
           const dist = Math.sqrt(dx * dx + dy * dy);
           const maxDist = w * 0.22;
           if (dist < maxDist && a.online && b.online) {
-            const alpha = (1 - dist / maxDist) * 0.18;
+            const alpha = (1 - dist / maxDist) * 0.08;
             ctx.beginPath();
             ctx.moveTo(a.x * w / 100, a.y * h / 100);
             ctx.lineTo(b.x * w / 100, b.y * h / 100);
-            ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = `rgba(180, 180, 190, ${alpha})`;
+            ctx.lineWidth = 0.5;
             ctx.stroke();
           }
         }
       }
 
-      // Draw nodes
+      // Draw nodes — subtle grey dots
       for (const node of nodes) {
         const nx = node.x * w / 100;
         const ny = node.y * h / 100;
-        const pulseScale = node.online ? 1 + Math.sin(node.pulse) * 0.12 : 1;
+        const pulseScale = node.online ? 1 + Math.sin(node.pulse) * 0.08 : 1;
 
         if (node.online) {
-          const glow = ctx.createRadialGradient(nx, ny, 0, nx, ny, node.radius * 3.5 * pulseScale);
-          glow.addColorStop(0, `hsla(${node.hue}, 80%, 65%, 0.12)`);
-          glow.addColorStop(1, `hsla(${node.hue}, 80%, 65%, 0)`);
+          const glow = ctx.createRadialGradient(nx, ny, 0, nx, ny, node.radius * 2.5 * pulseScale);
+          glow.addColorStop(0, `rgba(200, 200, 210, 0.06)`);
+          glow.addColorStop(1, `rgba(200, 200, 210, 0)`);
           ctx.beginPath();
-          ctx.arc(nx, ny, node.radius * 3.5 * pulseScale, 0, Math.PI * 2);
+          ctx.arc(nx, ny, node.radius * 2.5 * pulseScale, 0, Math.PI * 2);
           ctx.fillStyle = glow;
           ctx.fill();
         }
 
         ctx.beginPath();
         ctx.arc(nx, ny, node.radius * pulseScale, 0, Math.PI * 2);
-        if (node.online) {
-          const grad = ctx.createRadialGradient(nx - 2, ny - 2, 0, nx, ny, node.radius);
-          grad.addColorStop(0, `hsla(${node.hue}, 85%, 72%, 0.85)`);
-          grad.addColorStop(1, `hsla(${node.hue}, 75%, 58%, 0.85)`);
-          ctx.fillStyle = grad;
-        } else {
-          ctx.fillStyle = 'rgba(200, 215, 225, 0.25)';
-        }
+        const l = node.lightness;
+        ctx.fillStyle = node.online
+          ? `hsla(220, 5%, ${l}%, 0.4)`
+          : `hsla(220, 3%, ${l + 5}%, 0.15)`;
         ctx.fill();
-
-        if (node.online) {
-          ctx.beginPath();
-          ctx.arc(nx + node.radius * 0.6, ny - node.radius * 0.6, 2, 0, Math.PI * 2);
-          ctx.fillStyle = '#4ade80';
-          ctx.fill();
-        }
       }
 
       animRef.current = requestAnimationFrame(animate);

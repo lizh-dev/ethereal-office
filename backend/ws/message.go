@@ -91,30 +91,38 @@ type ChatMessage struct {
 	Timestamp int64  `json:"timestamp"`
 }
 
+type DMHistoryItem struct {
+	From      string `json:"from"`
+	To        string `json:"to"`
+	Text      string `json:"text"`
+	Timestamp string `json:"timestamp"`
+}
+
 type OutgoingMessage struct {
-	Type          string        `json:"type"`
-	UserID        string        `json:"userId,omitempty"`
-	User          *UserInfo     `json:"user,omitempty"`
-	Users         []UserInfo    `json:"users,omitempty"`
-	X             float64       `json:"x,omitempty"`
-	Y             float64       `json:"y,omitempty"`
-	SeatID        string        `json:"seatId,omitempty"`
-	Status        string        `json:"status,omitempty"`
-	StatusMessage string        `json:"statusMessage,omitempty"`
-	Message       *ChatMessage  `json:"message,omitempty"`
-	ChatHistory   []ChatMessage `json:"chatHistory,omitempty"`
-	IsMuted       *bool         `json:"isMuted,omitempty"`
-	IsCamOn       *bool         `json:"isCameraOn,omitempty"`
-	Emoji         string        `json:"emoji,omitempty"`
-	Name          string        `json:"name,omitempty"`
-	AvatarStyle   string        `json:"avatarStyle,omitempty"`
-	AvatarSeed    string        `json:"avatarSeed,omitempty"`
-	From          string        `json:"from,omitempty"`
-	To            string        `json:"to,omitempty"`
-	Text          string        `json:"text,omitempty"`
-	Timestamp     string        `json:"timestamp,omitempty"`
-	SDP           string        `json:"sdp,omitempty"`
-	Candidate     string        `json:"candidate,omitempty"`
+	Type          string          `json:"type"`
+	UserID        string          `json:"userId,omitempty"`
+	User          *UserInfo       `json:"user,omitempty"`
+	Users         []UserInfo      `json:"users,omitempty"`
+	X             float64         `json:"x,omitempty"`
+	Y             float64         `json:"y,omitempty"`
+	SeatID        string          `json:"seatId,omitempty"`
+	Status        string          `json:"status,omitempty"`
+	StatusMessage string          `json:"statusMessage,omitempty"`
+	Message       *ChatMessage    `json:"message,omitempty"`
+	ChatHistory   []ChatMessage   `json:"chatHistory,omitempty"`
+	DMHistory     []DMHistoryItem `json:"dmHistory,omitempty"`
+	IsMuted       *bool           `json:"isMuted,omitempty"`
+	IsCamOn       *bool           `json:"isCameraOn,omitempty"`
+	Emoji         string          `json:"emoji,omitempty"`
+	Name          string          `json:"name,omitempty"`
+	AvatarStyle   string          `json:"avatarStyle,omitempty"`
+	AvatarSeed    string          `json:"avatarSeed,omitempty"`
+	From          string          `json:"from,omitempty"`
+	To            string          `json:"to,omitempty"`
+	Text          string          `json:"text,omitempty"`
+	Timestamp     string          `json:"timestamp,omitempty"`
+	SDP           string          `json:"sdp,omitempty"`
+	Candidate     string          `json:"candidate,omitempty"`
 }
 
 func MarshalMessage(msg OutgoingMessage) []byte {

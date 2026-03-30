@@ -105,10 +105,12 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
       });
   }, [slug]);
 
-  // Auto-join on reload if user info exists in localStorage
+  // Auto-join on reload if user info exists in localStorage (skip if floor has password)
   useEffect(() => {
     if (autoJoinChecked || joined || loading || notFound) return;
     setAutoJoinChecked(true);
+    // Don't auto-join password-protected floors
+    if (floorData?.hasPassword) return;
     try {
       const saved = localStorage.getItem('ethereal-office-user');
       if (saved) {
@@ -119,7 +121,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
       }
     } catch { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, notFound, autoJoinChecked, joined]);
+  }, [loading, notFound, autoJoinChecked, joined, floorData?.hasPassword]);
 
   const { send, connected } = useWebSocket(wsOptions);
   useIdleDetection(send);
@@ -138,8 +140,9 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
     setWsOptions({ floor: slug, name, avatarStyle, avatarSeed });
     setJoined(true);
 
-    // Show setup guide if floor has no zones (new floor)
-    if (!floorData?.zones || !Array.isArray(floorData.zones) || floorData.zones.length === 0) {
+    // Show setup guide if floor has no zones (new floor) and not already dismissed
+    const guideDismissed = localStorage.getItem(`ethereal-guide-dismissed-${slug}`);
+    if (!guideDismissed && (!floorData?.zones || !Array.isArray(floorData.zones) || floorData.zones.length === 0)) {
       setShowSetupGuide(true);
     }
 
@@ -291,10 +294,11 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
           <SetupGuide
             onStartSetup={() => {
               setShowSetupGuide(false);
+              localStorage.setItem(`ethereal-guide-dismissed-${slug}`, '1');
               useOfficeStore.getState().setEditorMode('edit');
               setShowSpaceWizard(true);
             }}
-            onSkip={() => { setShowSetupGuide(false); setShowEditHint(true); setTimeout(() => setShowEditHint(false), 6000); }}
+            onSkip={() => { setShowSetupGuide(false); setShowEditHint(true); setTimeout(() => setShowEditHint(false), 6000); localStorage.setItem(`ethereal-guide-dismissed-${slug}`, '1'); }}
           />
         )}
         {showAvatarSelector && <AvatarSelector />}

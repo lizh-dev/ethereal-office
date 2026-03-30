@@ -100,8 +100,11 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
 
     const elements = excalidrawAPI.getSceneElements();
 
-    // 1. Re-detect seats from current element positions before saving
-    initSeatsFromElements(elements);
+    // Only re-detect seats if no zones exist (wizard already created zones with proper labels)
+    const currentZones = useOfficeStore.getState().zones;
+    if (!currentZones || currentZones.length === 0 || currentZones.every(z => z.seats.length === 0)) {
+      initSeatsFromElements(elements);
+    }
     const updatedZones = useOfficeStore.getState().zones;
 
     // 2. Save to DB
@@ -128,9 +131,10 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
     setEditorMode('view');
     setSaving(false);
 
-    // 4. Re-detect seats after view mode renders (with delay for Excalidraw to update)
+    // 4. Re-detect seats after view mode renders only if no wizard-created zones exist
     setTimeout(() => {
-      if (elements && elements.length > 0) {
+      const zonesAfterSave = useOfficeStore.getState().zones;
+      if (elements && elements.length > 0 && (!zonesAfterSave || zonesAfterSave.length === 0)) {
         initSeatsFromElements(elements);
       }
     }, 500);

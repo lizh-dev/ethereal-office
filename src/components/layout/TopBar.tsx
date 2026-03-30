@@ -108,14 +108,14 @@ export default function TopBar() {
         )}
       </div>
 
-      {/* Search - hidden on mobile */}
-      <div className="hidden md:block flex-1 max-w-md mx-6">
+      {/* Search - responsive, compact on mobile */}
+      <div className="flex-1 max-w-md mx-2 md:mx-6">
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
           <input type="text" placeholder="メンバーを検索..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full h-9 pl-9 pr-4 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-600 placeholder:text-gray-400 focus:outline-none focus:border-blue-300 focus:bg-white transition-colors"
+            className="w-full h-8 md:h-9 pl-8 md:pl-9 pr-3 md:pr-4 bg-gray-50 border border-gray-200 rounded-full text-xs md:text-sm text-gray-600 placeholder:text-gray-400 focus:outline-none focus:border-blue-300 focus:bg-white transition-colors"
           />
         </div>
       </div>

@@ -63,6 +63,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
   // Force re-render at 30fps during view mode so avatars track pan/zoom smoothly
   const [, forceUpdate] = useState(0);
+  const lastSavedZoomRef = useRef(0);
   useEffect(() => {
     if (!isViewMode || !excalidrawAPI) return;
     let running = true;
@@ -76,6 +77,11 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
           const st = excalidrawAPI.getAppState();
           if (st) {
             useOfficeStore.getState().setExcalidrawAppState(st);
+            // Save zoom level periodically (every 60 frames ~= 1s)
+            if (frame % 60 === 0 && st.zoom?.value && st.zoom.value !== lastSavedZoomRef.current) {
+              lastSavedZoomRef.current = st.zoom.value;
+              try { localStorage.setItem('ethereal-zoom', String(st.zoom.value)); } catch {}
+            }
           }
         } catch { /* ignore */ }
       }
@@ -88,33 +94,37 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
   const setZones = useOfficeStore((s) => s.setZones);
   const prevModeRef = useRef(editorMode);
 
-  // Re-generate seats every time user switches edit → view
+  // Re-generate seats every time user switches edit → view (only if no zones exist from wizard/DB)
   useEffect(() => {
     if (prevModeRef.current === 'edit' && editorMode !== 'edit' && excalidrawAPI) {
-      const elements = excalidrawAPI.getSceneElements();
-      if (elements && elements.length > 0) {
-        const desks = elements.filter((el: any) =>
-          el.type === 'rectangle' && !el.isDeleted &&
-          el.backgroundColor === '#e8e3dd' && el.width > 40 && el.width < 120
-        );
-        const allChairs = elements.filter((el: any) =>
-          el.type === 'ellipse' && !el.isDeleted &&
-          el.backgroundColor === '#9ca3af' && el.width <= 30 && el.height <= 30
-        );
-        const deskChairs: any[] = [];
-        const otherChairs: any[] = [];
-        for (const chair of allChairs) {
-          const cx = chair.x + chair.width / 2, cy = chair.y + chair.height / 2;
-          const nearDesk = desks.some((d: any) => Math.abs(cx - (d.x + d.width / 2)) < 60 && Math.abs(cy - (d.y + d.height / 2)) < 60);
-          (nearDesk ? deskChairs : otherChairs).push(chair);
-        }
-        const sortFn = (a: any, b: any) => { const dy = a.y - b.y; return Math.abs(dy) > 10 ? dy : a.x - b.x; };
-        const sorted = [...deskChairs.sort(sortFn), ...otherChairs.sort(sortFn)];
+      const currentZones = useOfficeStore.getState().zones;
+      // Skip re-generation if zones already have seats (from wizard or saved data)
+      if (!currentZones || currentZones.length === 0 || currentZones.every(z => z.seats.length === 0)) {
+        const elements = excalidrawAPI.getSceneElements();
+        if (elements && elements.length > 0) {
+          const desks = elements.filter((el: any) =>
+            el.type === 'rectangle' && !el.isDeleted &&
+            el.backgroundColor === '#e8e3dd' && el.width > 40 && el.width < 120
+          );
+          const allChairs = elements.filter((el: any) =>
+            el.type === 'ellipse' && !el.isDeleted &&
+            el.backgroundColor === '#9ca3af' && el.width <= 30 && el.height <= 30
+          );
+          const deskChairs: any[] = [];
+          const otherChairs: any[] = [];
+          for (const chair of allChairs) {
+            const cx = chair.x + chair.width / 2, cy = chair.y + chair.height / 2;
+            const nearDesk = desks.some((d: any) => Math.abs(cx - (d.x + d.width / 2)) < 60 && Math.abs(cy - (d.y + d.height / 2)) < 60);
+            (nearDesk ? deskChairs : otherChairs).push(chair);
+          }
+          const sortFn = (a: any, b: any) => { const dy = a.y - b.y; return Math.abs(dy) > 10 ? dy : a.x - b.x; };
+          const sorted = [...deskChairs.sort(sortFn), ...otherChairs.sort(sortFn)];
 
-        const zones = [{ id: 'office', type: 'desk' as const, name: 'オフィス', x: 0, y: 0, w: 0, h: 0,
-          seats: sorted.map((c: any, i: number) => ({ id: `seat-${i}`, roomId: 'office', x: c.x, y: c.y, w: c.width, h: c.height, occupied: false, occupiedBy: undefined as string | undefined })),
-        }];
-        useOfficeStore.setState({ zones });
+          const zones = [{ id: 'office', type: 'desk' as const, name: 'オフィス', x: 0, y: 0, w: 0, h: 0,
+            seats: sorted.map((c: any, i: number) => ({ id: `seat-${i}`, roomId: 'office', x: c.x, y: c.y, w: c.width, h: c.height, occupied: false, occupiedBy: undefined as string | undefined })),
+          }];
+          useOfficeStore.setState({ zones });
+        }
       }
     }
     prevModeRef.current = editorMode;

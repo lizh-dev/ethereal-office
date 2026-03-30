@@ -62,7 +62,7 @@ func (h *Hub) cleanupEmptyRooms() {
 	for slug, room := range h.rooms {
 		// Clean up expired reconnection entries (older than 60 seconds)
 		for uid, di := range room.recentlyDisconnected {
-			if time.Since(di.DisconnectAt) > 20*time.Second {
+			if time.Since(di.DisconnectAt) > 120*time.Second {
 				delete(room.recentlyDisconnected, uid)
 			}
 		}
@@ -98,7 +98,7 @@ func (h *Hub) addClient(client *Client) {
 	h.mu.Lock()
 	// Check if this user was recently disconnected — restore position only, NOT seat
 	if di, ok := room.recentlyDisconnected[client.info.ID]; ok {
-		if time.Since(di.DisconnectAt) < 20*time.Second {
+		if time.Since(di.DisconnectAt) < 120*time.Second {
 			client.info.X = di.Info.X
 			client.info.Y = di.Info.Y
 			// Do NOT restore SeatID — user must re-sit manually
@@ -107,6 +107,14 @@ func (h *Hub) addClient(client *Client) {
 		}
 		delete(room.recentlyDisconnected, client.info.ID)
 	}
+
+	// Evict stale client with the same userId (e.g. zombie from broken connection)
+	if old, exists := room.clients[client.info.ID]; exists && old != client {
+		log.Printf("[%s] evicting stale client %s (%s) - same ID", client.room, old.info.ID, old.info.Name)
+		delete(room.clients, old.info.ID)
+		go func() { old.conn.Close() }()
+	}
+
 	room.clients[client.info.ID] = client
 	h.mu.Unlock()
 
@@ -129,13 +137,32 @@ func (h *Hub) addClient(client *Client) {
 		})
 	}
 
-	// Send welcome with existing users and chat history from DB
+	// Load DM history for this user (last 100 DMs sent or received)
+	var dmHistory []DMHistoryItem
+	if db.DB != nil {
+		var dbDMs []model.DMMessage
+		db.DB.Where("floor_slug = ? AND (from_id = ? OR to_id = ?)", client.room, client.info.ID, client.info.ID).
+			Order("created_at DESC").
+			Limit(100).
+			Find(&dbDMs)
+		for i := len(dbDMs) - 1; i >= 0; i-- {
+			dmHistory = append(dmHistory, DMHistoryItem{
+				From:      dbDMs[i].FromID,
+				To:        dbDMs[i].ToID,
+				Text:      dbDMs[i].Text,
+				Timestamp: dbDMs[i].CreatedAt.UTC().Format(time.RFC3339),
+			})
+		}
+	}
+
+	// Send welcome with existing users, chat history, and DM history from DB
 	users := h.getRoomUsers(client.room)
 	welcome := OutgoingMessage{
 		Type:        MsgWelcome,
 		UserID:      client.info.ID,
 		Users:       users,
 		ChatHistory: chatHistory,
+		DMHistory:   dmHistory,
 		SeatID:      client.info.SeatID,
 		X:           client.info.X,
 		Y:           client.info.Y,
@@ -206,7 +233,7 @@ func (h *Hub) HasRecentlyDisconnected(slug, userID string) bool {
 	if !ok {
 		return false
 	}
-	return time.Since(di.DisconnectAt) < 20*time.Second
+	return time.Since(di.DisconnectAt) < 120*time.Second
 }
 
 func (h *Hub) getRoomUsers(slug string) []UserInfo {
@@ -493,13 +520,25 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 		if room == nil {
 			return
 		}
-		h.mu.RLock()
-		target, ok := room.clients[msg.TargetUserID]
-		h.mu.RUnlock()
-		if !ok {
-			return
+
+		now := time.Now()
+		ts := now.UTC().Format(time.RFC3339)
+
+		// Persist DM to DB
+		if db.DB != nil {
+			dbDM := model.DMMessage{
+				FloorSlug: client.room,
+				FromID:    client.info.ID,
+				FromName:  client.info.Name,
+				ToID:      msg.TargetUserID,
+				Text:      msg.Text,
+				CreatedAt: now,
+			}
+			if err := db.DB.Create(&dbDM).Error; err != nil {
+				log.Printf("[%s] failed to persist DM: %v", client.room, err)
+			}
 		}
-		ts := time.Now().UTC().Format(time.RFC3339)
+
 		dmMsg := OutgoingMessage{
 			Type:      MsgDMReceived,
 			From:      client.info.ID,
@@ -508,17 +547,23 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 			Timestamp: ts,
 		}
 		data := MarshalMessage(dmMsg)
-		// Send to target
-		select {
-		case target.send <- data:
-		default:
+
+		// Send to target (if online)
+		h.mu.RLock()
+		target, ok := room.clients[msg.TargetUserID]
+		h.mu.RUnlock()
+		if ok {
+			select {
+			case target.send <- data:
+			default:
+			}
 		}
 		// Echo back to sender
 		select {
 		case client.send <- data:
 		default:
 		}
-		log.Printf("[%s] DM from %s to %s", client.room, client.info.Name, target.info.Name)
+		log.Printf("[%s] DM from %s to %s (target online: %v)", client.room, client.info.Name, msg.TargetUserID, ok)
 
 	case MsgCallRequest:
 		if msg.TargetUserID == "" {

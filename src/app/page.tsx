@@ -14,6 +14,11 @@ export default function LandingPage() {
 
   const scrollToCreate = () => {
     createRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Focus the floor name input after scroll completes
+    setTimeout(() => {
+      const input = createRef.current?.querySelector<HTMLInputElement>('input[type="text"]');
+      input?.focus();
+    }, 800);
   };
 
   return (

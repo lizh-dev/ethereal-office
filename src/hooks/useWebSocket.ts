@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import type { PresenceStatus } from '@/types';
 
-const RECONNECT_INTERVAL = 10000;
+const RECONNECT_INTERVAL = 3000;
 
 // Event emitter for WebRTC signaling messages
 type RTCSignalHandler = (msg: { type: string; userId: string; sdp?: string; candidate?: string }) => void;
@@ -160,6 +160,21 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
             useOfficeStore.setState({ chatMessages: [] });
             for (const chatMsg of msg.chatHistory) {
               addChatMessage(chatMsg.userId, chatMsg.text, chatMsg.timestamp);
+            }
+          }
+          // Restore DM history from DB
+          if (msg.dmHistory && msg.dmHistory.length > 0) {
+            const store = useOfficeStore.getState();
+            // Clear existing DM messages to avoid duplicates on reconnect
+            useOfficeStore.setState({ dmMessages: {} });
+            for (const dm of msg.dmHistory) {
+              store.addDMMessage({
+                id: `dm-hist-${dm.timestamp}-${Math.random().toString(36).slice(2, 7)}`,
+                from: dm.from,
+                to: dm.to,
+                text: dm.text,
+                timestamp: dm.timestamp,
+              });
             }
           }
           break;
@@ -361,7 +376,25 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     if (options?.floor && options?.name) {
       connect();
     }
+
+    // Reconnect immediately when tab becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && options?.floor && options?.name) {
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+          console.log('[WS] Tab visible, reconnecting...');
+          // Clear any pending reconnect timer
+          if (reconnectTimerRef.current) {
+            clearTimeout(reconnectTimerRef.current);
+            reconnectTimerRef.current = null;
+          }
+          connect();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current);
       }

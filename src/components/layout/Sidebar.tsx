@@ -123,17 +123,27 @@ export default function Sidebar() {
         </nav>
 
         {/* Edit mode */}
-        <button
-          onClick={handleEditClick}
-          className={`w-11 h-11 rounded-xl flex items-center justify-center mb-2 transition-all ${
-            editorMode === 'edit'
-              ? 'bg-amber-100 text-amber-600'
-              : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
-          }`}
-          title={editorMode === 'edit' ? '編集終了' : 'フロアを編集（管理者パスワード必要）'}
-        >
-          <span className="text-lg">{isFloorOwner ? '✏️' : '🔒'}</span>
-        </button>
+        <div className="relative group mb-2">
+          <button
+            onClick={handleEditClick}
+            className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+              editorMode === 'edit'
+                ? 'bg-amber-100 text-amber-600'
+                : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+            }`}
+            title={editorMode === 'edit' ? '編集終了' : 'フロアを編集（管理者パスワード必要）'}
+          >
+            <span className="text-lg">{isFloorOwner ? '✏️' : '🔒'}</span>
+          </button>
+          {!isFloorOwner && editorMode !== 'edit' && (
+            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block z-50">
+              <div className="bg-gray-800 text-white text-[10px] px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-lg">
+                管理者パスワードで編集可能
+                <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-800" />
+              </div>
+            </div>
+          )}
+        </div>
       </aside>
 
       {/* Mobile bottom tab bar */}

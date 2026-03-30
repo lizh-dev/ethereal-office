@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 const faqs = [
@@ -40,6 +40,14 @@ const faqs = [
 
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      setHeight(contentRef.current.scrollHeight);
+    }
+  }, [a]);
 
   return (
     <div className="border-b border-gray-100 last:border-b-0">
@@ -50,16 +58,18 @@ function FAQItem({ q, a }: { q: string; a: string }) {
         <span className="text-base font-medium text-gray-800 group-hover:text-sky-600 transition-colors duration-300 pr-4">
           {q}
         </span>
-        <span className={`flex-shrink-0 w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center text-sky-500 transition-transform duration-300 ${open ? 'rotate-45' : ''}`}>
+        <span className={`flex-shrink-0 w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center text-sky-500 transition-all duration-400 ease-out ${open ? 'rotate-45 bg-sky-100' : ''}`}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </span>
       </button>
       <div
-        className={`overflow-hidden transition-all duration-300 ${open ? 'max-h-40 pb-5' : 'max-h-0'}`}
+        ref={contentRef}
+        style={{ maxHeight: open ? height + 20 : 0 }}
+        className="overflow-hidden transition-all duration-400 ease-out"
       >
-        <p className="text-sm text-gray-500 leading-relaxed">{a}</p>
+        <p className={`text-sm text-gray-500 leading-relaxed pb-5 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}>{a}</p>
       </div>
     </div>
   );
