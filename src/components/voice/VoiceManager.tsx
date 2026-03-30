@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useWebRTC } from '@/hooks/useWebRTC';
+import { useProximityVoice } from '@/hooks/useProximityVoice';
 import { useOfficeStore } from '@/store/officeStore';
 import VoiceControls from './VoiceControls';
 import IncomingCallDialog from './IncomingCallDialog';
@@ -60,6 +61,9 @@ export default function VoiceManager() {
     }
     prevStatusRef.current = callRequestStatus;
   }, [callRequestStatus, callTargetUserId, webrtc]);
+
+  // Proximity voice: auto-connect based on distance when walking around
+  useProximityVoice(webrtc);
 
   // Handle incoming call accept (receiver side)
   const handleAcceptCall = (fromUserId: string) => {

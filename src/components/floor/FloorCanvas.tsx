@@ -134,6 +134,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
   const sitAt = useOfficeStore((s) => s.sitAt);
   const standUp = useOfficeStore((s) => s.standUp);
   const currentSeatId = useOfficeStore((s) => s.currentSeatId);
+  const autoVoiceEnabled = useOfficeStore((s) => s.autoVoiceEnabled);
 
   // Click = find nearest empty chair and sit, or free move
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
@@ -383,6 +384,27 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
         <div
           style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}
         >
+          {/* Proximity voice range indicator (shown when not seated and auto-voice enabled) */}
+          {!currentSeatId && autoVoiceEnabled && (() => {
+            const pos = sceneToScreen(currentUser.position.x, currentUser.position.y, appState);
+            const zoom = appState.zoom?.value || 1;
+            const radius = 180 * zoom; // PROXIMITY_CONNECT_DIST
+            return (
+              <div style={{
+                position: 'absolute',
+                left: pos.x - radius,
+                top: pos.y - radius,
+                width: radius * 2,
+                height: radius * 2,
+                borderRadius: '50%',
+                border: '1.5px dashed rgba(56, 189, 248, 0.3)',
+                background: 'radial-gradient(circle, rgba(56, 189, 248, 0.04) 0%, transparent 70%)',
+                pointerEvents: 'none',
+                zIndex: 0,
+                transition: 'left 0.1s, top 0.1s',
+              }} />
+            );
+          })()}
           {/* Proximity lines between nearby users */}
           <svg style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1 }}>
             {allUsers.map((a, i) => allUsers.slice(i + 1).map(b => {

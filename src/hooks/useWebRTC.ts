@@ -12,6 +12,8 @@ const ICE_SERVERS: RTCConfiguration = {
 interface PeerEntry {
   pc: RTCPeerConnection;
   remoteStream: MediaStream;
+  gainNode?: GainNode;
+  audioSource?: MediaStreamAudioSourceNode;
 }
 
 export interface WebRTCState {
@@ -24,6 +26,10 @@ export interface WebRTCState {
   leaveVoice: () => void;
   joinVoice: () => void;
   joinVoiceWith: (targetUserId: string) => void;
+  connectToPeer: (remoteUserId: string) => Promise<void>;
+  removePeer: (remoteUserId: string) => void;
+  setRemoteVolume: (remoteUserId: string, volume: number) => void;
+  acquireLocalStream: () => Promise<MediaStream | null>;
   canJoinVoice: boolean;
   currentZoneName: string;
 }
@@ -415,6 +421,34 @@ export function useWebRTC(): WebRTCState {
     }
   }, [currentUser.id, acquireLocalStream, connectToPeer]);
 
+  // Set volume for a remote peer via GainNode (for proximity voice)
+  const setRemoteVolume = useCallback((remoteUserId: string, volume: number) => {
+    const entry = peersRef.current.get(remoteUserId);
+    if (!entry) return;
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
+    const ctx = audioContextRef.current;
+
+    // Create GainNode if not yet created for this peer
+    if (!entry.gainNode && entry.remoteStream.getAudioTracks().length > 0) {
+      const source = ctx.createMediaStreamSource(entry.remoteStream);
+      const gainNode = ctx.createGain();
+      source.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      entry.audioSource = source;
+      entry.gainNode = gainNode;
+    }
+
+    if (entry.gainNode) {
+      entry.gainNode.gain.linearRampToValueAtTime(
+        Math.max(0, Math.min(1, volume)),
+        ctx.currentTime + 0.1
+      );
+    }
+  }, []);
+
   // Can join voice: seated + same zone has other users
   const zones = useOfficeStore((s) => s.zones);
   const canJoinVoice = !!currentSeatId && currentUser.id !== 'pending' &&
@@ -439,6 +473,10 @@ export function useWebRTC(): WebRTCState {
     leaveVoice,
     joinVoice,
     joinVoiceWith,
+    connectToPeer,
+    removePeer,
+    setRemoteVolume,
+    acquireLocalStream,
     canJoinVoice,
     currentZoneName,
   };
