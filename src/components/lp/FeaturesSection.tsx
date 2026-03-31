@@ -4,51 +4,50 @@ import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 const features = [
   {
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <circle cx="12" cy="12" r="3" />
-        <path d="M12 2v2M12 20v2M2 12h2M20 12h2" />
-      </svg>
-    ),
-    title: 'リアルタイムプレゼンス',
-    description: '誰がオフィスにいて、今何をしているのかが一目でわかる。チームの"今"を可視化。',
+    icon: '🎙️',
+    title: '近接ボイス',
+    description: '近くの人の声が自然に聞こえ、離れると小さくなる。まるで本物のオフィスのような音声体験。',
     color: 'text-emerald-500',
     bgColor: 'bg-emerald-50',
+    tag: 'NEW',
   },
   {
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M15 10l-4 4l6 6l4-16l-18 7l4 2l2 6l3-4" />
-      </svg>
-    ),
-    title: 'ワンクリック会話',
-    description: 'アバターに近づくだけで自然に会話開始。ミーティング設定は不要。',
+    icon: '💺',
+    title: '座るだけで自動通話',
+    description: '同じゾーンに座った瞬間、自動で音声接続。ミーティング設定もクリックも不要。',
     color: 'text-sky-500',
     bgColor: 'bg-sky-50',
+    tag: 'NEW',
   },
   {
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        <path d="M3 9h18M9 21V9" />
-      </svg>
-    ),
-    title: 'カスタマイズ可能なオフィス',
-    description: '会議室、ラウンジ、デスク配置を自由に設計。チームに合ったオフィスを作れる。',
+    icon: '🖥️',
+    title: '画面共有',
+    description: '通話中にワンクリックで画面を共有。リモートでのペアプロやレビューがスムーズに。',
     color: 'text-violet-500',
     bgColor: 'bg-violet-50',
+    tag: 'NEW',
   },
   {
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-      </svg>
-    ),
-    title: 'ログイン不要・30秒で開始',
-    description: 'アカウント登録は一切不要。URLを開くだけで即参加。フロア作成も30秒で完了。',
+    icon: '🎯',
+    title: '集中タイマー',
+    description: 'ポモドーロタイマーでステータス自動変更。「今は集中中」がチームに伝わる。',
     color: 'text-amber-500',
     bgColor: 'bg-amber-50',
+    tag: 'NEW',
+  },
+  {
+    icon: '🏢',
+    title: 'カスタムオフィス',
+    description: 'デスク・会議室・ラウンジ・カフェを自由に配置。ウィザードで30秒で完成。',
+    color: 'text-indigo-500',
+    bgColor: 'bg-indigo-50',
+  },
+  {
+    icon: '⚡',
+    title: 'ログイン不要・30秒',
+    description: 'アカウント登録ゼロ。URLを共有するだけでチーム全員が即参加できる。',
+    color: 'text-rose-500',
+    bgColor: 'bg-rose-50',
   },
 ];
 
@@ -66,24 +65,28 @@ export default function FeaturesSection() {
             <span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text text-transparent">機能</span>
           </h2>
           <p className="text-gray-500 max-w-xl mx-auto">
-            シンプルだけど、リモートワークに本当に必要なものを。
+            oViceを超える体験を、ログインなしで。
           </p>
         </div>
 
-        {/* Feature cards */}
-        <div className="grid sm:grid-cols-2 gap-6">
+        {/* Feature cards — 3 columns */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((feature, i) => (
             <div
               key={i}
-              className="group relative p-8 rounded-2xl bg-white border border-gray-100 hover:border-sky-200 hover:shadow-lg hover:shadow-sky-50 transition-all duration-500"
-              style={{ transitionDelay: `${i * 100}ms` }}
+              className="group relative p-7 rounded-2xl bg-white border border-gray-100 hover:border-sky-200 hover:shadow-lg hover:shadow-sky-50 transition-all duration-500"
+              style={{ transitionDelay: `${i * 80}ms` }}
             >
+              {feature.tag && (
+                <span className="absolute top-4 right-4 px-2 py-0.5 bg-sky-500 text-white text-[9px] font-bold rounded-full tracking-wider">
+                  {feature.tag}
+                </span>
+              )}
               {/* Icon */}
-              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl ${feature.bgColor} mb-5`}>
-                <div className={feature.color}>{feature.icon}</div>
+              <div className={`inline-flex items-center justify-center w-11 h-11 rounded-xl ${feature.bgColor} mb-4`}>
+                <span className="text-xl">{feature.icon}</span>
               </div>
-
-              <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
               <p className="text-sm text-gray-500 leading-relaxed">{feature.description}</p>
             </div>
           ))}
