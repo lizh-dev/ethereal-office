@@ -17,7 +17,7 @@ import ProfileView from '@/components/views/ProfileView';
 import DMPanel from '@/components/chat/DMPanel';
 import VoiceManager from '@/components/voice/VoiceManager';
 // ScreenShareView is now inside VoiceManager
-import FocusTimerPanel from '@/components/focus/FocusTimerPanel';
+import ActionBar from '@/components/layout/ActionBar';
 import ActivityFeed from '@/components/views/ActivityFeed';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -40,7 +40,6 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   const { slug } = use(params);
   const { editorMode, showAvatarSelector, currentUser, currentSeatId, viewMode, kickedNotification, activeDMUserId } = useOfficeStore();
   const [showSpaceWizard, setShowSpaceWizard] = useState(false);
-  const [showFocusTimer, setShowFocusTimer] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [showEditHint, setShowEditHint] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
@@ -309,17 +308,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
         <NotificationToast />
         {activeDMUserId && <DMPanel />}
         <VoiceManager />
-        {showFocusTimer && <FocusTimerPanel />}
-        {/* Focus timer toggle — positioned left side to avoid voice controls on right */}
-        {!showFocusTimer && editorMode !== 'edit' && (
-          <button
-            onClick={() => setShowFocusTimer(true)}
-            className="fixed top-[58px] left-[68px] md:left-[68px] px-2.5 py-1.5 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm text-[10px] text-gray-500 hover:text-amber-600 font-medium transition-colors backdrop-blur-sm"
-            style={{ zIndex: 60 }}
-          >
-            🎯 集中
-          </button>
-        )}
+        <ActionBar />
         {/* Kick notification overlay */}
         {kickedNotification && (
           <div style={{

@@ -693,39 +693,6 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             );
           })()}
 
-          {/* Quick Actions Bar */}
-          <div style={{
-            position: 'fixed', top: 60, left: '50%', transform: 'translateX(-50%)',
-            zIndex: 50, pointerEvents: 'auto',
-            display: 'flex', alignItems: 'center', gap: 2,
-            background: 'rgba(255,255,255,0.95)', borderRadius: 12,
-            padding: '6px 10px',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.06)',
-            border: '1px solid #f0f0f0',
-          }} onClick={e => e.stopPropagation()}>
-            {/* Status indicator */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 8px 0 4px', borderRight: '1px solid #e5e7eb', marginRight: 4 }}>
-              <span style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: STATUS_COLORS[currentUser.status],
-              }} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>
-                {STATUS_LABELS[currentUser.status]}
-              </span>
-            </div>
-
-            {/* Seat info */}
-            {currentSeatId && (() => {
-              const seatLabel = zones.flatMap(z => z.seats).find(s => s.id === currentSeatId)?.label;
-              return seatLabel ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 8px', fontSize: 11, color: '#6366F1', fontWeight: 500 }}>
-                  📍 {seatLabel}
-                </div>
-              ) : null;
-            })()}
-          </div>
-
-
           {/* Right-click context menu on user avatars */}
           {contextMenu && (
             <div
