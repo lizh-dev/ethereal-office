@@ -5,8 +5,8 @@ import { useOfficeStore } from '@/store/officeStore';
 import { useFocusTimer } from '@/hooks/useFocusTimer';
 
 /**
- * Unified action bar — Google Meet / Discord style.
- * Positioned at bottom-center of the canvas, contains all user actions.
+ * Unified action bar — positioned above chat input bar.
+ * White glass style matching the system's clean design language.
  */
 export default function ActionBar() {
   const currentUser = useOfficeStore((s) => s.currentUser);
@@ -30,21 +30,20 @@ export default function ActionBar() {
     return null;
   })();
 
+  const statusColor = currentUser.status === 'online' ? '#22C55E' :
+    currentUser.status === 'busy' ? '#EF4444' :
+    currentUser.status === 'focusing' ? '#F59E0B' : '#9CA3AF';
+
   return (
-    <div className="fixed bottom-[62px] md:bottom-3 left-1/2 -translate-x-1/2 z-[80]">
-      <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl shadow-xl border border-white/10"
-        style={{ background: 'rgba(30, 30, 40, 0.88)', backdropFilter: 'blur(16px)' }}>
+    <div className="fixed bottom-[116px] md:bottom-[52px] left-1/2 -translate-x-1/2 z-[70]">
+      <div className="flex items-center gap-0.5 px-1.5 py-1 rounded-2xl shadow-lg border border-gray-200/80"
+        style={{ background: 'rgba(255, 255, 255, 0.92)', backdropFilter: 'blur(12px)' }}>
 
         {/* Status pill */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/8">
-          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{
-            background: currentUser.status === 'online' ? '#4ADE80' :
-              currentUser.status === 'busy' ? '#F87171' :
-              currentUser.status === 'focusing' ? '#FBBF24' : '#9CA3AF',
-            boxShadow: `0 0 6px ${currentUser.status === 'online' ? '#4ADE8060' : 'transparent'}`,
-          }} />
-          <span className="text-[11px] text-gray-300 font-medium max-w-[80px] truncate">
-            {seatLabel ? `📍 ${seatLabel}` : (
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl">
+          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: statusColor }} />
+          <span className="text-[11px] text-gray-600 font-medium max-w-[80px] truncate">
+            {seatLabel ? `${seatLabel}` : (
               currentUser.status === 'online' ? 'オンライン' :
               currentUser.status === 'busy' ? 'ビジー' :
               currentUser.status === 'focusing' ? '集中中' : '離席'
@@ -52,19 +51,19 @@ export default function ActionBar() {
           </span>
         </div>
 
-        <div className="w-px h-5 bg-white/10" />
+        <div className="w-px h-5 bg-gray-200" />
 
         {/* Auto voice toggle */}
         <button
           onClick={() => setAutoVoiceEnabled(!autoVoiceEnabled)}
-          className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all ${
+          className={`flex items-center justify-center w-8 h-8 rounded-xl transition-all ${
             autoVoiceEnabled
-              ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-              : 'bg-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300'
+              ? 'bg-indigo-50 text-indigo-500 hover:bg-indigo-100'
+              : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
           }`}
           title={autoVoiceEnabled ? '自動通話ON' : '自動通話OFF'}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
             {autoVoiceEnabled ? (
               <>
                 <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" fill="currentColor" />
@@ -81,58 +80,40 @@ export default function ActionBar() {
           {focusTimer.isActive ? (
             <button
               onClick={() => focusTimer.stopFocus()}
-              className={`flex items-center gap-1.5 px-2.5 h-9 rounded-xl transition-all ${
+              className={`flex items-center gap-1 px-2 h-8 rounded-xl transition-all text-[11px] font-semibold tabular-nums ${
                 focusTimer.isBreak
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'bg-amber-500/20 text-amber-400'
+                  ? 'bg-green-50 text-green-600'
+                  : 'bg-amber-50 text-amber-600'
               }`}
-              title="集中モード停止"
             >
-              <span className="text-xs">{focusTimer.isBreak ? '☕' : '🎯'}</span>
-              <span className="text-[11px] font-mono font-semibold tabular-nums">
-                {Math.floor(focusTimer.remainingSeconds / 60)}:{(focusTimer.remainingSeconds % 60).toString().padStart(2, '0')}
-              </span>
+              {focusTimer.isBreak ? '☕' : '🎯'}
+              {Math.floor(focusTimer.remainingSeconds / 60)}:{(focusTimer.remainingSeconds % 60).toString().padStart(2, '0')}
             </button>
           ) : (
             <button
               onClick={() => setShowFocusPresets(v => !v)}
-              className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300 transition-all"
+              className="flex items-center justify-center w-8 h-8 rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all"
               title="集中モード"
             >
-              <span className="text-sm">🎯</span>
+              <span className="text-[13px]">🎯</span>
             </button>
           )}
-          {/* Focus presets popup */}
           {showFocusPresets && !focusTimer.isActive && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex items-center gap-1 px-2 py-1.5 rounded-xl shadow-xl border border-white/10"
-              style={{ background: 'rgba(30, 30, 40, 0.95)', backdropFilter: 'blur(16px)' }}>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 flex items-center gap-1 px-2 py-1.5 rounded-xl shadow-lg border border-gray-200"
+              style={{ background: 'rgba(255, 255, 255, 0.97)', backdropFilter: 'blur(12px)' }}>
               {[15, 25, 50].map(min => (
                 <button key={min}
                   onClick={() => { focusTimer.startFocus(min); setShowFocusPresets(false); }}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
                 >
                   {min}分
                 </button>
               ))}
               <button onClick={() => setShowFocusPresets(false)}
-                className="px-1.5 py-1.5 text-gray-500 hover:text-gray-300 text-xs">
-                ✕
-              </button>
+                className="px-1 py-1 text-gray-400 hover:text-gray-600 text-xs">✕</button>
             </div>
           )}
         </div>
-
-        {/* Stamp button — dispatches click to canvas stamp button */}
-        <button
-          onClick={() => {
-            const btn = document.querySelector('button[title="スタンプ"]') as HTMLButtonElement;
-            if (btn) btn.click();
-          }}
-          className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300 transition-all"
-          title="リアクション"
-        >
-          <span className="text-sm">😀</span>
-        </button>
       </div>
     </div>
   );

@@ -86,35 +86,34 @@ export default function VoiceControls({ webrtc }: VoiceControlsProps) {
 
   return (
     <div className="fixed bottom-[106px] md:bottom-[52px] left-1/2 -translate-x-1/2 z-[80]">
-      <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl shadow-xl border border-white/10"
-        style={{ background: 'rgba(22, 163, 74, 0.9)', backdropFilter: 'blur(16px)' }}>
+      <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl shadow-lg border border-green-200"
+        style={{ background: 'rgba(240, 253, 244, 0.95)', backdropFilter: 'blur(12px)' }}>
 
         {/* Call status */}
         <div className="flex items-center gap-1.5 px-2">
-          <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-          <span className="text-[11px] text-white/90 font-medium">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-[11px] text-green-700 font-medium">
             {peerCount > 0
               ? `${currentZoneName || '通話中'} · ${peerCount}人`
               : '接続中...'}
           </span>
         </div>
 
-        {/* Active speaker */}
         {speakerNames.length > 0 && (
-          <span className="text-[10px] text-white/70 max-w-[60px] truncate">
+          <span className="text-[10px] text-green-600 max-w-[60px] truncate">
             🎤{speakerNames[0]}
           </span>
         )}
 
-        <div className="w-px h-5 bg-white/20" />
+        <div className="w-px h-5 bg-green-200" />
 
         {/* Mute toggle */}
         <button onClick={toggleMute}
-          className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-            isMuted ? 'bg-red-500 text-white' : 'bg-white/15 text-white hover:bg-white/25'
+          className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+            isMuted ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700 hover:bg-green-200'
           }`}
           title={isMuted ? 'ミュート解除' : 'ミュート'}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-white">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             {isMuted ? (
               <path d="M1 1l22 22M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6M17 16.95A7 7 0 015 12v-2m14 0v2c0 .76-.12 1.5-.35 2.18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             ) : (
@@ -129,15 +128,15 @@ export default function VoiceControls({ webrtc }: VoiceControlsProps) {
         {/* Screen share */}
         {!isScreenSharing && (
           <button onClick={handleStartScreenShare}
-            className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/15 text-white hover:bg-white/25 transition-all"
+            className="w-8 h-8 rounded-xl flex items-center justify-center bg-green-100 text-green-700 hover:bg-green-200 transition-all"
             title="画面共有">
-            <span className="text-sm">🖥️</span>
+            <span className="text-[12px]">🖥️</span>
           </button>
         )}
 
         {/* Leave call */}
         <button onClick={leaveVoice}
-          className="w-9 h-9 rounded-xl flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-all"
+          className="w-8 h-8 rounded-xl flex items-center justify-center bg-red-100 hover:bg-red-200 text-red-600 transition-all"
           title="通話を終了">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             <path d="M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" fill="currentColor"/>

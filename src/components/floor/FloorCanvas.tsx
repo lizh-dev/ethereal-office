@@ -582,16 +582,16 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             </div>
           )}
 
-          {/* Chat + Stamp bar */}
+          {/* Unified bottom bar: chat input is now in ActionBar */}
           <div className="fixed bottom-[72px] md:bottom-4 left-1/2 -translate-x-1/2 z-50" style={{
             pointerEvents: 'auto',
           }} onClick={e => e.stopPropagation()}>
-            {/* Stamp palette (above input, toggleable) */}
+            {/* Stamp palette (above bar, toggleable) */}
             {showStamps && (
               <div style={{
-                display: 'flex', gap: 2, background: 'rgba(255,255,255,0.97)', borderRadius: 12,
-                padding: '4px 6px', boxShadow: '0 2px 12px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb',
-                marginBottom: 6, justifyContent: 'center',
+                display: 'flex', gap: 2, background: '#fff', borderRadius: 14,
+                padding: '6px 8px', boxShadow: '0 4px 20px rgba(0,0,0,0.12)', border: '1px solid #E5E7EB',
+                marginBottom: 8, justifyContent: 'center',
               }}>
                 {['👋', '👍', '👏', '😂', '❤️', '🎉', '🤔', '☕'].map(emoji => (
                   <button key={emoji} onClick={() => {
@@ -600,41 +600,48 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                     setTimeout(() => useOfficeStore.setState(s => { const { [currentUser.id]: _, ...rest } = s.reactions; return { reactions: rest }; }), 3000);
                     setShowStamps(false);
                   }} style={{
-                    width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent',
+                    width: 32, height: 32, borderRadius: 8, border: 'none', background: 'transparent',
                     cursor: 'pointer', fontSize: 17, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'transform 0.1s, background 0.1s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.transform = 'scale(1.2)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.transform = 'scale(1.15)'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'scale(1)'; }}
                   >{emoji}</button>
                 ))}
               </div>
             )}
-            {/* Input row */}
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            {/* Unified input row — white rounded bar */}
+            <div style={{
+              display: 'flex', gap: 4, alignItems: 'center',
+              background: '#fff', borderRadius: 24, padding: '4px 4px 4px 6px',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)',
+              border: '1px solid #E5E7EB',
+            }}>
               <button onClick={() => setShowStamps(v => !v)} style={{
-                width: 36, height: 36, borderRadius: '50%', border: '1px solid #e5e7eb',
-                background: showStamps ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.95)', cursor: 'pointer',
-                fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.06)', color: showStamps ? '#4F46E5' : '#6B7280',
+                width: 34, height: 34, borderRadius: '50%', border: 'none',
+                background: showStamps ? '#EEF2FF' : 'transparent', cursor: 'pointer',
+                fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: showStamps ? '#6366F1' : '#9CA3AF', transition: 'all 0.15s',
               }} title="スタンプ">😀</button>
               <input
                 type="text" value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
                 placeholder="メッセージを入力..."
-                className="w-[180px] sm:w-[260px]"
+                className="w-[160px] sm:w-[280px] md:w-[340px]"
                 style={{
-                  padding: '8px 14px', borderRadius: 20,
-                  border: '1px solid #e5e5e5', fontSize: 13, outline: 'none',
-                  background: 'rgba(255,255,255,0.95)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  padding: '7px 12px', borderRadius: 20,
+                  border: 'none', fontSize: 13, outline: 'none',
+                  background: 'transparent', color: '#1F2937',
                 }}
               />
               <button onClick={handleSend} style={{
-                width: 36, height: 36, borderRadius: '50%', border: 'none',
-                background: '#4F46E5', color: '#fff', cursor: 'pointer', fontSize: 16,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 2px 8px rgba(79,70,229,0.3)',
+                width: 34, height: 34, borderRadius: '50%', border: 'none',
+                background: chatInput.trim() ? '#6366F1' : '#E5E7EB',
+                color: chatInput.trim() ? '#fff' : '#9CA3AF',
+                cursor: chatInput.trim() ? 'pointer' : 'default',
+                fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.15s',
               }}>↑</button>
             </div>
           </div>
