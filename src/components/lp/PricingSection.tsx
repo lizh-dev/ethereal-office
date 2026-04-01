@@ -7,50 +7,52 @@ const plans = [
     name: 'Free',
     price: '0',
     period: '永久無料',
-    description: '小規模チームに最適',
+    description: '今すぐお使いいただけます',
     features: [
-      'フロア数 無制限',
-      '同時接続 10人まで',
-      '音声通話（近接ボイス）',
-      'チャット・DM',
-      'フロアエディター',
-      'カスタムアバター',
+      'フロア作成 無制限',
+      '同時接続 人数制限なし',
+      'チャット・ダイレクトメッセージ',
+      'フロアエディター（自由配置）',
+      'アバターカスタマイズ',
+      'パスワード保護',
     ],
     cta: '無料で始める',
-    highlighted: false,
+    highlighted: true,
+    badge: 'おすすめ',
   },
   {
-    name: 'Pro',
-    price: '980',
-    period: '/ 月額（税込）',
-    description: '成長するチームのために',
+    name: 'Pro（準備中）',
+    price: '未定',
+    period: '',
+    description: 'より便利な機能を追加予定',
     features: [
-      'Free の全機能',
-      '同時接続 50人まで',
+      'Freeプランの全機能',
+      '音声通話（近接ボイス）',
       '画面共有',
       'フロアテンプレート',
-      '管理者ダッシュボード',
+      '管理者向け機能',
       '優先サポート',
     ],
-    cta: '14日間無料トライアル',
-    highlighted: true,
-    badge: '人気',
+    cta: 'リリースをお待ちください',
+    highlighted: false,
+    comingSoon: true,
   },
   {
-    name: 'Enterprise',
+    name: 'Enterprise（準備中）',
     price: 'お問い合わせ',
     period: '',
-    description: '大規模組織向け',
+    description: '大規模な組織向け',
     features: [
-      'Pro の全機能',
-      '同時接続 無制限',
-      'SSO / SAML認証',
-      '専用サーバー',
-      'SLA保証',
-      '導入サポート',
+      'Proプランの全機能',
+      '接続数の拡張',
+      'シングルサインオン対応',
+      '専用環境のご提供',
+      'サービス品質の保証',
+      '導入・運用のサポート',
     ],
     cta: 'お問い合わせ',
     highlighted: false,
+    comingSoon: true,
   },
 ];
 
@@ -66,7 +68,7 @@ export default function PricingSection() {
             シンプルな<span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text text-transparent">料金体系</span>
           </h2>
           <p className="text-gray-500 max-w-xl mx-auto">
-            まずは無料で始めて、チームの成長に合わせてアップグレード
+            現在はすべての基本機能を無料でご利用いただけます
           </p>
         </div>
 
@@ -77,10 +79,15 @@ export default function PricingSection() {
                 plan.highlighted
                   ? 'bg-white border-2 border-sky-400 shadow-xl shadow-sky-100 scale-[1.02]'
                   : 'bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md'
-              }`}>
+              } ${'comingSoon' in plan && plan.comingSoon ? 'opacity-75' : ''}`}>
               {plan.badge && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-sky-500 text-white text-xs font-semibold rounded-full">
                   {plan.badge}
+                </div>
+              )}
+              {'comingSoon' in plan && plan.comingSoon && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-gray-400 text-white text-xs font-semibold rounded-full">
+                  準備中
                 </div>
               )}
               <div className="mb-6">
@@ -88,7 +95,7 @@ export default function PricingSection() {
                 <p className="text-xs text-gray-500">{plan.description}</p>
               </div>
               <div className="mb-6">
-                {plan.price === 'お問い合わせ' ? (
+                {plan.price === 'お問い合わせ' || plan.price === '未定' ? (
                   <span className="text-2xl font-bold text-gray-900">{plan.price}</span>
                 ) : (
                   <>
@@ -111,7 +118,9 @@ export default function PricingSection() {
                 className={`block w-full text-center py-3 rounded-xl text-sm font-semibold transition-all ${
                   plan.highlighted
                     ? 'bg-sky-500 hover:bg-sky-400 text-white shadow-md shadow-sky-200'
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    : 'comingSoon' in plan && plan.comingSoon
+                      ? 'bg-gray-100 text-gray-400 cursor-default'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                 }`}>
                 {plan.cta}
               </a>

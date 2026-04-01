@@ -98,7 +98,7 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
             <span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text text-transparent">始めよう</span>
           </h2>
           <p className="text-gray-500">
-            30秒でバーチャルオフィスを作成できます
+            わずか30秒でバーチャルオフィスを作成できます
           </p>
         </div>
 
@@ -157,7 +157,7 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                placeholder="設定するとURL知っていてもパスワードが必要"
+                placeholder="設定すると、入室時にパスワードの入力が必要になります"
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300"
               />
             </div>
@@ -172,10 +172,10 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
                 value={ownerPassword}
                 onChange={(e) => setOwnerPassword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                placeholder="フロア編集・メンバー退出に必要"
+                placeholder="フロアの編集やメンバーの退室操作に必要です"
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300"
               />
-              <p className="text-[10px] text-gray-400 mt-1">どのPCからでもこのパスワードで管理者になれます</p>
+              <p className="text-[10px] text-gray-400 mt-1">どの端末からでもこのパスワードで管理者としてログインできます</p>
             </div>
 
             {/* Error */}
@@ -194,7 +194,7 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
           </div>
 
           <p className="text-center text-gray-400 text-sm mt-4">
-            作成後、URLを共有するだけで誰でも参加できます
+            作成後、URLを共有するだけでどなたでも参加いただけます
           </p>
         </div>
 

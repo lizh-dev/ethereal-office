@@ -6,7 +6,7 @@ const steps = [
   {
     number: '01',
     title: 'フロアを作成',
-    description: 'テンプレートを選んで、フロア名を入力するだけ。30秒で完了。',
+    description: 'フロア名を入力するだけで、すぐにオフィスが完成します。所要時間はわずか30秒です。',
     icon: (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -18,7 +18,7 @@ const steps = [
   {
     number: '02',
     title: 'URLをシェア',
-    description: '作成されたURLをチームに共有。アカウント登録は一切不要。',
+    description: '作成されたURLをチームに共有してください。アカウント登録は一切必要ありません。',
     icon: (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
@@ -29,7 +29,7 @@ const steps = [
   {
     number: '03',
     title: 'オフィスに集合',
-    description: 'チームメンバーが自然と集まり、コミュニケーションが生まれる。',
+    description: 'チームのメンバーが自然と集まり、いつでも気軽にコミュニケーションが取れるようになります。',
     icon: (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
@@ -55,7 +55,7 @@ export default function StepsSection() {
             で始められる
           </h2>
           <p className="text-gray-500 max-w-xl mx-auto">
-            複雑な設定は不要。誰でもすぐに使い始められます。
+            難しい設定は一切ありません。どなたでもすぐにお使いいただけます。
           </p>
         </div>
 

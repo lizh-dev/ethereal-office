@@ -3,7 +3,34 @@
     "allow": [
       "Bash(claude mcp:*)",
       "Bash(git status:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s -X POST http://localhost:8080/api/floors -H 'Content-Type: application/json' -d '{\"\"name\"\": \"\"Demo Office\"\", \"\"slug\"\": \"\"demo-showcase\"\"}')",
+      "Bash(grep -r \"stripe\\\\|payment\\\\|billing\\\\|subscription\\\\|license\\\\|plan\\\\|tier\" /c/workspaces/ethereal-office --include=*.go --include=*.ts --include=*.tsx)",
+      "Bash(find /c/workspaces/ethereal-office/src -name *VoiceContext* -o -name *voice* -type f)",
+      "Bash(curl -s -X POST http://localhost:8080/api/floors -H 'Content-Type: application/json' -d '{\"\"name\"\": \"\"SmartOffice Demo\"\"}')",
+      "mcp__chrome__list_pages",
+      "Bash(npm ls:*)",
+      "Bash(ls public/demo-video*)",
+      "Bash(docker compose:*)",
+      "Bash(npm run:*)",
+      "Bash(where choco:*)",
+      "Bash(where winget:*)",
+      "Bash(winget install:*)",
+      "Bash(node scripts/record-demo.mjs)",
+      "Bash(ls -la public/*.webm)",
+      "Bash(export PATH=\"$PATH:/c/Users/leech/AppData/Local/Microsoft/WinGet/Links\")",
+      "Bash(ffmpeg -i public/demo.webm -c:v libx264 -preset fast -crf 23 -movflags +faststart -vf \"scale=1920:1080\" public/demo.mp4 -y)",
+      "Bash(cmd.exe /c \"where ffmpeg\")",
+      "Bash(cmd.exe /c \"where ffmpeg 2>&1\")",
+      "Bash(ls /c/ffmpeg*)",
+      "Read(//c//**)",
+      "Bash(curl -s http://localhost:8080/api/floors)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(curl -s http://localhost:8080/api/floors/cd6ba98b)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''''name:'''', d.get\\(''''name''''\\)\\); z=d.get\\(''''zones'''',[]\\); print\\(''''zones:'''', len\\(z\\) if z else 0\\); print\\(''''hasScene:'''', bool\\(d.get\\(''''excalidrawScene''''\\)\\)\\)\")",
+      "Bash(curl -sI http://localhost:3000/demo.webm)",
+      "Bash(find /c/workspaces/ethereal-office -name *.ts -path */api/*)"
     ]
   }
 }

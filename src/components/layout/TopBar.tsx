@@ -12,7 +12,7 @@ const STATUS_COLORS: Record<string, string> = {
   online: '#4CAF50', busy: '#F44336', focusing: '#FF9800', offline: '#9CA3AF',
 };
 const STATUS_LABELS: Record<string, string> = {
-  online: 'オンライン', busy: 'ビジー', focusing: '集中中', offline: 'オフライン',
+  online: 'オンライン', busy: 'ビジー', focusing: '取込中', offline: 'オフライン',
 };
 
 const STATUS_OPTIONS: { value: PresenceStatus; label: string; color: string }[] = [

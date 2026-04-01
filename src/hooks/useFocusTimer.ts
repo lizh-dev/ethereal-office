@@ -81,7 +81,7 @@ export function useFocusTimer(): FocusTimerState {
     const min = Math.floor(remainingSeconds / 60);
     const sec = remainingSeconds % 60;
     const timeStr = `${min}:${sec.toString().padStart(2, '0')}`;
-    const label = isBreak ? `休憩中 ${timeStr}` : `集中中 ${timeStr}`;
+    const label = isBreak ? `休憩中 ${timeStr}` : `取込中 ${timeStr}`;
     useOfficeStore.getState().setStatusMessage(label);
   }, [remainingSeconds, isActive, isBreak]);
 

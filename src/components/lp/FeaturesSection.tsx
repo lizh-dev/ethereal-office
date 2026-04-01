@@ -6,7 +6,7 @@ const features = [
   {
     icon: '🎙️',
     title: '近接ボイス',
-    description: '近くの人の声が自然に聞こえ、離れると小さくなる。まるで本物のオフィスのような音声体験。',
+    description: '近くにいる方の声が自然に聞こえ、離れると小さくなります。本物のオフィスのような音声体験です。',
     color: 'text-emerald-500',
     bgColor: 'bg-emerald-50',
     tag: 'NEW',
@@ -14,7 +14,7 @@ const features = [
   {
     icon: '💺',
     title: '座るだけで自動通話',
-    description: '同じゾーンに座った瞬間、自動で音声接続。ミーティング設定もクリックも不要。',
+    description: '同じエリアに着席した瞬間に、自動で音声がつながります。会議の設定やクリックの手間はありません。',
     color: 'text-sky-500',
     bgColor: 'bg-sky-50',
     tag: 'NEW',
@@ -22,7 +22,7 @@ const features = [
   {
     icon: '🖥️',
     title: '画面共有',
-    description: '通話中にワンクリックで画面を共有。リモートでのペアプロやレビューがスムーズに。',
+    description: '通話中にワンクリックで画面を共有できます。離れた場所でも、一緒に画面を見ながらお仕事が進められます。',
     color: 'text-violet-500',
     bgColor: 'bg-violet-50',
     tag: 'NEW',
@@ -30,7 +30,7 @@ const features = [
   {
     icon: '🎯',
     title: '集中タイマー',
-    description: 'ポモドーロタイマーでステータス自動変更。「今は集中中」がチームに伝わる。',
+    description: 'タイマーを使うと「取込中」のステータスが自動で表示されます。声をかけてよいタイミングがチームに伝わります。',
     color: 'text-amber-500',
     bgColor: 'bg-amber-50',
     tag: 'NEW',
@@ -38,14 +38,14 @@ const features = [
   {
     icon: '🏢',
     title: 'カスタムオフィス',
-    description: 'デスク・会議室・ラウンジ・カフェを自由に配置。ウィザードで30秒で完成。',
+    description: 'デスク・会議室・ラウンジ・カフェを自由に配置できます。ガイドに沿って進めるだけで、30秒で完成します。',
     color: 'text-indigo-500',
     bgColor: 'bg-indigo-50',
   },
   {
     icon: '⚡',
     title: 'ログイン不要・30秒',
-    description: 'アカウント登録ゼロ。URLを共有するだけでチーム全員が即参加できる。',
+    description: 'アカウント登録は一切不要です。URLを共有するだけで、チームの全員がすぐに参加できます。',
     color: 'text-rose-500',
     bgColor: 'bg-rose-50',
   },
@@ -65,7 +65,7 @@ export default function FeaturesSection() {
             <span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text text-transparent">機能</span>
           </h2>
           <p className="text-gray-500 max-w-xl mx-auto">
-            oViceを超える体験を、ログインなしで。
+            アカウント登録なしで、すぐにお使いいただけます。
           </p>
         </div>
 
