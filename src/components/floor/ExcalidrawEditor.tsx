@@ -193,13 +193,15 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
 
       // Initialize seats and auto-save isometric template on first load
       setTimeout(() => {
-        const elements = api.getSceneElements();
+        const allElements = api.getSceneElements();
+        // Filter out deleted elements
+        const elements = allElements.filter((el: any) => !el.isDeleted);
         if (!elements || elements.length === 0) return;
 
-        const existingZones = useOfficeStore.getState().zones;
-        if (existingZones.length === 0) {
-          initSeatsFromElements(elements);
-        }
+        // Always re-detect seats from actual element positions.
+        // DB zones are kept in store for label preservation (initSeatsFromElements
+        // matches by center-coord key), but positions are recalculated from elements.
+        initSeatsFromElements(elements);
 
         // Auto-save isometric template to DB on first load (so it persists)
         if (hasImageFurniture && floorSlugRef.current) {

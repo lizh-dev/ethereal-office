@@ -250,11 +250,12 @@ function generateLounge(config: SpaceConfig, ox: number, oy: number): { elements
 
 function generateCafe(config: SpaceConfig, ox: number, oy: number): { elements: RawEl[]; chairs: RawEl[] } {
   const { rows, cols, spacing, name } = config;
-  // Small round table (0.7 scale): ~46x32
+  // Small round table (0.7 scale): ~46x46
   const tblScale = 0.7;
   const tblW = Math.round(getAsset('fur-table-round').width * tblScale);
   const tblH = Math.round(getAsset('fur-table-round').height * tblScale);
-  const chW = 32, chH = 50; // chair down/up dimensions
+  const chW = getAsset('fur-chair').width;   // 22
+  const chH = getAsset('fur-chair').height;  // 35
   const gap = 8;
   // Cell: chair(down) + gap + table + gap + chair(up)
   const setH = chH + gap + tblH + gap + chH;

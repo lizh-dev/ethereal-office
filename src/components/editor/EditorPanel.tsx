@@ -5,7 +5,6 @@ import { useWsSend } from '@/contexts/WebSocketContext';
 import { initSeatsFromElements } from '@/lib/seatDetection';
 import { useRef, useState } from 'react';
 
-const ISLAND_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: () => void; floorSlug?: string }) {
   const wsSend = useWsSend();
@@ -98,13 +97,12 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
     if (!excalidrawAPI) return;
     setSaving(true);
 
-    const elements = excalidrawAPI.getSceneElements();
+    const allElements = excalidrawAPI.getSceneElements();
+    // Filter out deleted elements before detection and persistence
+    const elements = allElements.filter((el: any) => !el.isDeleted);
 
-    // Only re-detect seats if no zones exist (wizard already created zones with proper labels)
-    const currentZones = useOfficeStore.getState().zones;
-    if (!currentZones || currentZones.length === 0 || currentZones.every(z => z.seats.length === 0)) {
-      initSeatsFromElements(elements);
-    }
+    // Always re-detect seats from current elements (preserves existing labels via position matching)
+    initSeatsFromElements(elements);
     const updatedZones = useOfficeStore.getState().zones;
 
     // 2. Save to DB
@@ -127,131 +125,11 @@ export default function EditorPanel({ onAddSpace, floorSlug }: { onAddSpace?: ()
     // 2. Notify other users via WS
     wsSend.sceneUpdate();
 
-    // 3. Switch to view mode first
+    // 3. Switch to view mode
     setEditorMode('view');
     setSaving(false);
-
-    // 4. Re-detect seats after view mode renders only if no wizard-created zones exist
-    setTimeout(() => {
-      const zonesAfterSave = useOfficeStore.getState().zones;
-      if (elements && elements.length > 0 && (!zonesAfterSave || zonesAfterSave.length === 0)) {
-        initSeatsFromElements(elements);
-      }
-    }, 500);
   };
 
-  // Re-detect seats preserving existing labels
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function redetectSeats(elements: any[]) {
-    const els = elements.filter((el: any) => !el.isDeleted);
-
-    const rooms = els.filter((el: any) =>
-      el.type === 'rectangle' && el.backgroundColor === '#ffffff' && el.width > 150 && el.height > 100
-    ).sort((a: any, b: any) => {
-      const dy = a.y - b.y;
-      if (Math.abs(dy) > 50) return dy;
-      return a.x - b.x;
-    });
-
-    const allChairs = els.filter((el: any) =>
-      el.type === 'ellipse' && el.width <= 30 && el.height <= 30 &&
-      !['#86ceab', '#5ead88', '#4ade80', '#22c55e', '#16a34a'].includes(el.backgroundColor)
-    );
-
-    // Build existing label map
-    const existingSeatsMap = new Map<string, { label?: string; id: string }>();
-    for (const z of zones) {
-      for (const s of z.seats) {
-        const key = `${Math.round(s.x / 5) * 5},${Math.round(s.y / 5) * 5}`;
-        existingSeatsMap.set(key, { label: s.label, id: s.id });
-      }
-    }
-
-    function getRoomType(room: any): 'desk' | 'meeting' | 'lounge' | 'cafe' | 'open' {
-      const desksInside = els.filter((el: any) => el.type === 'rectangle' && el.backgroundColor === '#e8e3dd' && el.x >= room.x && el.x <= room.x + room.width && el.y >= room.y && el.y <= room.y + room.height);
-      const sofasInside = els.filter((el: any) => el.type === 'rectangle' && el.backgroundColor === '#c4bab0' && el.x >= room.x && el.x <= room.x + room.width && el.y >= room.y && el.y <= room.y + room.height);
-      const tablesInside = els.filter((el: any) => el.type === 'ellipse' && el.backgroundColor === '#ddd8d2' && el.x >= room.x && el.x <= room.x + room.width && el.y >= room.y && el.y <= room.y + room.height);
-      if (sofasInside.length > 0) return 'lounge';
-      if (tablesInside.length > 0 && desksInside.length === 0) return 'meeting';
-      if (desksInside.length > 0) return 'desk';
-      return 'open';
-    }
-
-    function getRoomName(room: any): string | null {
-      const textEls = els.filter((el: any) => el.type === 'text' && el.x >= room.x - 5 && el.x <= room.x + room.width + 5 && el.y >= room.y - 5 && el.y <= room.y + room.height).sort((a: any, b: any) => a.y - b.y);
-      return textEls[0]?.text || null;
-    }
-
-    const sortChairs = (arr: any[]) => [...arr].sort((a: any, b: any) => {
-      const dy = a.y - b.y;
-      if (Math.abs(dy) > 10) return dy;
-      return a.x - b.x;
-    });
-
-    const assignedChairs = new Set<any>();
-    const newZones = rooms.map((room: any, ri: number) => {
-      const chairsInRoom = allChairs.filter((c: any) => {
-        const cx = c.x + c.width / 2;
-        const cy = c.y + c.height / 2;
-        return cx >= room.x && cx <= room.x + room.width && cy >= room.y && cy <= room.y + room.height;
-      });
-      chairsInRoom.forEach((c: any) => assignedChairs.add(c));
-      const sorted = sortChairs(chairsInRoom);
-      const letter = ISLAND_LETTERS[ri % 26];
-      const roomName = getRoomName(room);
-      const zoneId = `zone-${ri}`;
-      // Check for user rename, then existing zone name, then auto-detected name
-      const renames = JSON.parse(sessionStorage.getItem('ethereal-zone-renames') || '{}');
-      const existingZone = zones.find(z => z.id === zoneId);
-      const detectedName = roomName || `${letter}島`;
-      const finalName = renames[zoneId] || existingZone?.name || detectedName;
-
-      return {
-        id: zoneId,
-        type: getRoomType(room),
-        name: finalName,
-        x: room.x, y: room.y, w: room.width, h: room.height,
-        seats: sorted.map((c: any, i: number) => {
-          const key = `${Math.round(c.x / 5) * 5},${Math.round(c.y / 5) * 5}`;
-          const existing = existingSeatsMap.get(key);
-          const defaultLabel = `${letter}-${i + 1}`;
-          return {
-            id: existing?.id || defaultLabel,
-            roomId: `zone-${ri}`,
-            x: c.x, y: c.y, w: c.width, h: c.height,
-            label: existing?.label || defaultLabel,
-            occupied: false,
-            occupiedBy: undefined as string | undefined,
-          };
-        }),
-      };
-    });
-
-    const unassigned = allChairs.filter((c: any) => !assignedChairs.has(c));
-    if (unassigned.length > 0) {
-      const sorted = sortChairs(unassigned);
-      const letter = ISLAND_LETTERS[newZones.length % 26];
-      newZones.push({
-        id: 'zone-other', type: 'open' as const, name: 'その他',
-        x: 0, y: 0, w: 0, h: 0,
-        seats: sorted.map((c: any, i: number) => {
-          const key = `${Math.round(c.x / 5) * 5},${Math.round(c.y / 5) * 5}`;
-          const existing = existingSeatsMap.get(key);
-          const defaultLabel = `${letter}-${i + 1}`;
-          return {
-            id: existing?.id || defaultLabel,
-            roomId: 'zone-other',
-            x: c.x, y: c.y, w: c.width, h: c.height,
-            label: existing?.label || defaultLabel,
-            occupied: false,
-            occupiedBy: undefined as string | undefined,
-          };
-        }),
-      });
-    }
-
-    setZones(newZones);
-  }
 
   const totalSeats = zones.reduce((sum, z) => sum + z.seats.length, 0);
 

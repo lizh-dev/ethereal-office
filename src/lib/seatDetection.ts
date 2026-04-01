@@ -5,6 +5,7 @@ const CHAIR_FILE_IDS = new Set(['fur-chair', 'fur-chair-up', 'fur-chair-left', '
 const SOFA_FILE_IDS = new Set(['fur-sofa', 'fur-armchair']);
 const DESK_FILE_IDS = new Set(['fur-desk']);
 const TABLE_FILE_IDS = new Set(['fur-table-round', 'fur-table-rect']);
+const COFFEE_FILE_IDS = new Set(['fur-coffee']);
 
 const ISLAND_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -44,7 +45,9 @@ export function initSeatsFromElements(elements: readonly unknown[]) {
     const hasDesk = els.some(el => el.type === 'image' && DESK_FILE_IDS.has(el.fileId) && isInside(el, room));
     const hasSofa = els.some(el => el.type === 'image' && SOFA_FILE_IDS.has(el.fileId) && isInside(el, room));
     const hasTable = els.some(el => el.type === 'image' && TABLE_FILE_IDS.has(el.fileId) && isInside(el, room));
+    const hasCoffee = els.some(el => el.type === 'image' && COFFEE_FILE_IDS.has(el.fileId) && isInside(el, room));
     if (hasSofa) return 'lounge';
+    if (hasCoffee && hasTable) return 'cafe';
     if (hasTable && !hasDesk) return 'meeting';
     if (hasDesk) return 'desk';
     // Fallback: legacy primitives
@@ -109,14 +112,16 @@ export function initSeatsFromElements(elements: readonly unknown[]) {
       name: finalName,
       x: room.x, y: room.y, w: room.width, h: room.height,
       seats: sorted.map((c, i) => {
-        const key = `${Math.round(c.x / 5) * 5},${Math.round(c.y / 5) * 5}`;
+        const cx = c.x + (c.width || 30) / 2;
+        const cy = c.y + (c.height || 30) / 2;
+        const key = `${Math.round(cx / 5) * 5},${Math.round(cy / 5) * 5}`;
         const existing = existingSeatsMap.get(key);
         const defaultLabel = `${letter}-${i + 1}`;
         return {
           id: existing?.id || defaultLabel,
           roomId: zoneId,
-          x: c.x + (c.width || 30) / 2,
-          y: c.y + (c.height || 30) / 2,
+          x: cx,
+          y: cy,
           w: c.width,
           h: c.height,
           label: existing?.label || defaultLabel,
@@ -138,14 +143,16 @@ export function initSeatsFromElements(elements: readonly unknown[]) {
       name: 'その他',
       x: 0, y: 0, w: 0, h: 0,
       seats: sorted.map((c, i) => {
-        const key = `${Math.round(c.x / 5) * 5},${Math.round(c.y / 5) * 5}`;
+        const cx = c.x + (c.width || 30) / 2;
+        const cy = c.y + (c.height || 30) / 2;
+        const key = `${Math.round(cx / 5) * 5},${Math.round(cy / 5) * 5}`;
         const existing = existingSeatsMap.get(key);
         const defaultLabel = `${letter}-${i + 1}`;
         return {
           id: existing?.id || defaultLabel,
           roomId: 'zone-other',
-          x: c.x + (c.width || 30) / 2,
-          y: c.y + (c.height || 30) / 2,
+          x: cx,
+          y: cy,
           w: c.width,
           h: c.height,
           label: existing?.label || defaultLabel,
