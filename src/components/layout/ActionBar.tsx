@@ -39,6 +39,14 @@ export default function ActionBar() {
   };
 
   const handleStartMeeting = () => {
+    // Check concurrent meeting limit on client side before sending WS
+    const { activeMeetings, planPermissions } = useOfficeStore.getState();
+    if (planPermissions.maxConcurrentMeetings > 0 && activeMeetings.length >= planPermissions.maxConcurrentMeetings) {
+      useOfficeStore.getState().addNotification(`Freeプランでは同時に${planPermissions.maxConcurrentMeetings}つのミーティングまでです`);
+      setShowCreateDialog(false);
+      return;
+    }
+
     const name = meetingName.trim() || 'ミーティング';
     const pw = meetingPassword.trim();
     const id = `${floorSlug}-${name.replace(/\s+/g, '-')}-${Date.now()}`;
@@ -48,9 +56,7 @@ export default function ActionBar() {
     setMeetingPassword('');
     useOfficeStore.getState().addActivity('meeting', `${currentUser.name} がミーティング「${name}」を開始`);
     useOfficeStore.getState().setMyMeetingId(id);
-    // Broadcast meeting creation to all floor members
     wsSend.meetingStart(id, name, !!pw, pw);
-    // Store password in localStorage (never in URL)
     if (pw) {
       try { localStorage.setItem(`meeting-pw-${id}`, pw); } catch { /* ignore */ }
     }
