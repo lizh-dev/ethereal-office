@@ -114,6 +114,8 @@ interface OfficeState {
   setCallRequestStatus: (status: 'idle' | 'pending' | 'accepted' | 'declined') => void;
   setCallTargetUserId: (userId: string | null) => void;
   clearCallRequest: () => void;
+  pendingCallUrl: string | null;
+  setPendingCallUrl: (url: string | null) => void;
 
   // Active meetings (shared across floor)
   activeMeetings: ActiveMeetingState[];
@@ -294,6 +296,8 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   setCallRequestStatus: (status) => set({ callRequestStatus: status }),
   setCallTargetUserId: (userId) => set({ callTargetUserId: userId }),
   clearCallRequest: () => set({ incomingCallRequest: null, callRequestStatus: 'idle', callTargetUserId: null }),
+  pendingCallUrl: null,
+  setPendingCallUrl: (url) => set({ pendingCallUrl: url }),
 
   // Active meetings
   activeMeetings: [],

@@ -327,7 +327,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
 
         case 'call_accept_received': {
           useOfficeStore.getState().setCallRequestStatus('accepted');
-          // Open the same deterministic call room as the callee
+          // Build the call room URL for the caller
           const callTargetId = useOfficeStore.getState().callTargetUserId;
           if (callTargetId) {
             const myId = useOfficeStore.getState().currentUser.id;
@@ -335,7 +335,14 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
             const floorSlug = window.location.pathname.split('/')[2] || '';
             const sortedIds = [callTargetId, myId].sort();
             const callRoomId = `${floorSlug}-call-${sortedIds[0].slice(0, 8)}-${sortedIds[1].slice(0, 8)}`;
-            window.open(`/meeting/${callRoomId}?name=${encodeURIComponent(myName)}`, '_blank');
+            const callUrl = `/meeting/${callRoomId}?name=${encodeURIComponent(myName)}&uid=${encodeURIComponent(myId)}`;
+            // Try to open tab (may be blocked by popup blocker)
+            const w = window.open(callUrl, '_blank');
+            if (!w) {
+              // Popup blocked — store URL and show notification
+              useOfficeStore.getState().setPendingCallUrl(callUrl);
+              addNotification('通話が承認されました — クリックして参加');
+            }
           }
           setTimeout(() => useOfficeStore.getState().clearCallRequest(), 500);
           break;
