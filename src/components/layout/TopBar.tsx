@@ -6,6 +6,7 @@ import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import QRCodeModal from '@/components/QRCodeModal';
+import { useFocusTimer } from '@/hooks/useFocusTimer';
 import type { PresenceStatus } from '@/types';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -25,6 +26,7 @@ const STATUS_OPTIONS: { value: PresenceStatus; label: string; color: string }[] 
 export default function TopBar() {
   const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, setStatusMessage, statusMessage, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode, floorPlanType, branding } = useOfficeStore();
   const wsSend = useWsSend();
+  const focusTimer = useFocusTimer();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [statusMsgInput, setStatusMsgInput] = useState(statusMessage || '');
@@ -229,6 +231,29 @@ export default function TopBar() {
                   placeholder="ステータスメッセージ（任意）"
                   className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[12px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-blue-300 focus:bg-white transition-colors"
                 />
+              </div>
+              {/* Focus mode */}
+              <div className="border-t border-gray-100 mt-1 pt-1 px-3 py-2">
+                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">集中モード</div>
+                {focusTimer.isActive ? (
+                  <button
+                    onClick={() => { focusTimer.stopFocus(); setShowStatusMenu(false); }}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg bg-amber-50 text-amber-600 text-[12px] font-semibold"
+                  >
+                    <span>{focusTimer.isBreak ? '☕' : '🎯'}</span>
+                    <span>{Math.floor(focusTimer.remainingSeconds / 60)}:{(focusTimer.remainingSeconds % 60).toString().padStart(2, '0')}</span>
+                    <span className="ml-auto text-[10px] text-amber-400">停止</span>
+                  </button>
+                ) : (
+                  <div className="flex gap-1.5">
+                    {[15, 25, 50].map(min => (
+                      <button key={min}
+                        onClick={() => { focusTimer.startFocus(min); setShowStatusMenu(false); }}
+                        className="flex-1 px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-amber-50 hover:text-amber-600 text-[12px] font-medium text-gray-600 transition-colors text-center"
+                      >{min}分</button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="border-t border-gray-100 mt-1 pt-1">
                 <button

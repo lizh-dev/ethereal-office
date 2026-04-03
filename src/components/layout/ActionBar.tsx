@@ -4,30 +4,35 @@ import { useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import { useFocusTimer } from '@/hooks/useFocusTimer';
+import dynamic from 'next/dynamic';
+import JitsiMeetPanel from '@/components/voice/JitsiMeetPanel';
+
+const MeetingBoard = dynamic(() => import('@/components/voice/MeetingBoard'), { ssr: false });
+
 const STAMPS = ['👋', '👍', '👏', '😂', '❤️', '🎉', '🤔', '☕'];
 
 /**
- * Unified bottom bar — single bar combining status, actions, and chat input.
- * Slack/Notion inspired: icons left, input center, send right.
+ * Bottom floating bar — meeting, whiteboard, stamps.
  */
 export default function ActionBar() {
   const currentUser = useOfficeStore((s) => s.currentUser);
   const editorMode = useOfficeStore((s) => s.editorMode);
   const viewMode = useOfficeStore((s) => s.viewMode);
+  const canVoiceCall = useOfficeStore((s) => s.planPermissions.voiceCall);
+  const canMeetingBoard = useOfficeStore((s) => s.planPermissions.meetingBoard);
   const wsSend = useWsSend();
-
-  const [chatInput, setChatInput] = useState('');
-  const [showStamps, setShowStamps] = useState(false);
-  const [showFocusPresets, setShowFocusPresets] = useState(false);
   const focusTimer = useFocusTimer();
 
-  if (editorMode === 'edit' || viewMode !== 'floor') return null;
+  const [showStamps, setShowStamps] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [meetingName, setMeetingName] = useState('');
+  const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
+  const [showMeeting, setShowMeeting] = useState(false);
+  const [showBoard, setShowBoard] = useState(false);
 
-  const handleSend = () => {
-    if (!chatInput.trim()) return;
-    wsSend.chat(chatInput.trim());
-    setChatInput('');
-  };
+  const floorSlug = typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '';
+
+  if (editorMode === 'edit' || viewMode !== 'floor') return null;
 
   const handleReaction = (emoji: string) => {
     wsSend.reaction(emoji);
@@ -36,99 +41,129 @@ export default function ActionBar() {
     setShowStamps(false);
   };
 
-  const statusColor = currentUser.status === 'online' ? '#22C55E' :
-    currentUser.status === 'busy' ? '#EF4444' :
-    currentUser.status === 'focusing' ? '#F59E0B' : '#9CA3AF';
+  const handleStartMeeting = () => {
+    const name = meetingName.trim() || 'ミーティング';
+    const id = `${floorSlug}-${name.replace(/\s+/g, '-')}-${Date.now()}`;
+    setActiveMeetingId(id);
+    setShowMeeting(true);
+    setShowCreateDialog(false);
+    setMeetingName('');
+    useOfficeStore.getState().addActivity('meeting', `${currentUser.name} がミーティング「${name}」を開始`);
+  };
+
+  const handleLeaveMeeting = () => {
+    setActiveMeetingId(null);
+    setShowMeeting(false);
+  };
 
   return (
-    <div className="fixed bottom-[62px] md:bottom-3 left-1/2 -translate-x-1/2 z-[70]" onClick={e => e.stopPropagation()}>
-      {/* Stamp palette — floats above */}
-      {showStamps && (
-        <div className="flex gap-0.5 justify-center mb-2 px-2 py-1.5 bg-white rounded-2xl shadow-lg border border-gray-100">
-          {STAMPS.map(emoji => (
-            <button key={emoji} onClick={() => handleReaction(emoji)}
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 hover:scale-110 transition-all"
-            >{emoji}</button>
-          ))}
-        </div>
-      )}
-
-      {/* Focus presets popup — floats above */}
-      {showFocusPresets && !focusTimer.isActive && (
-        <div className="flex items-center gap-1 justify-center mb-2 px-3 py-2 bg-white rounded-2xl shadow-lg border border-gray-100">
-          <span className="text-xs text-gray-500 mr-1">集中:</span>
-          {[15, 25, 50].map(min => (
-            <button key={min}
-              onClick={() => { focusTimer.startFocus(min); setShowFocusPresets(false); }}
-              className="px-3 py-1 rounded-lg text-xs font-medium text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
-            >{min}分</button>
-          ))}
-          <button onClick={() => setShowFocusPresets(false)} className="ml-1 text-gray-400 hover:text-gray-600 text-xs">✕</button>
-        </div>
-      )}
-
-      {/* Main bar */}
-      <div className="flex items-center gap-1 px-1.5 py-1 bg-white rounded-2xl shadow-lg border border-gray-200/80"
-        style={{ backdropFilter: 'blur(12px)' }}>
-
-        {/* Status dot */}
-        <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" title={currentUser.status}>
-          <div className="w-2.5 h-2.5 rounded-full" style={{ background: statusColor, boxShadow: `0 0 6px ${statusColor}40` }} />
-        </div>
-
-        {/* Divider */}
-        <div className="w-px h-5 bg-gray-200 flex-shrink-0" />
-
-        {/* Action icons */}
-        {focusTimer.isActive ? (
-          <button onClick={() => focusTimer.stopFocus()}
-            className={`h-8 px-2 rounded-xl flex items-center gap-1 flex-shrink-0 text-[11px] font-semibold tabular-nums transition-all ${
-              focusTimer.isBreak ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
-            }`}>
-            {focusTimer.isBreak ? '☕' : '🎯'}
-            {Math.floor(focusTimer.remainingSeconds / 60)}:{(focusTimer.remainingSeconds % 60).toString().padStart(2, '0')}
-          </button>
-        ) : (
-          <button onClick={() => setShowFocusPresets(v => !v)}
-            className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-              showFocusPresets ? 'text-amber-500 bg-amber-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-            }`}
-            title="集中モード">
-            <span className="text-[13px]">🎯</span>
-          </button>
+    <>
+      <div className="fixed bottom-[62px] md:bottom-3 left-1/2 -translate-x-1/2 z-[70]" onClick={e => e.stopPropagation()}>
+        {/* Stamp palette — floats above */}
+        {showStamps && (
+          <div className="flex gap-0.5 justify-center mb-2 px-2 py-1.5 bg-white rounded-2xl shadow-lg border border-gray-100">
+            {STAMPS.map(emoji => (
+              <button key={emoji} onClick={() => handleReaction(emoji)}
+                className="w-9 h-9 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 hover:scale-110 transition-all"
+              >{emoji}</button>
+            ))}
+          </div>
         )}
 
-        <button onClick={() => setShowStamps(v => !v)}
-          className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-            showStamps ? 'text-indigo-500 bg-indigo-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-          }`}
-          title="スタンプ">
-          <span className="text-[13px]">😀</span>
-        </button>
+        {/* Meeting create popover — floats above */}
+        {showCreateDialog && !activeMeetingId && (
+          <div className="flex items-center gap-2 justify-center mb-2 px-3 py-2 bg-white rounded-2xl shadow-lg border border-gray-100">
+            <input
+              type="text"
+              value={meetingName}
+              onChange={e => setMeetingName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleStartMeeting()}
+              placeholder="ミーティング名（任意）"
+              autoFocus
+              className="w-[160px] px-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-sky-300"
+            />
+            <button onClick={handleStartMeeting}
+              className="px-3 py-1.5 rounded-lg bg-sky-500 text-white text-xs font-semibold hover:bg-sky-400 transition-colors"
+            >開始</button>
+            <button onClick={() => setShowCreateDialog(false)}
+              className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+          </div>
+        )}
 
-        {/* Divider */}
-        <div className="w-px h-5 bg-gray-200 flex-shrink-0" />
+        {/* Main bar */}
+        <div className="flex items-center gap-1 px-1.5 py-1 bg-white rounded-2xl shadow-lg border border-gray-200/80"
+          style={{ backdropFilter: 'blur(12px)' }}>
 
-        {/* Chat input */}
-        <input
-          type="text"
-          value={chatInput}
-          onChange={e => setChatInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
-          placeholder="メッセージ..."
-          className="w-[120px] sm:w-[200px] md:w-[280px] h-8 px-3 bg-transparent text-[13px] text-gray-700 placeholder:text-gray-400 outline-none"
-        />
+          {/* Meeting button */}
+          {canVoiceCall && (
+            <button
+              onClick={() => {
+                if (activeMeetingId) {
+                  setShowMeeting(v => !v);
+                } else {
+                  setShowCreateDialog(v => !v);
+                }
+              }}
+              className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
+                activeMeetingId ? 'text-green-500 bg-green-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+              }`}
+              title={activeMeetingId ? 'ミーティング表示/非表示' : 'ミーティングを開始'}
+            >
+              <span className="text-[13px]">🎥</span>
+            </button>
+          )}
 
-        {/* Send */}
-        <button onClick={handleSend}
-          className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-            chatInput.trim() ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-400'
-          }`}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
+          {/* Whiteboard button */}
+          {canMeetingBoard && (
+            <button
+              onClick={() => setShowBoard(v => !v)}
+              className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
+                showBoard ? 'text-indigo-500 bg-indigo-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+              }`}
+              title="ホワイトボード"
+            >
+              <span className="text-[13px]">📝</span>
+            </button>
+          )}
+
+          {/* Stamp button */}
+          <button onClick={() => setShowStamps(v => !v)}
+            className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
+              showStamps ? 'text-indigo-500 bg-indigo-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+            }`}
+            title="スタンプ">
+            <span className="text-[13px]">😀</span>
+          </button>
+
+          {/* Focus timer display (when active) */}
+          {focusTimer.isActive && (
+            <button onClick={() => focusTimer.stopFocus()}
+              className={`h-8 px-2 rounded-xl flex items-center gap-1 flex-shrink-0 text-[11px] font-semibold tabular-nums transition-all ${
+                focusTimer.isBreak ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
+              }`}>
+              {focusTimer.isBreak ? '☕' : '🎯'}
+              {Math.floor(focusTimer.remainingSeconds / 60)}:{(focusTimer.remainingSeconds % 60).toString().padStart(2, '0')}
+            </button>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Jitsi Meeting Panel */}
+      {activeMeetingId && showMeeting && (
+        <JitsiMeetPanel
+          roomName={activeMeetingId}
+          userName={currentUser.name}
+          onClose={handleLeaveMeeting}
+        />
+      )}
+
+      {/* Standalone Whiteboard */}
+      {showBoard && (
+        <MeetingBoard
+          meetingId={`${floorSlug}-board`}
+          onClose={() => setShowBoard(false)}
+        />
+      )}
+    </>
   );
 }

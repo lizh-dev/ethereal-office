@@ -21,7 +21,6 @@ import VoiceManager from '@/components/voice/VoiceManager';
 // ScreenShareView is now inside VoiceManager
 import ActionBar from '@/components/layout/ActionBar';
 import ActivityFeed from '@/components/views/ActivityFeed';
-import FloorToolbar from '@/components/floor/FloorToolbar';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useIdleDetection } from '@/hooks/useIdleDetection';
@@ -307,7 +306,6 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
               <>
                 <FloorCanvas floorSlug={slug} savedScene={floorData?.excalidrawScene} />
                 {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} onApplyTemplate={() => setShowTemplatePicker(true)} floorSlug={slug} />}
-                {editorMode !== 'edit' && <FloorToolbar />}
                 {/* Activity Feed Panel */}
                 {showActivityFeed && editorMode !== 'edit' && (
                   <div style={{
