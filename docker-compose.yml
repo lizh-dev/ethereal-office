@@ -53,7 +53,8 @@ services:
       ENABLE_GUESTS: "1"
       ENABLE_XMPP_WEBSOCKET: "1"
       ENABLE_HTTP_REDIRECT: "0"
-      PUBLIC_URL: "https://localhost:8443"
+      DISABLE_HTTPS: "1"
+      PUBLIC_URL: "http://localhost:8880"
       XMPP_DOMAIN: meet.jitsi
       XMPP_AUTH_DOMAIN: auth.meet.jitsi
       XMPP_BOSH_URL_BASE: http://jitsi-prosody:5280

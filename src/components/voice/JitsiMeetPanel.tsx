@@ -45,7 +45,7 @@ export default function JitsiMeetPanel({ roomName, userName, onClose }: JitsiMee
   const initJitsi = useCallback(() => {
     if (!containerRef.current || jitsiRef.current) return;
 
-    const jitsiDomain = 'localhost:8443';
+    const jitsiDomain = 'localhost:8880';
 
     try {
       jitsiRef.current = new window.JitsiMeetExternalAPI(jitsiDomain, {
