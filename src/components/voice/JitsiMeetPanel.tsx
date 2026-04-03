@@ -7,7 +7,7 @@ interface JitsiMeetPanelProps {
 }
 
 export default function JitsiMeetPanel({ roomName, userName, onClose }: JitsiMeetPanelProps) {
-  const meetingUrl = `/meeting/${roomName}#name=${encodeURIComponent(userName)}`;
+  const meetingUrl = `/meeting/${roomName}?name=${encodeURIComponent(userName)}`;
 
   return (
     <div style={{

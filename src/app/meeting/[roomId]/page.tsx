@@ -19,15 +19,15 @@ export default function MeetingPage() {
   useEffect(() => {
     if (!roomId) return;
 
-    // Get userName from URL hash (client-side only)
-    const hashParams = new URLSearchParams(window.location.hash.slice(1));
-    const userName = hashParams.get('name') || 'ゲスト';
+    // Get userName from URL query parameter (client-side only)
+    const urlParams = new URLSearchParams(window.location.search);
+    const userName = urlParams.get('name') || 'ゲスト';
 
     const initJitsi = () => {
       if (!containerRef.current || jitsiRef.current) return;
 
       try {
-        jitsiRef.current = new window.JitsiMeetExternalAPI('localhost:8880', {
+        jitsiRef.current = new window.JitsiMeetExternalAPI('localhost:8443', {
           roomName: roomId,
           parentNode: containerRef.current,
           width: '100%',

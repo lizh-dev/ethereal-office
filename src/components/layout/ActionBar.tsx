@@ -49,7 +49,7 @@ export default function ActionBar() {
     setShowCreateDialog(false);
     setMeetingName('');
     useOfficeStore.getState().addActivity('meeting', `${currentUser.name} がミーティング「${name}」を開始`);
-    window.open(`/meeting/${id}#name=${encodeURIComponent(currentUser.name)}`, '_blank');
+    window.open(`/meeting/${id}?name=${encodeURIComponent(currentUser.name)}`, '_blank');
   };
 
   const handleLeaveMeeting = () => {

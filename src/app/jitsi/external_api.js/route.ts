@@ -1,5 +1,5 @@
 export async function GET() {
-  const jitsiUrl = process.env.NEXT_PUBLIC_JITSI_URL || 'http://localhost:8880';
+  const jitsiUrl = process.env.NEXT_PUBLIC_JITSI_URL || 'https://localhost:8443';
   try {
     const res = await fetch(`${jitsiUrl}/external_api.js`, {
       // @ts-expect-error Node fetch option to skip TLS verification in dev
@@ -12,7 +12,7 @@ export async function GET() {
   } catch {
     // Fallback: fetch from HTTP port
     try {
-      const res = await fetch('http://localhost:8880/external_api.js');
+      const res = await fetch('https://localhost:8443/external_api.js');
       const body = await res.text();
       return new Response(body, {
         headers: { 'Content-Type': 'application/javascript', 'Cache-Control': 'public, max-age=3600' },
