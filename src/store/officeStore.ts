@@ -48,8 +48,10 @@ interface OfficeState {
   activeJitsiMode: 'zone' | 'call' | null;
   activeJitsiZoneName: string | null;
   jitsiParticipantCount: number;
+  jitsiManualJoinTrigger: number;
   setActiveJitsiRoom: (room: string | null, mode: 'zone' | 'call' | null, zoneName?: string) => void;
   setJitsiParticipantCount: (count: number) => void;
+  triggerJitsiManualJoin: () => void;
   chatMessages: ChatMessage[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   excalidrawAPI: any | null;
@@ -202,8 +204,10 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   activeJitsiMode: null,
   activeJitsiZoneName: null,
   jitsiParticipantCount: 0,
+  jitsiManualJoinTrigger: 0,
   setActiveJitsiRoom: (room, mode, zoneName) => set({ activeJitsiRoom: room, activeJitsiMode: mode, activeJitsiZoneName: zoneName || null }),
   setJitsiParticipantCount: (count) => set({ jitsiParticipantCount: count }),
+  triggerJitsiManualJoin: () => set((s) => ({ jitsiManualJoinTrigger: s.jitsiManualJoinTrigger + 1 })),
   chatMessages: [],
   excalidrawAPI: null,
   excalidrawAppState: null,

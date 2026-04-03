@@ -4,8 +4,6 @@ import { convertToExcalidrawElements } from '@excalidraw/excalidraw';
 import { useOfficeStore } from '@/store/officeStore';
 import { getTemplateElements, TEMPLATE_META } from '@/lib/templates';
 import { initSeatsFromElements } from '@/lib/seatDetection';
-import FeatureGate from '@/components/plan/FeatureGate';
-
 export default function TemplatePicker({ onClose }: { onClose: () => void }) {
   const excalidrawAPI = useOfficeStore((s) => s.excalidrawAPI);
 
@@ -57,45 +55,42 @@ export default function TemplatePicker({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        {/* Content gated behind Pro */}
-        <FeatureGate feature="floorTemplates">
-          <div style={{ padding: 24 }}>
-            <div style={{
-              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12,
-            }}>
-              {TEMPLATE_META.map((tmpl) => (
-                <button
-                  key={tmpl.id}
-                  onClick={() => handleSelect(tmpl.id)}
-                  disabled={!excalidrawAPI}
-                  style={{
-                    padding: 16, borderRadius: 12,
-                    border: '1px solid #e5e7eb', background: '#fff',
-                    cursor: excalidrawAPI ? 'pointer' : 'not-allowed',
-                    textAlign: 'left', transition: 'all 0.15s',
-                    display: 'flex', flexDirection: 'column', gap: 4,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#a5b4fc';
-                    e.currentTarget.style.background = '#eef2ff';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#e5e7eb';
-                    e.currentTarget.style.background = '#fff';
-                  }}
-                >
-                  <span style={{ fontSize: 24 }}>{tmpl.icon}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1f2937' }}>
-                    {tmpl.name}
-                  </span>
-                  <span style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.4 }}>
-                    {tmpl.desc}
-                  </span>
-                </button>
-              ))}
-            </div>
+        <div style={{ padding: 24 }}>
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12,
+          }}>
+            {TEMPLATE_META.map((tmpl) => (
+              <button
+                key={tmpl.id}
+                onClick={() => handleSelect(tmpl.id)}
+                disabled={!excalidrawAPI}
+                style={{
+                  padding: 16, borderRadius: 12,
+                  border: '1px solid #e5e7eb', background: '#fff',
+                  cursor: excalidrawAPI ? 'pointer' : 'not-allowed',
+                  textAlign: 'left', transition: 'all 0.15s',
+                  display: 'flex', flexDirection: 'column', gap: 4,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#a5b4fc';
+                  e.currentTarget.style.background = '#eef2ff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.background = '#fff';
+                }}
+              >
+                <span style={{ fontSize: 24 }}>{tmpl.icon}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#1f2937' }}>
+                  {tmpl.name}
+                </span>
+                <span style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.4 }}>
+                  {tmpl.desc}
+                </span>
+              </button>
+            ))}
           </div>
-        </FeatureGate>
+        </div>
       </div>
     </div>
   );

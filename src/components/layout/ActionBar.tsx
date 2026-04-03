@@ -21,6 +21,7 @@ export default function ActionBar() {
   const viewMode = useOfficeStore((s) => s.viewMode);
   const canVoiceCall = useOfficeStore((s) => s.planPermissions.voiceCall);
   const activeJitsiRoom = useOfficeStore((s) => s.activeJitsiRoom);
+  const triggerJitsiManualJoin = useOfficeStore((s) => s.triggerJitsiManualJoin);
   const wsSend = useWsSend();
 
   const [chatInput, setChatInput] = useState('');
@@ -89,20 +90,23 @@ export default function ActionBar() {
         {/* Action icons */}
         {canVoiceCall ? (
           <button
-            onClick={() => setAutoVoiceEnabled(!autoVoiceEnabled)}
+            onClick={() => triggerJitsiManualJoin()}
             className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all relative ${
               activeJitsiRoom ? 'text-green-500 bg-green-50' : autoVoiceEnabled ? 'text-indigo-500 bg-indigo-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
             }`}
-            title={activeJitsiRoom ? '通話中' : autoVoiceEnabled ? '自動通話ON' : '自動通話OFF'}
+            title={activeJitsiRoom ? '通話中（クリックで退出）' : '通話を開始'}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              {autoVoiceEnabled ? (
+              {activeJitsiRoom ? (
                 <>
                   <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" fill="currentColor" />
                   <path d="M19 10v2a7 7 0 01-14 0v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </>
               ) : (
-                <path d="M1 1l22 22M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6M17 16.95A7 7 0 015 12v-2m14 0v2c0 .76-.12 1.5-.35 2.18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <>
+                  <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" fill="currentColor" opacity="0.5" />
+                  <path d="M19 10v2a7 7 0 01-14 0v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </>
               )}
             </svg>
           </button>

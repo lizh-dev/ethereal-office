@@ -20,7 +20,6 @@ import DMPanel from '@/components/chat/DMPanel';
 import VoiceManager from '@/components/voice/VoiceManager';
 // ScreenShareView is now inside VoiceManager
 import ActionBar from '@/components/layout/ActionBar';
-import FeatureGate from '@/components/plan/FeatureGate';
 import ActivityFeed from '@/components/views/ActivityFeed';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -359,11 +358,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
           />
         )}
         {showAvatarSelector && <AvatarSelector />}
-        {showSpaceWizard && (
-          <FeatureGate feature="floorTemplates">
-            <SpaceWizard onClose={() => setShowSpaceWizard(false)} />
-          </FeatureGate>
-        )}
+        {showSpaceWizard && <SpaceWizard onClose={() => setShowSpaceWizard(false)} />}
         {showTemplatePicker && <TemplatePicker onClose={() => setShowTemplatePicker(false)} />}
         <NotificationToast />
         {activeDMUserId && <DMPanel />}

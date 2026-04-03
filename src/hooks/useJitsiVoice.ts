@@ -16,6 +16,7 @@ export interface JitsiVoiceState {
   jitsiApi: any | null;
   joinZoneRoom: (zoneId: string, zoneName: string) => void;
   joinCallRoom: (targetUserId: string, targetUserName: string) => void;
+  manualJoin: () => void;
   leaveRoom: () => void;
   toggleMute: () => void;
   toggleVideo: () => void;
@@ -57,6 +58,7 @@ export function useJitsiVoice(): JitsiVoiceState {
   const autoVoiceEnabled = useOfficeStore(s => s.autoVoiceEnabled);
   const callRequestStatus = useOfficeStore(s => s.callRequestStatus);
   const callTargetUserId = useOfficeStore(s => s.callTargetUserId);
+  const manualJoinTrigger = useOfficeStore(s => s.jitsiManualJoinTrigger);
 
   // Get floor slug from URL
   const getFloorSlug = useCallback(() => {
@@ -103,9 +105,12 @@ export function useJitsiVoice(): JitsiVoiceState {
 
       const container = document.getElementById('jitsi-voice-container');
       if (!container) {
+        console.error('[JitsiVoice] Container not found');
         joiningRef.current = false;
         return;
       }
+      // Clear any previous content
+      container.innerHTML = '';
 
       jitsiApiRef.current = new window.JitsiMeetExternalAPI(JITSI_DOMAIN, {
         roomName,
@@ -207,6 +212,28 @@ export function useJitsiVoice(): JitsiVoiceState {
     createJitsiRoom(roomName, 'zone', zName);
   }, [getFloorSlug, createJitsiRoom]);
 
+  // Manual join: if seated, join that zone's room; otherwise create a floor-wide room
+  const manualJoin = useCallback(() => {
+    if (jitsiApiRef.current) {
+      // Already in a room — toggle off
+      leaveRoom();
+      return;
+    }
+    const store = useOfficeStore.getState();
+    const seatId = store.currentSeatId;
+    const userId = store.currentUser.id;
+    if (seatId && userId !== 'pending') {
+      const zone = getZoneForSeat(userId, seatId);
+      if (zone) {
+        joinZoneRoom(zone.zoneId, zone.zoneName);
+        return;
+      }
+    }
+    // Not seated or no zone — join a floor-wide room
+    const slug = getFloorSlug();
+    createJitsiRoom(`${slug}-lobby`, 'zone', 'ロビー');
+  }, [leaveRoom, joinZoneRoom, getFloorSlug, createJitsiRoom]);
+
   // Join 1:1 call room
   const joinCallRoom = useCallback((targetUserId: string, targetUserName: string) => {
     const slug = getFloorSlug();
@@ -272,6 +299,15 @@ export function useJitsiVoice(): JitsiVoiceState {
     prevCallStatusRef.current = callRequestStatus;
   }, [callRequestStatus, callTargetUserId, joinCallRoom]);
 
+  // Manual join triggered from ActionBar mic button
+  const prevTriggerRef = useRef(manualJoinTrigger);
+  useEffect(() => {
+    if (manualJoinTrigger !== prevTriggerRef.current) {
+      prevTriggerRef.current = manualJoinTrigger;
+      manualJoin();
+    }
+  }, [manualJoinTrigger, manualJoin]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -305,6 +341,7 @@ export function useJitsiVoice(): JitsiVoiceState {
     jitsiApi: jitsiApiRef.current,
     joinZoneRoom,
     joinCallRoom,
+    manualJoin,
     leaveRoom,
     toggleMute,
     toggleVideo,
