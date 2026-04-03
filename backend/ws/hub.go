@@ -305,6 +305,13 @@ func (h *Hub) RemoveMeetingParticipant(slug, meetingID, userID string) {
 	// Remove quick meeting when last person leaves
 	if count == 0 {
 		delete(room.activeMeetings, meetingID)
+		// Mark archive log as ended
+		if db.DB != nil {
+			now := time.Now()
+			db.DB.Model(&model.MeetingLog{}).
+				Where("meeting_id = ? AND ended_at IS NULL", meetingID).
+				Update("ended_at", &now)
+		}
 	}
 	h.mu.Unlock()
 
@@ -843,6 +850,19 @@ func (h *Hub) handleMeetingStart(client *Client, msg IncomingMessage) {
 	}, "")
 
 	log.Printf("[%s] meeting started: %s by %s", client.room, msg.MeetingName, client.info.Name)
+
+	// Archive log
+	if db.DB != nil {
+		db.DB.Create(&model.MeetingLog{
+			FloorSlug:       client.room,
+			MeetingID:       msg.MeetingID,
+			Name:            msg.MeetingName,
+			CreatedBy:       client.info.ID,
+			CreatorName:     client.info.Name,
+			MaxParticipants: 1,
+			StartedAt:       time.Now(),
+		})
+	}
 }
 
 func (h *Hub) handleMeetingJoin(client *Client, msg IncomingMessage) {
@@ -889,6 +909,13 @@ func (h *Hub) handleMeetingJoin(client *Client, msg IncomingMessage) {
 	}, "")
 
 	log.Printf("[%s] %s joined meeting %s (%d participants)", client.room, client.info.Name, msg.MeetingID, count)
+
+	// Update peak participants in archive log
+	if db.DB != nil {
+		db.DB.Model(&model.MeetingLog{}).
+			Where("meeting_id = ? AND ended_at IS NULL", msg.MeetingID).
+			Update("max_participants", count)
+	}
 }
 
 func (h *Hub) handleMeetingLeave(client *Client, msg IncomingMessage) {
@@ -915,6 +942,12 @@ func (h *Hub) handleMeetingLeave(client *Client, msg IncomingMessage) {
 	// Remove quick meeting when last person leaves
 	if count == 0 {
 		delete(room.activeMeetings, msg.MeetingID)
+		if db.DB != nil {
+			now := time.Now()
+			db.DB.Model(&model.MeetingLog{}).
+				Where("meeting_id = ? AND ended_at IS NULL", msg.MeetingID).
+				Update("ended_at", &now)
+		}
 	}
 	h.mu.Unlock()
 

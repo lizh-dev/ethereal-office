@@ -99,6 +99,7 @@ func main() {
 	mux.HandleFunc("/api/floors/{slug}/meeting-rooms", handler.HandleMeetingRooms())
 	mux.HandleFunc("/api/meeting-rooms/", handler.HandleMeetingRoomDelete())
 	mux.HandleFunc("GET /api/meetings/{roomId}/check", handler.CheckMeetingRoom(hub))
+	mux.HandleFunc("GET /api/floors/{slug}/meeting-logs", handler.HandleMeetingLogs())
 	mux.HandleFunc("POST /api/meetings/leave", handler.HandleMeetingLeave(hub))
 
 	// WebSocket

@@ -138,6 +138,23 @@ func HandleMeetingLeave(hub *ws.Hub) http.HandlerFunc {
 	}
 }
 
+// HandleMeetingLogs returns archived meeting logs for a floor.
+func HandleMeetingLogs() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		slug := r.PathValue("slug")
+		if slug == "" {
+			http.Error(w, "missing slug", http.StatusBadRequest)
+			return
+		}
+		var logs []model.MeetingLog
+		if db.DB != nil {
+			db.DB.Where("floor_slug = ?", slug).Order("started_at DESC").Limit(50).Find(&logs)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(logs)
+	}
+}
+
 // HandleMeetingRoomDelete handles DELETE for a specific permanent room.
 func HandleMeetingRoomDelete() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

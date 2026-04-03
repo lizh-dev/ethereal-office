@@ -14,6 +14,16 @@ interface PermanentRoom {
   permanent: boolean;
 }
 
+interface MeetingLog {
+  id: number;
+  meetingId: string;
+  name: string;
+  creatorName: string;
+  maxParticipants: number;
+  startedAt: string;
+  endedAt: string | null;
+}
+
 export default function MeetingRoom() {
   const currentUser = useOfficeStore((s) => s.currentUser);
   const activeMeetings = useOfficeStore((s) => s.activeMeetings);
@@ -22,6 +32,7 @@ export default function MeetingRoom() {
   const wsSend = useWsSend();
 
   const [permanentRooms, setPermanentRooms] = useState<PermanentRoom[]>([]);
+  const [meetingLogs, setMeetingLogs] = useState<MeetingLog[]>([]);
   const [showCreatePermanent, setShowCreatePermanent] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomPassword, setNewRoomPassword] = useState('');
@@ -31,14 +42,16 @@ export default function MeetingRoom() {
 
   const floorSlug = typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '';
 
-  // Load permanent rooms from API
+  // Load permanent rooms and meeting logs from API
   useEffect(() => {
     if (!floorSlug) return;
     fetch(`/api/floors/${floorSlug}/meeting-rooms`)
       .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) setPermanentRooms(data);
-      })
+      .then(data => { if (Array.isArray(data)) setPermanentRooms(data); })
+      .catch(() => {});
+    fetch(`/api/floors/${floorSlug}/meeting-logs`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setMeetingLogs(data); })
       .catch(() => {});
   }, [floorSlug]);
 
@@ -247,6 +260,37 @@ export default function MeetingRoom() {
           </div>
         )}
       </section>
+
+      {/* === Meeting History === */}
+      {meetingLogs.length > 0 && (
+        <section>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: '0 0 10px' }}>
+            履歴
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {meetingLogs.filter(l => l.endedAt).map(log => {
+              const start = new Date(log.startedAt);
+              const end = log.endedAt ? new Date(log.endedAt) : null;
+              const durationMin = end ? Math.round((end.getTime() - start.getTime()) / 60000) : 0;
+              const dateStr = `${start.getMonth() + 1}/${start.getDate()} ${start.getHours()}:${start.getMinutes().toString().padStart(2, '0')}`;
+              return (
+                <div key={log.id} style={{
+                  padding: '8px 12px', borderRadius: 8,
+                  background: '#f8fafc', border: '1px solid #f1f5f9',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>{log.name}</span>
+                    <span style={{ fontSize: 10, color: '#94a3b8' }}>{dateStr}</span>
+                  </div>
+                  <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>
+                    {log.creatorName} | {durationMin}分 | 最大{log.maxParticipants}人
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
