@@ -1,9 +1,6 @@
 'use client';
 
-/**
- * JitsiMeetPanel — opens Jitsi in a new tab instead of embedding as iframe.
- * Iframe embedding causes connection loops and massive requests in local dev.
- */
+import { useState, useEffect } from 'react';
 
 interface JitsiMeetPanelProps {
   roomName: string;
@@ -12,7 +9,18 @@ interface JitsiMeetPanelProps {
 }
 
 export default function JitsiMeetPanel({ roomName, userName, onClose }: JitsiMeetPanelProps) {
-  const jitsiUrl = `https://localhost:8443/${roomName}#userInfo.displayName="${encodeURIComponent(userName)}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=true`;
+  const [jitsiUrl, setJitsiUrl] = useState('');
+
+  useEffect(() => {
+    fetch('/api/jitsi/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room: roomName, userName }),
+    })
+      .then(r => r.json())
+      .then(data => setJitsiUrl(data.url || ''))
+      .catch(() => setJitsiUrl(`https://localhost:8443/${roomName}`));
+  }, [roomName, userName]);
 
   return (
     <div style={{
@@ -26,21 +34,23 @@ export default function JitsiMeetPanel({ roomName, userName, onClose }: JitsiMee
         <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>ミーティング中</span>
       </div>
       <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 12px' }}>
-        Jitsiが別タブで開いています。
+        別タブでビデオ会議が開いています。
       </p>
       <div style={{ display: 'flex', gap: 8 }}>
-        <a
-          href={jitsiUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            flex: 1, padding: '8px 0', borderRadius: 8, border: 'none',
-            background: '#0ea5e9', color: 'white', fontSize: 12, fontWeight: 600,
-            textAlign: 'center', textDecoration: 'none', display: 'block',
-          }}
-        >
-          Jitsiを開く
-        </a>
+        {jitsiUrl && (
+          <a
+            href={jitsiUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              flex: 1, padding: '8px 0', borderRadius: 8, border: 'none',
+              background: '#0ea5e9', color: 'white', fontSize: 12, fontWeight: 600,
+              textAlign: 'center', textDecoration: 'none', display: 'block',
+            }}
+          >
+            会議を開く
+          </a>
+        )}
         <button
           onClick={onClose}
           style={{
