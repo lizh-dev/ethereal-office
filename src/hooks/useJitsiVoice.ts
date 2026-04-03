@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 
-const JITSI_DOMAIN = 'localhost:8880';
+const JITSI_DOMAIN = 'localhost:8443';
 
 export interface JitsiVoiceState {
   activeRoom: string | null;

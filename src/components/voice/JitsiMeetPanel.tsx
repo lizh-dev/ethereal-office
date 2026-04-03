@@ -1,13 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { useOfficeStore } from '@/store/officeStore';
-
-declare global {
-  interface Window {
-    JitsiMeetExternalAPI: any;
-  }
-}
+/**
+ * JitsiMeetPanel — opens Jitsi in a new tab instead of embedding as iframe.
+ * Iframe embedding causes connection loops and massive requests in local dev.
+ */
 
 interface JitsiMeetPanelProps {
   roomName: string;
@@ -16,158 +12,46 @@ interface JitsiMeetPanelProps {
 }
 
 export default function JitsiMeetPanel({ roomName, userName, onClose }: JitsiMeetPanelProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const jitsiRef = useRef<any>(null);
-  const scriptLoadedRef = useRef(false);
-  const [size, setSize] = useState<'normal' | 'large'>('normal');
-  const [pos, setPos] = useState({ x: typeof window !== 'undefined' ? window.innerWidth - 420 : 400, y: 80 });
-  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y };
-    const handleMove = (ev: MouseEvent) => {
-      if (!dragRef.current) return;
-      setPos({
-        x: Math.max(0, Math.min(window.innerWidth - 200, dragRef.current.origX + ev.clientX - dragRef.current.startX)),
-        y: Math.max(0, Math.min(window.innerHeight - 100, dragRef.current.origY + ev.clientY - dragRef.current.startY)),
-      });
-    };
-    const handleUp = () => {
-      dragRef.current = null;
-      document.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseup', handleUp);
-    };
-    document.addEventListener('mousemove', handleMove);
-    document.addEventListener('mouseup', handleUp);
-  }, [pos]);
-
-  const initJitsi = useCallback(() => {
-    if (!containerRef.current || jitsiRef.current) return;
-
-    const jitsiDomain = 'localhost:8880';
-
-    try {
-      jitsiRef.current = new window.JitsiMeetExternalAPI(jitsiDomain, {
-        roomName,
-        parentNode: containerRef.current,
-        width: '100%',
-        height: '100%',
-        lang: 'ja',
-        userInfo: { displayName: userName },
-        configOverwrite: {
-          startWithAudioMuted: false,
-          startWithVideoMuted: true,
-          prejoinPageEnabled: false,
-          disableDeepLinking: true,
-          defaultLanguage: 'ja',
-          toolbarButtons: [
-            'microphone', 'camera', 'desktop', 'chat',
-            'raisehand', 'tileview', 'hangup',
-          ],
-          hideConferenceSubject: true,
-          hideConferenceTimer: false,
-          notifications: [],
-          disableThirdPartyRequests: true,
-        },
-        interfaceConfigOverwrite: {
-          SHOW_JITSI_WATERMARK: false,
-          SHOW_WATERMARK_FOR_GUESTS: false,
-          SHOW_BRAND_WATERMARK: false,
-          SHOW_POWERED_BY: false,
-          DEFAULT_REMOTE_DISPLAY_NAME: 'ゲスト',
-          TOOLBAR_ALWAYS_VISIBLE: true,
-          DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
-          HIDE_INVITE_MORE_HEADER: true,
-        },
-      });
-
-      jitsiRef.current.addListener('readyToClose', () => onClose());
-      jitsiRef.current.addListener('videoConferenceLeft', () => onClose());
-      jitsiRef.current.addListener('participantJoined', (p: any) => {
-        useOfficeStore.getState().addActivity('meeting', `${p.displayName || 'ゲスト'} がミーティングに参加`);
-      });
-    } catch (err) {
-      console.error('Failed to init Jitsi:', err);
-    }
-  }, [roomName, userName, onClose]);
-
-  useEffect(() => {
-    if (window.JitsiMeetExternalAPI) {
-      initJitsi();
-    } else if (!scriptLoadedRef.current) {
-      scriptLoadedRef.current = true;
-      const script = document.createElement('script');
-      script.src = '/jitsi/external_api.js';
-      script.async = true;
-      script.onload = initJitsi;
-      script.onerror = () => {
-        console.error('Failed to load Jitsi external API');
-        scriptLoadedRef.current = false;
-      };
-      document.head.appendChild(script);
-    }
-
-    return () => {
-      if (jitsiRef.current) {
-        jitsiRef.current.dispose();
-        jitsiRef.current = null;
-      }
-    };
-  }, [initJitsi]);
-
-  const w = size === 'large' ? 800 : 400;
-  const h = size === 'large' ? 560 : 340;
+  const jitsiUrl = `https://localhost:8443/${roomName}#userInfo.displayName="${encodeURIComponent(userName)}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=true`;
 
   return (
     <div style={{
-      position: 'fixed', left: pos.x, top: pos.y,
-      width: w, height: h, zIndex: 80,
-      borderRadius: 14, overflow: 'hidden',
-      boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
-      display: 'flex', flexDirection: 'column',
-      background: '#1a1a2e',
-      transition: 'width 0.2s, height 0.2s',
+      position: 'fixed', right: 16, top: 64, zIndex: 80,
+      background: 'white', borderRadius: 12, padding: 16,
+      boxShadow: '0 8px 24px rgba(0,0,0,0.12)', border: '1px solid #e2e8f0',
+      width: 280,
     }}>
-      {/* Header — draggable */}
-      <div
-        onMouseDown={handleMouseDown}
-        style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '6px 12px', background: '#16213e', borderBottom: '1px solid #0f3460',
-          cursor: 'grab', userSelect: 'none', flexShrink: 0,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 13 }}>🎥</span>
-          <span style={{ color: '#e2e8f0', fontSize: 12, fontWeight: 600 }}>ミーティング</span>
-        </div>
-        <div style={{ display: 'flex', gap: 4 }}>
-          <button
-            onClick={() => setSize(s => s === 'large' ? 'normal' : 'large')}
-            style={{
-              background: 'transparent', border: 'none', color: '#94a3b8',
-              cursor: 'pointer', fontSize: 12, padding: '2px 4px',
-            }}
-            title={size === 'large' ? '縮小' : '拡大'}
-          >
-            {size === 'large' ? '⊟' : '⊞'}
-          </button>
-          <button
-            onClick={onClose}
-            style={{
-              background: '#ef4444', border: 'none', borderRadius: 6,
-              color: 'white', fontSize: 10, fontWeight: 600,
-              padding: '2px 10px', cursor: 'pointer',
-            }}
-          >
-            退出
-          </button>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#22c55e' }} />
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>ミーティング中</span>
       </div>
-
-      {/* Jitsi Container */}
-      <div ref={containerRef} style={{ flex: 1 }} />
+      <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 12px' }}>
+        Jitsiが別タブで開いています。
+      </p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <a
+          href={jitsiUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            flex: 1, padding: '8px 0', borderRadius: 8, border: 'none',
+            background: '#0ea5e9', color: 'white', fontSize: 12, fontWeight: 600,
+            textAlign: 'center', textDecoration: 'none', display: 'block',
+          }}
+        >
+          Jitsiを開く
+        </a>
+        <button
+          onClick={onClose}
+          style={{
+            padding: '8px 14px', borderRadius: 8, border: '1px solid #e2e8f0',
+            background: 'white', color: '#ef4444', fontSize: 12, fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          終了
+        </button>
+      </div>
     </div>
   );
 }

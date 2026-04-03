@@ -1,29 +1,18 @@
 'use client';
 
-import { useJitsiVoice } from '@/hooks/useJitsiVoice';
-import { useOfficeStore } from '@/store/officeStore';
-import JitsiVoicePanel from './JitsiVoicePanel';
-import JitsiCallBar from './JitsiCallBar';
 import IncomingCallDialog from './IncomingCallDialog';
 
 /**
- * VoiceManager must be rendered inside a WebSocketProvider.
- * It initializes the Jitsi voice hook and renders voice UI components.
- * Zone auto-join, 1:1 call handling, and UI rendering are all managed via useJitsiVoice.
+ * VoiceManager — minimal. Just renders the incoming call dialog.
+ * Jitsi meetings are opened in separate tabs now.
  */
 export default function VoiceManager() {
-  const jitsi = useJitsiVoice();
-
-  const handleAcceptCall = (fromUserId: string) => {
-    const caller = useOfficeStore.getState().users.find(u => u.id === fromUserId);
-    jitsi.joinCallRoom(fromUserId, caller?.name || 'ゲスト');
+  const handleAcceptCall = (_fromUserId: string) => {
+    // 1:1 calls now redirect to Jitsi in a new tab
+    const slug = window.location.pathname.split('/')[2] || '';
+    const jitsiUrl = `https://localhost:8443/${slug}-call-${Date.now()}`;
+    window.open(jitsiUrl, '_blank');
   };
 
-  return (
-    <>
-      <JitsiVoicePanel jitsi={jitsi} />
-      <JitsiCallBar jitsi={jitsi} />
-      <IncomingCallDialog onAccept={handleAcceptCall} />
-    </>
-  );
+  return <IncomingCallDialog onAccept={handleAcceptCall} />;
 }

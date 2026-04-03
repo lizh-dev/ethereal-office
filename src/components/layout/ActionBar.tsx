@@ -49,6 +49,9 @@ export default function ActionBar() {
     setShowCreateDialog(false);
     setMeetingName('');
     useOfficeStore.getState().addActivity('meeting', `${currentUser.name} がミーティング「${name}」を開始`);
+    // Open Jitsi in a new tab
+    const jitsiUrl = `https://localhost:8443/${id}#userInfo.displayName="${encodeURIComponent(currentUser.name)}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=true`;
+    window.open(jitsiUrl, '_blank');
   };
 
   const handleLeaveMeeting = () => {

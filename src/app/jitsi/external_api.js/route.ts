@@ -1,5 +1,5 @@
 export async function GET() {
-  const jitsiUrl = process.env.NEXT_PUBLIC_JITSI_URL || 'http://localhost:8880';
+  const jitsiUrl = process.env.NEXT_PUBLIC_JITSI_URL || 'https://localhost:8443';
   try {
     const res = await fetch(`${jitsiUrl}/external_api.js`, {
       // @ts-expect-error Node fetch option to skip TLS verification in dev
