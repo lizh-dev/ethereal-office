@@ -60,6 +60,13 @@ export default function MeetingBoard({ meetingId, onClose }: MeetingBoardProps) 
           const data = JSON.parse(msg.boardData);
           isRemoteUpdateRef.current = true;
           excalidrawAPI.updateScene({ elements: data.elements });
+          // Sync image files if present
+          if (data.files && typeof data.files === 'object') {
+            const fileArray = Object.values(data.files);
+            if (fileArray.length > 0) {
+              excalidrawAPI.addFiles(fileArray);
+            }
+          }
           setTimeout(() => { isRemoteUpdateRef.current = false; }, 100);
         }
       } catch { /* ignore */ }
@@ -79,9 +86,20 @@ export default function MeetingBoard({ meetingId, onClose }: MeetingBoardProps) 
     [meetingId, wsSend]
   );
 
-  const handleChange = useCallback((elements: readonly any[]) => {
+  const handleChange = useCallback((elements: readonly any[], _appState: any, files: any) => {
     if (isRemoteUpdateRef.current) return;
-    debouncedSend(JSON.stringify({ elements }));
+    // Include image files (BinaryFileData) for sync
+    const fileEntries: Record<string, any> = {};
+    if (files) {
+      for (const [key, file] of Object.entries(files)) {
+        const f = file as any;
+        if (f && f.dataURL) {
+          fileEntries[key] = { id: f.id, dataURL: f.dataURL, mimeType: f.mimeType, created: f.created };
+        }
+      }
+    }
+    const hasFiles = Object.keys(fileEntries).length > 0;
+    debouncedSend(JSON.stringify({ elements, ...(hasFiles ? { files: fileEntries } : {}) }));
   }, [isRemoteUpdateRef, debouncedSend]);
 
   const handleExport = () => {

@@ -20,6 +20,9 @@ export interface WsSend {
   callDecline: (targetUserId: string) => void;
   callEnd: (targetUserId: string) => void;
   boardUpdate: (meetingId: string, boardData: string) => void;
+  meetingStart: (meetingId: string, meetingName: string, hasPassword: boolean) => void;
+  meetingJoin: (meetingId: string) => void;
+  meetingLeave: (meetingId: string) => void;
 }
 
 const WebSocketContext = createContext<{ send: WsSend; connected: boolean } | null>(null);

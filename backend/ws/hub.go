@@ -18,11 +18,23 @@ type disconnectedInfo struct {
 	DisconnectAt time.Time
 }
 
+// activeMeeting tracks an in-progress meeting within a room.
+type activeMeeting struct {
+	ID           string
+	Name         string
+	CreatedBy    string // userId
+	CreatorName  string
+	HasPassword  bool
+	Participants map[string]bool // userId set
+	CreatedAt    time.Time
+}
+
 type Room struct {
 	clients              map[string]*Client
 	chatHistory          []ChatMessage
 	lastActive           time.Time
 	recentlyDisconnected map[string]*disconnectedInfo // userId -> info
+	activeMeetings       map[string]*activeMeeting    // meetingId -> meeting
 }
 
 type Hub struct {
@@ -85,6 +97,7 @@ func (h *Hub) getOrCreateRoom(slug string) *Room {
 			chatHistory:          make([]ChatMessage, 0),
 			lastActive:           time.Now(),
 			recentlyDisconnected: make(map[string]*disconnectedInfo),
+			activeMeetings:       make(map[string]*activeMeeting),
 		}
 		h.rooms[slug] = room
 	}
@@ -183,7 +196,10 @@ func (h *Hub) addClient(client *Client) {
 
 	// floorPlan and perms already resolved at top of addClient
 
-	// Send welcome with existing users, chat history, DM history, and plan permissions
+	// Build active meetings list
+	meetingList := h.getMeetingList(client.room)
+
+	// Send welcome with existing users, chat history, DM history, plan permissions, and active meetings
 	users := h.getRoomUsers(client.room)
 	welcome := OutgoingMessage{
 		Type:        MsgWelcome,
@@ -196,6 +212,7 @@ func (h *Hub) addClient(client *Client) {
 		Y:           client.info.Y,
 		Plan:        string(floorPlan),
 		Permissions: &perms,
+		Meetings:    meetingList,
 	}
 	client.send <- MarshalMessage(welcome)
 
@@ -678,5 +695,188 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 			}
 		}
 		h.mu.RUnlock()
+
+	case MsgMeetingStart:
+		h.handleMeetingStart(client, msg)
+
+	case MsgMeetingJoin:
+		h.handleMeetingJoin(client, msg)
+
+	case MsgMeetingLeave:
+		h.handleMeetingLeave(client, msg)
 	}
+}
+
+// --- Meeting lifecycle ---
+
+func (h *Hub) getMeetingList(slug string) []ActiveMeetingInfo {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	room, ok := h.rooms[slug]
+	if !ok {
+		return nil
+	}
+	list := make([]ActiveMeetingInfo, 0, len(room.activeMeetings))
+	for _, m := range room.activeMeetings {
+		pids := make([]string, 0, len(m.Participants))
+		for uid := range m.Participants {
+			pids = append(pids, uid)
+		}
+		list = append(list, ActiveMeetingInfo{
+			ID:           m.ID,
+			Name:         m.Name,
+			CreatedBy:    m.CreatedBy,
+			CreatorName:  m.CreatorName,
+			HasPassword:  m.HasPassword,
+			Participants: pids,
+			CreatedAt:    m.CreatedAt.UnixMilli(),
+		})
+	}
+	return list
+}
+
+func (h *Hub) getFloorPerms(slug string) model.PlanPermissions {
+	floorPlan := model.PlanFree
+	if db.DB != nil {
+		var floor model.Floor
+		if err := db.DB.Where("slug = ?", slug).First(&floor).Error; err == nil {
+			var sub model.Subscription
+			if err := db.DB.Where("floor_id = ? AND status IN ?", floor.ID, []string{"active", "trialing"}).First(&sub).Error; err == nil {
+				floorPlan = sub.Plan
+			}
+		}
+	}
+	return model.PlanPermissionsMap[floorPlan]
+}
+
+func (h *Hub) handleMeetingStart(client *Client, msg IncomingMessage) {
+	if msg.MeetingID == "" {
+		return
+	}
+
+	h.mu.Lock()
+	room, ok := h.rooms[client.room]
+	if !ok {
+		h.mu.Unlock()
+		return
+	}
+
+	// Enforce concurrent meeting limit
+	perms := h.getFloorPerms(client.room)
+	if perms.MaxConcurrentMeetings > 0 && len(room.activeMeetings) >= perms.MaxConcurrentMeetings {
+		h.mu.Unlock()
+		client.send <- MarshalMessage(OutgoingMessage{
+			Type: MsgMeetingError,
+			Text: "Freeプランでは同時に1つのミーティングまでです。",
+		})
+		return
+	}
+
+	// Create meeting
+	room.activeMeetings[msg.MeetingID] = &activeMeeting{
+		ID:           msg.MeetingID,
+		Name:         msg.MeetingName,
+		CreatedBy:    client.info.ID,
+		CreatorName:  client.info.Name,
+		HasPassword:  msg.HasPassword,
+		Participants: map[string]bool{client.info.ID: true},
+		CreatedAt:    time.Now(),
+	}
+	h.mu.Unlock()
+
+	// Broadcast to all
+	h.broadcastToRoom(client.room, OutgoingMessage{
+		Type:        MsgMeetingStarted,
+		MeetingID:   msg.MeetingID,
+		MeetingName: msg.MeetingName,
+		HasPassword: msg.HasPassword,
+		UserID:      client.info.ID,
+		Name:        client.info.Name,
+		Participants: 1,
+	}, "")
+
+	log.Printf("[%s] meeting started: %s by %s", client.room, msg.MeetingName, client.info.Name)
+}
+
+func (h *Hub) handleMeetingJoin(client *Client, msg IncomingMessage) {
+	if msg.MeetingID == "" {
+		return
+	}
+
+	h.mu.Lock()
+	room, ok := h.rooms[client.room]
+	if !ok {
+		h.mu.Unlock()
+		return
+	}
+
+	meeting, ok := room.activeMeetings[msg.MeetingID]
+	if !ok {
+		h.mu.Unlock()
+		return
+	}
+
+	// Enforce participant limit
+	perms := h.getFloorPerms(client.room)
+	if perms.MaxMeetingParticipants > 0 && len(meeting.Participants) >= perms.MaxMeetingParticipants {
+		h.mu.Unlock()
+		client.send <- MarshalMessage(OutgoingMessage{
+			Type:            MsgMeetingError,
+			Text:            "ミーティングの参加上限に達しています。",
+			MeetingID:       msg.MeetingID,
+			MaxParticipants: perms.MaxMeetingParticipants,
+		})
+		return
+	}
+
+	meeting.Participants[client.info.ID] = true
+	count := len(meeting.Participants)
+	h.mu.Unlock()
+
+	h.broadcastToRoom(client.room, OutgoingMessage{
+		Type:         MsgMeetingJoined,
+		MeetingID:    msg.MeetingID,
+		UserID:       client.info.ID,
+		Name:         client.info.Name,
+		Participants: count,
+	}, "")
+
+	log.Printf("[%s] %s joined meeting %s (%d participants)", client.room, client.info.Name, msg.MeetingID, count)
+}
+
+func (h *Hub) handleMeetingLeave(client *Client, msg IncomingMessage) {
+	if msg.MeetingID == "" {
+		return
+	}
+
+	h.mu.Lock()
+	room, ok := h.rooms[client.room]
+	if !ok {
+		h.mu.Unlock()
+		return
+	}
+
+	meeting, ok := room.activeMeetings[msg.MeetingID]
+	if !ok {
+		h.mu.Unlock()
+		return
+	}
+
+	delete(meeting.Participants, client.info.ID)
+	count := len(meeting.Participants)
+
+	// Remove meeting if empty
+	if count == 0 {
+		delete(room.activeMeetings, msg.MeetingID)
+	}
+	h.mu.Unlock()
+
+	h.broadcastToRoom(client.room, OutgoingMessage{
+		Type:         MsgMeetingLeft,
+		MeetingID:    msg.MeetingID,
+		UserID:       client.info.ID,
+		Participants: count,
+	}, "")
+
+	log.Printf("[%s] %s left meeting %s (%d remaining)", client.room, client.info.Name, msg.MeetingID, count)
 }

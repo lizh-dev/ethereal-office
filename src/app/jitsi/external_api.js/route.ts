@@ -1,24 +1,30 @@
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET() {
   const jitsiUrl = process.env.NEXT_PUBLIC_JITSI_URL || 'https://localhost:8443';
+  const isHttps = jitsiUrl.startsWith('https');
   try {
-    const res = await fetch(`${jitsiUrl}/external_api.js`, {
-      // @ts-expect-error Node fetch option to skip TLS verification in dev
-      agent: jitsiUrl.startsWith('https') ? new (await import('https')).Agent({ rejectUnauthorized: false }) : undefined,
+    const mod = isHttps ? await import('node:https') : await import('node:http');
+    const body = await new Promise<string>((resolve, reject) => {
+      const req = mod.get(`${jitsiUrl}/external_api.js`, { rejectUnauthorized: false }, (res) => {
+        let data = '';
+        res.on('data', (chunk: Buffer) => { data += chunk.toString(); });
+        res.on('end', () => resolve(data));
+        res.on('error', reject);
+      });
+      req.on('error', reject);
+      req.setTimeout(10000, () => { req.destroy(new Error('timeout')); });
     });
-    const body = await res.text();
     return new Response(body, {
       headers: { 'Content-Type': 'application/javascript', 'Cache-Control': 'public, max-age=3600' },
     });
-  } catch {
-    // Fallback: fetch from HTTP port
-    try {
-      const res = await fetch('https://localhost:8443/external_api.js');
-      const body = await res.text();
-      return new Response(body, {
-        headers: { 'Content-Type': 'application/javascript', 'Cache-Control': 'public, max-age=3600' },
-      });
-    } catch {
-      return new Response('// Jitsi API not available', { status: 502, headers: { 'Content-Type': 'application/javascript' } });
-    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[jitsi-proxy] Failed:', msg);
+    return new Response(`// Jitsi API error: ${msg}`, {
+      status: 502,
+      headers: { 'Content-Type': 'application/javascript' },
+    });
   }
 }

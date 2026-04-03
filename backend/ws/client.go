@@ -12,7 +12,7 @@ const (
 	writeWait      = 10 * time.Second
 	pongWait       = 20 * time.Second
 	pingPeriod     = (pongWait * 9) / 10
-	maxMessageSize = 16384
+	maxMessageSize = 4 * 1024 * 1024 // 4MB — supports image-containing whiteboard data
 )
 
 type Client struct {

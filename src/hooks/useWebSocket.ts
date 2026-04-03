@@ -24,6 +24,9 @@ interface WsSend {
   callDecline: (targetUserId: string) => void;
   callEnd: (targetUserId: string) => void;
   boardUpdate: (meetingId: string, boardData: string) => void;
+  meetingStart: (meetingId: string, meetingName: string, hasPassword: boolean) => void;
+  meetingJoin: (meetingId: string) => void;
+  meetingLeave: (meetingId: string) => void;
 }
 
 interface UseWebSocketOptions {
@@ -170,6 +173,20 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
               });
             }
           }
+          // Load active meetings
+          if (msg.meetings) {
+            useOfficeStore.getState().setActiveMeetings(
+              msg.meetings.map((m: any) => ({
+                id: m.id,
+                name: m.name,
+                createdBy: m.createdBy,
+                creatorName: m.creatorName,
+                hasPassword: m.hasPassword,
+                participants: (m.participants || []).length,
+                createdAt: m.createdAt,
+              }))
+            );
+          }
           break;
         }
 
@@ -308,9 +325,21 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           });
           break;
 
-        case 'call_accept_received':
+        case 'call_accept_received': {
           useOfficeStore.getState().setCallRequestStatus('accepted');
+          // Open the same deterministic call room as the callee
+          const callTargetId = useOfficeStore.getState().callTargetUserId;
+          if (callTargetId) {
+            const myId = useOfficeStore.getState().currentUser.id;
+            const myName = useOfficeStore.getState().currentUser.name;
+            const floorSlug = window.location.pathname.split('/')[2] || '';
+            const sortedIds = [callTargetId, myId].sort();
+            const callRoomId = `${floorSlug}-call-${sortedIds[0].slice(0, 8)}-${sortedIds[1].slice(0, 8)}`;
+            window.open(`/meeting/${callRoomId}?name=${encodeURIComponent(myName)}`, '_blank');
+          }
+          setTimeout(() => useOfficeStore.getState().clearCallRequest(), 500);
           break;
+        }
 
         case 'call_decline_received':
           useOfficeStore.getState().setCallRequestStatus('declined');
@@ -328,6 +357,34 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
         case 'board_updated':
           // Relay to MeetingBoard via custom window event
           window.dispatchEvent(new MessageEvent('ws-board-update', { data: JSON.stringify(msg) }));
+          break;
+
+        case 'meeting_started':
+          useOfficeStore.getState().addActiveMeeting({
+            id: msg.meetingId,
+            name: msg.meetingName || 'ミーティング',
+            createdBy: msg.userId,
+            creatorName: msg.name || '',
+            hasPassword: msg.hasPassword || false,
+            participants: msg.participants || 1,
+            createdAt: Date.now(),
+          });
+          break;
+
+        case 'meeting_joined':
+          useOfficeStore.getState().updateMeetingParticipants(msg.meetingId, msg.participants || 0);
+          break;
+
+        case 'meeting_left':
+          if (msg.participants === 0) {
+            useOfficeStore.getState().removeMeeting(msg.meetingId);
+          } else {
+            useOfficeStore.getState().updateMeetingParticipants(msg.meetingId, msg.participants || 0);
+          }
+          break;
+
+        case 'meeting_error':
+          addNotification(msg.text || 'ミーティングエラー');
           break;
       }
     };
@@ -461,6 +518,19 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     ),
     boardUpdate: useCallback(
       (meetingId: string, boardData: string) => sendRaw({ type: 'board_update', meetingId, boardData }),
+      [sendRaw],
+    ),
+    meetingStart: useCallback(
+      (meetingId: string, meetingName: string, hasPassword: boolean) =>
+        sendRaw({ type: 'meeting_start', meetingId, meetingName, hasPassword }),
+      [sendRaw],
+    ),
+    meetingJoin: useCallback(
+      (meetingId: string) => sendRaw({ type: 'meeting_join', meetingId }),
+      [sendRaw],
+    ),
+    meetingLeave: useCallback(
+      (meetingId: string) => sendRaw({ type: 'meeting_leave', meetingId }),
       [sendRaw],
     ),
   };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import { useFocusTimer } from '@/hooks/useFocusTimer';
@@ -26,11 +26,33 @@ export default function ActionBar() {
   const [showStamps, setShowStamps] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [meetingName, setMeetingName] = useState('');
+  const [meetingPassword, setMeetingPassword] = useState('');
   const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
   const [showMeeting, setShowMeeting] = useState(false);
   const [showBoard, setShowBoard] = useState(false);
 
   const floorSlug = typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '';
+
+  // Listen for meeting tab close via BroadcastChannel
+  // (Must be before any conditional returns — React hook rules)
+  useEffect(() => {
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('ethereal-meeting');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'leave' && event.data.meetingId) {
+          const mid = event.data.meetingId;
+          if (mid === activeMeetingId) {
+            wsSend.meetingLeave(mid);
+            useOfficeStore.getState().setMyMeetingId(null);
+            setActiveMeetingId(null);
+            setShowMeeting(false);
+          }
+        }
+      };
+    } catch { /* BroadcastChannel not supported */ }
+    return () => { bc?.close(); };
+  }, [activeMeetingId, wsSend]);
 
   if (editorMode === 'edit' || viewMode !== 'floor') return null;
 
@@ -43,16 +65,26 @@ export default function ActionBar() {
 
   const handleStartMeeting = () => {
     const name = meetingName.trim() || 'ミーティング';
+    const pw = meetingPassword.trim();
     const id = `${floorSlug}-${name.replace(/\s+/g, '-')}-${Date.now()}`;
     setActiveMeetingId(id);
     setShowMeeting(true);
     setShowCreateDialog(false);
     setMeetingName('');
+    setMeetingPassword('');
     useOfficeStore.getState().addActivity('meeting', `${currentUser.name} がミーティング「${name}」を開始`);
-    window.open(`/meeting/${id}?name=${encodeURIComponent(currentUser.name)}`, '_blank');
+    useOfficeStore.getState().setMyMeetingId(id);
+    // Broadcast meeting creation to all floor members
+    wsSend.meetingStart(id, name, !!pw);
+    const meetingUrl = `/meeting/${id}?name=${encodeURIComponent(currentUser.name)}${pw ? `&pw=${encodeURIComponent(pw)}` : ''}`;
+    window.open(meetingUrl, '_blank');
   };
 
   const handleLeaveMeeting = () => {
+    if (activeMeetingId) {
+      wsSend.meetingLeave(activeMeetingId);
+    }
+    useOfficeStore.getState().setMyMeetingId(null);
     setActiveMeetingId(null);
     setShowMeeting(false);
   };
@@ -73,21 +105,34 @@ export default function ActionBar() {
 
         {/* Meeting create popover — floats above */}
         {showCreateDialog && !activeMeetingId && (
-          <div className="flex items-center gap-2 justify-center mb-2 px-3 py-2 bg-white rounded-2xl shadow-lg border border-gray-100">
-            <input
-              type="text"
-              value={meetingName}
-              onChange={e => setMeetingName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleStartMeeting()}
-              placeholder="ミーティング名（任意）"
-              autoFocus
-              className="w-[160px] px-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-sky-300"
-            />
-            <button onClick={handleStartMeeting}
-              className="px-3 py-1.5 rounded-lg bg-sky-500 text-white text-xs font-semibold hover:bg-sky-400 transition-colors"
-            >開始</button>
-            <button onClick={() => setShowCreateDialog(false)}
-              className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+          <div className="flex flex-col gap-2 items-center mb-2 px-3 py-2.5 bg-white rounded-2xl shadow-lg border border-gray-100">
+            <div className="flex items-center gap-2 w-full">
+              <input
+                type="text"
+                value={meetingName}
+                onChange={e => setMeetingName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleStartMeeting()}
+                placeholder="ミーティング名（任意）"
+                autoFocus
+                className="w-[160px] px-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-sky-300"
+              />
+              <button onClick={handleStartMeeting}
+                className="px-3 py-1.5 rounded-lg bg-sky-500 text-white text-xs font-semibold hover:bg-sky-400 transition-colors"
+              >開始</button>
+              <button onClick={() => { setShowCreateDialog(false); setMeetingPassword(''); }}
+                className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+            </div>
+            <div className="flex items-center gap-2 w-full">
+              <input
+                type="password"
+                value={meetingPassword}
+                onChange={e => setMeetingPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleStartMeeting()}
+                placeholder="パスワード（任意）"
+                className="w-[160px] px-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-sky-300"
+              />
+              <span className="text-[10px] text-gray-400">空欄なら公開</span>
+            </div>
           </div>
         )}
 

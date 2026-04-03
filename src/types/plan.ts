@@ -10,6 +10,8 @@ export interface PlanPermissions {
   adminFeatures: boolean;
   prioritySupport: boolean;
   maxMembers: number;
+  maxMeetingParticipants: number; // 0 = unlimited
+  maxConcurrentMeetings: number;  // 0 = unlimited
   customBranding: boolean;
   sso: boolean;
   dedicatedEnv: boolean;
@@ -18,15 +20,17 @@ export interface PlanPermissions {
 }
 
 export const DEFAULT_PERMISSIONS: PlanPermissions = {
-  voiceCall: false,
-  videoCall: false,
+  voiceCall: true,
+  videoCall: true,
   screenShare: false,
   fileShare: false,
-  meetingBoard: false,
+  meetingBoard: true,
   floorTemplates: false,
   adminFeatures: false,
   prioritySupport: false,
   maxMembers: 10,
+  maxMeetingParticipants: 4,
+  maxConcurrentMeetings: 1,
   customBranding: false,
   sso: false,
   dedicatedEnv: false,
@@ -34,7 +38,7 @@ export const DEFAULT_PERMISSIONS: PlanPermissions = {
   apiAccess: false,
 };
 
-export type FeatureKey = keyof Omit<PlanPermissions, 'maxMembers'>;
+export type FeatureKey = keyof Omit<PlanPermissions, 'maxMembers' | 'maxMeetingParticipants' | 'maxConcurrentMeetings'>;
 
 export const FEATURE_LABELS: Record<FeatureKey, string> = {
   voiceCall: '音声通話',

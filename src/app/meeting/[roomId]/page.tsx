@@ -34,7 +34,8 @@ export default function MeetingPage() {
       if (!containerRef.current || jitsiRef.current) return;
 
       try {
-        jitsiRef.current = new window.JitsiMeetExternalAPI('localhost:8443', {
+        const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN || 'localhost:8443';
+        jitsiRef.current = new window.JitsiMeetExternalAPI(jitsiDomain, {
           roomName: roomId,
           parentNode: containerRef.current,
           width: '100%',
@@ -81,10 +82,11 @@ export default function MeetingPage() {
           },
         });
 
-        // Set password if provided
-        if (pwFromUrl) {
+        // Set password if provided (from URL or gate screen input)
+        const meetingPassword = pwFromUrl || password;
+        if (meetingPassword) {
           jitsiRef.current.addListener('videoConferenceJoined', () => {
-            jitsiRef.current.executeCommand('password', pwFromUrl);
+            jitsiRef.current.executeCommand('password', meetingPassword);
           });
         }
 
@@ -96,6 +98,11 @@ export default function MeetingPage() {
         });
 
         jitsiRef.current.addListener('readyToClose', () => {
+          try {
+            const bc = new BroadcastChannel('ethereal-meeting');
+            bc.postMessage({ type: 'leave', meetingId: roomId });
+            bc.close();
+          } catch { /* BroadcastChannel not supported */ }
           window.close();
         });
       } catch (err) {
@@ -114,7 +121,18 @@ export default function MeetingPage() {
       document.head.appendChild(script);
     }
 
+    // Notify floor page on tab close
+    const handleBeforeUnload = () => {
+      try {
+        const bc = new BroadcastChannel('ethereal-meeting');
+        bc.postMessage({ type: 'leave', meetingId: roomId });
+        bc.close();
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       if (jitsiRef.current) {
         jitsiRef.current.dispose();
         jitsiRef.current = null;
@@ -166,22 +184,20 @@ export default function MeetingPage() {
             />
           </div>
 
-          {pwFromUrl && (
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#475569', marginBottom: 4 }}>パスワード</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="パスワードを入力"
-                style={{
-                  width: '100%', padding: '10px 12px', borderRadius: 8,
-                  border: '1px solid #e2e8f0', fontSize: 14, outline: 'none',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-          )}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#475569', marginBottom: 4 }}>パスワード（設定されている場合）</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="パスワードを入力"
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 8,
+                border: '1px solid #e2e8f0', fontSize: 14, outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
 
           <button
             onClick={() => {
@@ -204,6 +220,11 @@ export default function MeetingPage() {
   }
 
   const handleLeave = () => {
+    try {
+      const bc = new BroadcastChannel('ethereal-meeting');
+      bc.postMessage({ type: 'leave', meetingId: roomId });
+      bc.close();
+    } catch { /* BroadcastChannel not supported */ }
     if (jitsiRef.current) {
       jitsiRef.current.dispose();
       jitsiRef.current = null;

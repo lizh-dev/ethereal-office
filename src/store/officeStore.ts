@@ -23,6 +23,16 @@ export interface ActivityItem {
   timestamp: number;
 }
 
+export interface ActiveMeetingState {
+  id: string;
+  name: string;
+  createdBy: string;
+  creatorName: string;
+  hasPassword: boolean;
+  participants: number;
+  createdAt: number;
+}
+
 export interface Notification {
   id: string;
   text: string;
@@ -43,15 +53,6 @@ interface OfficeState {
   showAvatarSelector: boolean;
   autoVoiceEnabled: boolean;
   setAutoVoiceEnabled: (enabled: boolean) => void;
-  // Jitsi voice state
-  activeJitsiRoom: string | null;
-  activeJitsiMode: 'zone' | 'call' | null;
-  activeJitsiZoneName: string | null;
-  jitsiParticipantCount: number;
-  jitsiManualJoinTrigger: number;
-  setActiveJitsiRoom: (room: string | null, mode: 'zone' | 'call' | null, zoneName?: string) => void;
-  setJitsiParticipantCount: (count: number) => void;
-  triggerJitsiManualJoin: () => void;
   chatMessages: ChatMessage[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   excalidrawAPI: any | null;
@@ -113,6 +114,15 @@ interface OfficeState {
   setCallRequestStatus: (status: 'idle' | 'pending' | 'accepted' | 'declined') => void;
   setCallTargetUserId: (userId: string | null) => void;
   clearCallRequest: () => void;
+
+  // Active meetings (shared across floor)
+  activeMeetings: ActiveMeetingState[];
+  myMeetingId: string | null;
+  setActiveMeetings: (meetings: ActiveMeetingState[]) => void;
+  addActiveMeeting: (meeting: ActiveMeetingState) => void;
+  updateMeetingParticipants: (meetingId: string, participants: number) => void;
+  removeMeeting: (meetingId: string) => void;
+  setMyMeetingId: (id: string | null) => void;
 
   // Whisper (proximity chat)
   whisperMessages: WhisperMessage[];
@@ -200,14 +210,6 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   showGrid: true,
   showAvatarSelector: false,
   autoVoiceEnabled: typeof window !== 'undefined' ? localStorage.getItem('ethereal-auto-voice') !== 'false' : true,
-  activeJitsiRoom: null,
-  activeJitsiMode: null,
-  activeJitsiZoneName: null,
-  jitsiParticipantCount: 0,
-  jitsiManualJoinTrigger: 0,
-  setActiveJitsiRoom: (room, mode, zoneName) => set({ activeJitsiRoom: room, activeJitsiMode: mode, activeJitsiZoneName: zoneName || null }),
-  setJitsiParticipantCount: (count) => set({ jitsiParticipantCount: count }),
-  triggerJitsiManualJoin: () => set((s) => ({ jitsiManualJoinTrigger: s.jitsiManualJoinTrigger + 1 })),
   chatMessages: [],
   excalidrawAPI: null,
   excalidrawAppState: null,
@@ -292,6 +294,20 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   setCallRequestStatus: (status) => set({ callRequestStatus: status }),
   setCallTargetUserId: (userId) => set({ callTargetUserId: userId }),
   clearCallRequest: () => set({ incomingCallRequest: null, callRequestStatus: 'idle', callTargetUserId: null }),
+
+  // Active meetings
+  activeMeetings: [],
+  myMeetingId: null,
+  setActiveMeetings: (meetings) => set({ activeMeetings: meetings }),
+  addActiveMeeting: (meeting) => set((s) => ({ activeMeetings: [...s.activeMeetings, meeting] })),
+  updateMeetingParticipants: (meetingId, participants) => set((s) => ({
+    activeMeetings: s.activeMeetings.map(m => m.id === meetingId ? { ...m, participants } : m),
+  })),
+  removeMeeting: (meetingId) => set((s) => ({
+    activeMeetings: s.activeMeetings.filter(m => m.id !== meetingId),
+    myMeetingId: s.myMeetingId === meetingId ? null : s.myMeetingId,
+  })),
+  setMyMeetingId: (id) => set({ myMeetingId: id }),
 
   // Whisper (proximity chat)
   whisperMessages: [],

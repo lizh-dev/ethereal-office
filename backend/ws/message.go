@@ -23,8 +23,11 @@ const (
 	MsgCallRequest   = "call_request"
 	MsgCallAccept    = "call_accept"
 	MsgCallDecline   = "call_decline"
-	MsgCallEnd     = "call_end"
-	MsgBoardUpdate = "board_update"
+	MsgCallEnd      = "call_end"
+	MsgBoardUpdate  = "board_update"
+	MsgMeetingStart = "meeting_start"
+	MsgMeetingJoin  = "meeting_join"
+	MsgMeetingLeave = "meeting_leave"
 )
 
 // Server→Client message types
@@ -47,8 +50,13 @@ const (
 	MsgCallRequestReceived   = "call_request_received"
 	MsgCallAcceptReceived    = "call_accept_received"
 	MsgCallDeclineReceived   = "call_decline_received"
-	MsgCallEndReceived = "call_end_received"
-	MsgBoardUpdated    = "board_updated"
+	MsgCallEndReceived  = "call_end_received"
+	MsgBoardUpdated     = "board_updated"
+	MsgMeetingStarted   = "meeting_started"
+	MsgMeetingJoined    = "meeting_joined"
+	MsgMeetingLeft      = "meeting_left"
+	MsgMeetingList      = "meeting_list"
+	MsgMeetingError     = "meeting_error"
 )
 
 type IncomingMessage struct {
@@ -70,6 +78,8 @@ type IncomingMessage struct {
 	Candidate    string  `json:"candidate,omitempty"`
 	BoardData    string  `json:"boardData,omitempty"`
 	MeetingID    string  `json:"meetingId,omitempty"`
+	MeetingName  string  `json:"meetingName,omitempty"`
+	HasPassword  bool    `json:"hasPassword,omitempty"`
 }
 
 type UserInfo struct {
@@ -129,6 +139,22 @@ type OutgoingMessage struct {
 	Permissions   *model.PlanPermissions  `json:"permissions,omitempty"`
 	BoardData     string                  `json:"boardData,omitempty"`
 	MeetingID     string                  `json:"meetingId,omitempty"`
+	MeetingName   string                  `json:"meetingName,omitempty"`
+	HasPassword   bool                    `json:"hasPassword,omitempty"`
+	Meetings      []ActiveMeetingInfo     `json:"meetings,omitempty"`
+	Participants  int                     `json:"participants,omitempty"`
+	MaxParticipants int                   `json:"maxParticipants,omitempty"`
+}
+
+// ActiveMeetingInfo is the wire representation of an active meeting.
+type ActiveMeetingInfo struct {
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	CreatedBy    string   `json:"createdBy"`
+	CreatorName  string   `json:"creatorName"`
+	HasPassword  bool     `json:"hasPassword"`
+	Participants []string `json:"participants"`
+	CreatedAt    int64    `json:"createdAt"`
 }
 
 func MarshalMessage(msg OutgoingMessage) []byte {
