@@ -49,7 +49,7 @@ export default function MeetingPage() {
             defaultLanguage: 'ja',
             toolbarButtons: [
               'microphone', 'camera', 'desktop', 'chat',
-              'raisehand', 'tileview', 'hangup',
+              'raisehand', 'tileview',
             ],
             hideConferenceSubject: true,
             notifications: [],
@@ -62,6 +62,8 @@ export default function MeetingPage() {
             hideAddRoomButton: true,
             breakoutRooms: { hideAddRoomButton: true },
             remoteVideoMenu: { disableKick: true, disableGrantModerator: true },
+            // Hide "End meeting for all" - only show "Leave meeting"
+            buttonsWithNotifyClick: ['hangup'],
           },
           interfaceConfigOverwrite: {
             SHOW_JITSI_WATERMARK: false,
@@ -85,6 +87,13 @@ export default function MeetingPage() {
             jitsiRef.current.executeCommand('password', pwFromUrl);
           });
         }
+
+        // Intercept hangup button click — leave directly without "End meeting for all" dialog
+        jitsiRef.current.addListener('toolbarButtonClicked', (key: string) => {
+          if (key === 'hangup') {
+            jitsiRef.current.executeCommand('hangup');
+          }
+        });
 
         jitsiRef.current.addListener('readyToClose', () => {
           window.close();
@@ -194,9 +203,31 @@ export default function MeetingPage() {
     );
   }
 
+  const handleLeave = () => {
+    if (jitsiRef.current) {
+      jitsiRef.current.dispose();
+      jitsiRef.current = null;
+    }
+    window.close();
+    // If window.close() doesn't work (not opened by script), show message
+    setJoined(false);
+  };
+
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#1a1a2e' }}>
+    <div style={{ width: '100vw', height: '100vh', background: '#1a1a2e', position: 'relative' }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      {/* Custom leave button */}
+      <button
+        onClick={handleLeave}
+        style={{
+          position: 'fixed', bottom: 16, right: 16, zIndex: 100,
+          padding: '8px 20px', borderRadius: 10, border: 'none',
+          background: '#ef4444', color: 'white', fontSize: 13, fontWeight: 600,
+          cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.4)',
+        }}
+      >
+        退出
+      </button>
     </div>
   );
 }

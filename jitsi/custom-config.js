@@ -19,3 +19,4 @@ config.remoteVideoMenu = { disableKick: true, disableGrantModerator: true };
 config.disableModeratorIndicator = true;
 config.enableInsecureRoomNameWarning = false;
 config.doNotStoreRoom = true;
+config.buttonsWithNotifyClick = ['hangup'];
