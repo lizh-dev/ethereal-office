@@ -21,6 +21,7 @@ import VoiceManager from '@/components/voice/VoiceManager';
 // ScreenShareView is now inside VoiceManager
 import ActionBar from '@/components/layout/ActionBar';
 import ActivityFeed from '@/components/views/ActivityFeed';
+import FloorToolbar from '@/components/floor/FloorToolbar';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useIdleDetection } from '@/hooks/useIdleDetection';
@@ -306,20 +307,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
               <>
                 <FloorCanvas floorSlug={slug} savedScene={floorData?.excalidrawScene} />
                 {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} onApplyTemplate={() => setShowTemplatePicker(true)} floorSlug={slug} />}
-                {/* Activity Feed toggle button */}
-                {editorMode !== 'edit' && (
-                  <button
-                    onClick={() => setShowActivityFeed(v => !v)}
-                    className={`fixed top-16 right-3 z-50 w-9 h-9 rounded-xl border flex items-center justify-center transition-all shadow-sm ${
-                      showActivityFeed
-                        ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
-                        : 'bg-white/95 border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                    }`}
-                    title="アクティビティ"
-                  >
-                    <span className="text-sm">&#x1F4CB;</span>
-                  </button>
-                )}
+                {editorMode !== 'edit' && <FloorToolbar />}
                 {/* Activity Feed Panel */}
                 {showActivityFeed && editorMode !== 'edit' && (
                   <div style={{

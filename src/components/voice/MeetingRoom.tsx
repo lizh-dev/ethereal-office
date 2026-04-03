@@ -5,8 +5,6 @@ import { useOfficeStore } from '@/store/officeStore';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import JitsiMeetPanel from './JitsiMeetPanel';
 import MeetingBoard from './MeetingBoard';
-import FeatureGate from '@/components/plan/FeatureGate';
-
 interface Meeting {
   id: string;
   name: string;
@@ -50,7 +48,6 @@ export default function MeetingRoom() {
   };
 
   return (
-    <FeatureGate feature="voiceCall">
       <div style={{ padding: 16 }}>
         {/* Meeting List */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -178,6 +175,5 @@ export default function MeetingRoom() {
           </>
         )}
       </div>
-    </FeatureGate>
   );
 }
