@@ -1,10 +1,11 @@
 module github.com/ethereal-office/backend
 
-go 1.24.0
+go 1.25.0
 
 toolchain go1.25.5
 
 require (
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -17,6 +18,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/stripe/stripe-go/v82 v82.5.1 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	gorm.io/datatypes v1.2.7 // indirect

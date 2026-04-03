@@ -95,6 +95,10 @@ interface OfficeState {
   setFloorPlanInfo: (plan: PlanType, permissions: PlanPermissions) => void;
   canUseFeature: (feature: keyof PlanPermissions) => boolean;
 
+  // Custom branding
+  branding: { logoUrl: string; accentColor: string; floorTitle: string };
+  setBranding: (b: { logoUrl: string; accentColor: string; floorTitle: string }) => void;
+
   // Kick notification overlay
   kickedNotification: boolean;
   setKickedNotification: (v: boolean) => void;
@@ -267,6 +271,10 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
     const perms = get().planPermissions;
     return !!perms[feature];
   },
+
+  // Custom branding
+  branding: { logoUrl: '', accentColor: '#0ea5e9', floorTitle: '' },
+  setBranding: (b) => set({ branding: b }),
 
   // Kick notification overlay
   kickedNotification: false,

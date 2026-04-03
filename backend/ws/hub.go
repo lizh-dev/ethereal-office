@@ -282,6 +282,12 @@ func (h *Hub) getRoomUsers(slug string) []UserInfo {
 	return users
 }
 
+// GetRoomUsers is an exported wrapper around getRoomUsers for use by
+// external packages (e.g. public API handlers).
+func (h *Hub) GetRoomUsers(roomSlug string) []UserInfo {
+	return h.getRoomUsers(roomSlug)
+}
+
 func (h *Hub) broadcastToRoom(slug string, msg OutgoingMessage, excludeID string) {
 	data := MarshalMessage(msg)
 

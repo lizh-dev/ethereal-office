@@ -11,6 +11,7 @@ import AvatarSelector from '@/components/profile/AvatarSelector';
 import NotificationToast from '@/components/layout/NotificationToast';
 
 import JoinDialog from '@/components/JoinDialog';
+import SSOLoginScreen from '@/components/auth/SSOLoginScreen';
 import ChatView from '@/components/views/ChatView';
 import MembersView from '@/components/views/MembersView';
 import MeetingRoom from '@/components/voice/MeetingRoom';
@@ -19,6 +20,7 @@ import DMPanel from '@/components/chat/DMPanel';
 import VoiceManager from '@/components/voice/VoiceManager';
 // ScreenShareView is now inside VoiceManager
 import ActionBar from '@/components/layout/ActionBar';
+import FeatureGate from '@/components/plan/FeatureGate';
 import ActivityFeed from '@/components/views/ActivityFeed';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -26,6 +28,7 @@ import { useIdleDetection } from '@/hooks/useIdleDetection';
 import { WebSocketProvider } from '@/contexts/WebSocketContext';
 
 const SpaceWizard = dynamic(() => import('@/components/editor/SpaceWizard'), { ssr: false });
+const TemplatePicker = dynamic(() => import('@/components/editor/TemplatePicker'), { ssr: false });
 import SetupGuide from '@/components/editor/SetupGuide';
 
 interface FloorData {
@@ -41,6 +44,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   const { slug } = use(params);
   const { editorMode, showAvatarSelector, currentUser, currentSeatId, viewMode, kickedNotification, activeDMUserId } = useOfficeStore();
   const [showSpaceWizard, setShowSpaceWizard] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [showEditHint, setShowEditHint] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
@@ -56,6 +60,9 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   const [notFound, setNotFound] = useState(false);
   const [autoJoinChecked, setAutoJoinChecked] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [ssoRequired, setSsoRequired] = useState(false);
+  const [ssoVerified, setSsoVerified] = useState(false);
+  const [ssoChecked, setSsoChecked] = useState(false);
 
   // Check if already authenticated as owner in this session
   useEffect(() => {
@@ -106,6 +113,43 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
         setNotFound(true);
         setLoading(false);
       });
+  }, [slug]);
+
+  // Fetch branding
+  useEffect(() => {
+    fetch(`/api/floors/${slug}/branding`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          useOfficeStore.getState().setBranding({
+            logoUrl: data.logoUrl || '',
+            accentColor: data.accentColor || '#0ea5e9',
+            floorTitle: data.floorTitle || '',
+          });
+        }
+      })
+      .catch(() => {});
+  }, [slug]);
+
+  // Check SSO config and verify session
+  useEffect(() => {
+    fetch(`/api/floors/${slug}/sso/config`)
+      .then(r => r.json())
+      .then(cfg => {
+        if (cfg.enabled) {
+          setSsoRequired(true);
+          fetch(`/api/floors/${slug}/sso/verify`)
+            .then(r => r.json())
+            .then(v => {
+              if (v.authenticated) setSsoVerified(true);
+              setSsoChecked(true);
+            })
+            .catch(() => setSsoChecked(true));
+        } else {
+          setSsoChecked(true);
+        }
+      })
+      .catch(() => setSsoChecked(true));
   }, [slug]);
 
   // Auto-join on reload if user info exists in localStorage (skip if floor has password)
@@ -216,6 +260,9 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   }
 
   if (!joined) {
+    if (ssoRequired && !ssoVerified && ssoChecked) {
+      return <SSOLoginScreen floorName={floorData?.name || 'フロア'} slug={slug} />;
+    }
     return <JoinDialog floorName={floorData?.name || 'フロア'} floorSlug={slug} hasPassword={floorData?.hasPassword} onJoin={handleJoin} />;
   }
 
@@ -259,7 +306,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
             {viewMode === 'floor' && (
               <>
                 <FloorCanvas floorSlug={slug} savedScene={floorData?.excalidrawScene} />
-                {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} floorSlug={slug} />}
+                {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} onApplyTemplate={() => setShowTemplatePicker(true)} floorSlug={slug} />}
                 {/* Activity Feed toggle button */}
                 {editorMode !== 'edit' && (
                   <button
@@ -312,7 +359,12 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
           />
         )}
         {showAvatarSelector && <AvatarSelector />}
-        {showSpaceWizard && <SpaceWizard onClose={() => setShowSpaceWizard(false)} />}
+        {showSpaceWizard && (
+          <FeatureGate feature="floorTemplates">
+            <SpaceWizard onClose={() => setShowSpaceWizard(false)} />
+          </FeatureGate>
+        )}
+        {showTemplatePicker && <TemplatePicker onClose={() => setShowTemplatePicker(false)} />}
         <NotificationToast />
         {activeDMUserId && <DMPanel />}
         <VoiceManager />

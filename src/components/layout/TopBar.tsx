@@ -23,7 +23,7 @@ const STATUS_OPTIONS: { value: PresenceStatus; label: string; color: string }[] 
 ];
 
 export default function TopBar() {
-  const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, setStatusMessage, statusMessage, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode, floorPlanType } = useOfficeStore();
+  const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, setStatusMessage, statusMessage, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode, floorPlanType, branding } = useOfficeStore();
   const wsSend = useWsSend();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -98,8 +98,12 @@ export default function TopBar() {
     <header className="h-[50px] bg-white border-b border-gray-200 flex items-center justify-between px-3 md:px-4">
       <div className="flex items-center gap-2 md:gap-4">
         <Link href="/" className="text-base font-bold text-gray-800 flex items-center gap-1.5 md:gap-2 hover:text-sky-600 transition-colors" title="ホームに戻る">
-          <span className="text-sky-500">S</span>
-          <span className="hidden md:inline">SmartOffice</span>
+          {branding.logoUrl ? (
+            <img src={branding.logoUrl} alt="Logo" style={{ width: 24, height: 24, objectFit: 'contain', borderRadius: 4 }} />
+          ) : (
+            <span className="text-sky-500">S</span>
+          )}
+          <span className="hidden md:inline">{branding.floorTitle || 'SmartOffice'}</span>
         </Link>
         {editorMode === 'edit' && (
           <span className="text-[11px] px-2 md:px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full font-medium border border-amber-200">
@@ -132,7 +136,10 @@ export default function TopBar() {
             <span className="hidden md:inline">⚡ Pro</span>
           </Link>
         ) : (
-          <span className="text-[11px] px-2 md:px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg font-semibold text-white shadow-sm">
+          <span
+            className={`text-[11px] px-2 md:px-3 py-1.5 rounded-lg font-semibold text-white shadow-sm ${branding.accentColor && branding.accentColor !== '#0ea5e9' ? '' : 'bg-gradient-to-r from-emerald-500 to-teal-500'}`}
+            style={branding.accentColor && branding.accentColor !== '#0ea5e9' ? { background: branding.accentColor } : undefined}
+          >
             <span className="md:hidden">✓</span>
             <span className="hidden md:inline">✓ Pro</span>
           </span>

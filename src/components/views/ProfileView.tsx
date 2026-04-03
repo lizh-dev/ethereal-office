@@ -4,12 +4,15 @@ import { useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
+import BrandingSettings from '@/components/settings/BrandingSettings';
+import APIKeySettings from '@/components/settings/APIKeySettings';
+import SSOSettings from '@/components/settings/SSOSettings';
 
 const AVATAR_STYLES = ['notionists', 'avataaars', 'big-smile', 'adventurer', 'personas', 'lorelei'];
 const AVATAR_SEEDS = ['田中', '佐藤', '鈴木', '高橋', '伊藤', '渡辺', '山本', '中村', '小林', '加藤', '吉田', '山田'];
 
 export default function ProfileView() {
-  const { currentUser, setCurrentUserAvatar } = useOfficeStore();
+  const { currentUser, setCurrentUserAvatar, isFloorOwner } = useOfficeStore();
   const wsSend = useWsSend();
   const [name, setName] = useState(currentUser.name);
   const [avatarStyle, setAvatarStyle] = useState(currentUser.avatarStyle || 'notionists');
@@ -125,6 +128,40 @@ export default function ProfileView() {
           >
             {saved ? '✓ 保存しました' : '保存'}
           </button>
+
+          {/* Branding settings - only visible to floor owner */}
+          {isFloorOwner && (
+            <>
+              <div style={{ borderTop: '1px solid #e5e7eb', margin: '8px 0' }} />
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#374151', marginBottom: 12 }}>
+                  カスタムブランディング
+                </h3>
+                <BrandingSettings />
+              </div>
+            </>
+          )}
+
+          {/* SSO settings - only visible to floor owner */}
+          {isFloorOwner && (
+            <>
+              <div style={{ borderTop: '1px solid #e5e7eb', margin: '8px 0' }} />
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#374151', marginBottom: 12 }}>
+                  SSO (Google認証)
+                </h3>
+                <SSOSettings />
+              </div>
+            </>
+          )}
+
+          {/* API Key settings - only visible to floor owner */}
+          {isFloorOwner && (
+            <>
+              <div style={{ borderTop: '1px solid #e5e7eb', margin: '8px 0' }} />
+              <APIKeySettings />
+            </>
+          )}
         </div>
       </div>
     </div>

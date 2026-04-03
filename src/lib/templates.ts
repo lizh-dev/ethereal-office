@@ -40,6 +40,13 @@ function lounge(x: number, y: number): RawEl[] {
 
 function gid() { return `g-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`; }
 
+export const TEMPLATE_META = [
+  { id: 'default', name: 'スタンダード', desc: 'デスクエリア3x4 + 会議室x2 + ラウンジ', icon: '🏢' },
+  { id: 'small', name: 'スモールチーム', desc: 'ワークスペース2x4 + 会議室', icon: '🪑' },
+  { id: 'meeting', name: 'ミーティング特化', desc: '会議室x3 + フリースペース', icon: '🤝' },
+  { id: 'empty', name: '空のフロア', desc: '白紙からスタート', icon: '📝' },
+];
+
 export function getTemplateElements(templateId: string): RawEl[] {
   switch (templateId) {
     case 'default': {

@@ -16,8 +16,8 @@ func corsMiddleware(next http.Handler) http.Handler {
 		origin := r.Header.Get("Origin")
 		if origin != "" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Edit-Token, X-Owner-Password, X-Admin-Secret, Stripe-Signature")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Edit-Token, X-Owner-Password, X-Admin-Secret, Stripe-Signature, Authorization")
 		}
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -47,6 +47,19 @@ func main() {
 	mux.HandleFunc("POST /api/floors/{slug}/files", handler.UploadFile)
 	mux.HandleFunc("GET /api/floors/{slug}/files/{id}", handler.DownloadFile)
 
+	// SSO
+	mux.HandleFunc("GET /api/floors/{slug}/sso/config", handler.GetSSOConfig)
+	mux.HandleFunc("PUT /api/floors/{slug}/sso/config", handler.RequirePlanFeature("sso", handler.UpdateSSOConfig))
+	mux.HandleFunc("GET /api/floors/{slug}/sso/login", handler.SSOLogin)
+	mux.HandleFunc("GET /api/floors/{slug}/sso/callback", handler.SSOCallback)
+	mux.HandleFunc("GET /api/floors/{slug}/sso/verify", handler.VerifySSOSession)
+
+	// Branding
+	mux.HandleFunc("GET /api/floors/{slug}/branding", handler.GetFloorBranding)
+	mux.HandleFunc("PUT /api/floors/{slug}/branding", handler.RequirePlanFeature("customBranding", handler.UpdateFloorBranding))
+	mux.HandleFunc("POST /api/floors/{slug}/branding/logo", handler.RequirePlanFeature("customBranding", handler.UploadBrandingLogo))
+	mux.HandleFunc("GET /api/floors/{slug}/branding/logo/{file}", handler.ServeBrandingLogo)
+
 	// Auth
 	mux.HandleFunc("POST /api/auth/register", handler.Register)
 	mux.HandleFunc("POST /api/auth/login", handler.Login)
@@ -71,6 +84,16 @@ func main() {
 	mux.HandleFunc("POST /api/payments/verify", handler.VerifyCheckoutSession)
 	mux.HandleFunc("POST /api/payments/webhook", handler.HandleStripeWebhook)
 	mux.HandleFunc("POST /api/payments/portal", handler.CreatePortalSession)
+
+	// API key management (owner auth + Pro plan)
+	mux.HandleFunc("POST /api/floors/{slug}/api-keys", handler.RequirePlanFeature("apiAccess", handler.CreateAPIKey))
+	mux.HandleFunc("GET /api/floors/{slug}/api-keys", handler.RequirePlanFeature("apiAccess", handler.ListAPIKeys))
+	mux.HandleFunc("DELETE /api/floors/{slug}/api-keys/{keyId}", handler.RequirePlanFeature("apiAccess", handler.RevokeAPIKey))
+
+	// Public API (API key auth)
+	mux.HandleFunc("GET /api/v1/floors/{slug}", handler.RequireAPIKeyAuth(handler.PublicGetFloor))
+	mux.HandleFunc("GET /api/v1/floors/{slug}/members", handler.RequireAPIKeyAuth(handler.PublicGetMembers(hub)))
+	mux.HandleFunc("GET /api/v1/floors/{slug}/zones", handler.RequireAPIKeyAuth(handler.PublicGetZones))
 
 	// WebSocket
 	mux.HandleFunc("GET /ws", handler.HandleWebSocket(hub))

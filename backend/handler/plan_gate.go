@@ -37,9 +37,9 @@ func GetFloorPermissions(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// requirePlanFeature returns a middleware that blocks requests if the floor's plan
+// RequirePlanFeature returns a middleware that blocks requests if the floor's plan
 // doesn't include the given feature. The floor slug is read from the URL path.
-func requirePlanFeature(feature string, next http.HandlerFunc) http.HandlerFunc {
+func RequirePlanFeature(feature string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		slug := r.PathValue("slug")
 		if slug == "" {
