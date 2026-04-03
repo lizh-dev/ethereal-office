@@ -324,6 +324,11 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
         case 'call_end_received':
           // Call ended — Jitsi handles disconnect via its own UI
           break;
+
+        case 'board_updated':
+          // Relay to MeetingBoard via custom window event
+          window.dispatchEvent(new MessageEvent('ws-board-update', { data: JSON.stringify(msg) }));
+          break;
       }
     };
 

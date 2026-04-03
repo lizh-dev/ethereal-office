@@ -3,7 +3,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useWsSend } from '@/contexts/WebSocketContext';
-import { useOfficeStore } from '@/store/officeStore';
 
 const Excalidraw = dynamic(
   () => import('@excalidraw/excalidraw').then(mod => mod.Excalidraw),
@@ -20,6 +19,29 @@ export default function MeetingBoard({ meetingId, onClose }: MeetingBoardProps) 
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const isRemoteUpdateRef = useRef(false);
   const lastSentRef = useRef<string>('');
+  const [size, setSize] = useState<'normal' | 'large'>('normal');
+  const [pos, setPos] = useState({ x: 60, y: 80 });
+  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+
+  // Drag handling
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y };
+    const handleMove = (ev: MouseEvent) => {
+      if (!dragRef.current) return;
+      setPos({
+        x: Math.max(0, Math.min(window.innerWidth - 200, dragRef.current.origX + ev.clientX - dragRef.current.startX)),
+        y: Math.max(0, Math.min(window.innerHeight - 100, dragRef.current.origY + ev.clientY - dragRef.current.startY)),
+      });
+    };
+    const handleUp = () => {
+      dragRef.current = null;
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+    };
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+  }, [pos]);
 
   // Listen for remote board updates via WebSocket
   useEffect(() => {
@@ -29,27 +51,21 @@ export default function MeetingBoard({ meetingId, onClose }: MeetingBoardProps) 
         if (msg.type === 'board_updated' && msg.meetingId === meetingId && excalidrawAPI) {
           const data = JSON.parse(msg.boardData);
           isRemoteUpdateRef.current = true;
-          excalidrawAPI.updateScene({
-            elements: data.elements,
-          });
+          excalidrawAPI.updateScene({ elements: data.elements });
           setTimeout(() => { isRemoteUpdateRef.current = false; }, 100);
         }
       } catch { /* ignore */ }
     };
 
-    // We can't directly access the WebSocket from here, so we'll use a global event
     window.addEventListener('ws-board-update', handleWsMessage as any);
     return () => window.removeEventListener('ws-board-update', handleWsMessage as any);
   }, [meetingId, excalidrawAPI]);
 
   const handleChange = useCallback((elements: readonly any[]) => {
     if (isRemoteUpdateRef.current) return;
-
     const data = JSON.stringify({ elements });
     if (data === lastSentRef.current) return;
     lastSentRef.current = data;
-
-    // Send via WebSocket (throttled)
     wsSend.boardUpdate?.(meetingId, data);
   }, [meetingId, wsSend]);
 
@@ -61,57 +77,70 @@ export default function MeetingBoard({ meetingId, onClose }: MeetingBoardProps) 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `meeting-board-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `board-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
+  const w = size === 'large' ? 800 : 520;
+  const h = size === 'large' ? 560 : 380;
+
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 85,
-      background: 'rgba(0,0,0,0.5)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      position: 'fixed', left: pos.x, top: pos.y,
+      width: w, height: h, zIndex: 85,
+      borderRadius: 14, overflow: 'hidden',
+      boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
+      display: 'flex', flexDirection: 'column',
+      background: 'white', border: '1px solid #e2e8f0',
+      transition: 'width 0.2s, height 0.2s',
     }}>
-      <div style={{
-        width: '92vw', maxWidth: 1100, height: '85vh',
-        borderRadius: 16, overflow: 'hidden',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-        display: 'flex', flexDirection: 'column',
-        background: 'white',
-      }}>
-        {/* Header */}
-        <div style={{
+      {/* Header — draggable */}
+      <div
+        onMouseDown={handleMouseDown}
+        style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '8px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 16 }}>&#x1F4DD;</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>共有ボード</span>
-            <span style={{ fontSize: 11, color: '#94a3b8' }}>リアルタイム共同編集</span>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={handleExport} style={{
-              padding: '4px 12px', borderRadius: 6, border: '1px solid #e2e8f0',
-              background: 'white', color: '#475569', fontSize: 11, fontWeight: 500, cursor: 'pointer',
-            }}>
-              エクスポート
-            </button>
-            <button onClick={onClose} style={{
-              padding: '4px 12px', borderRadius: 6, border: 'none',
-              background: '#64748b', color: 'white', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-            }}>
-              閉じる
-            </button>
-          </div>
+          padding: '6px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0',
+          cursor: 'grab', userSelect: 'none', flexShrink: 0,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 14 }}>📝</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#0f172a' }}>ホワイトボード</span>
+          <span style={{ fontSize: 10, color: '#94a3b8' }}>共同編集</span>
         </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button onClick={handleExport} style={{
+            padding: '2px 8px', borderRadius: 6, border: '1px solid #e2e8f0',
+            background: 'white', color: '#475569', fontSize: 10, cursor: 'pointer',
+          }}>
+            保存
+          </button>
+          <button
+            onClick={() => setSize(s => s === 'large' ? 'normal' : 'large')}
+            style={{
+              background: 'transparent', border: 'none', color: '#94a3b8',
+              cursor: 'pointer', fontSize: 12, padding: '2px 4px',
+            }}
+            title={size === 'large' ? '縮小' : '拡大'}
+          >
+            {size === 'large' ? '⊟' : '⊞'}
+          </button>
+          <button onClick={onClose} style={{
+            padding: '2px 8px', borderRadius: 6, border: 'none',
+            background: '#64748b', color: 'white', fontSize: 10, fontWeight: 600, cursor: 'pointer',
+          }}>
+            ✕
+          </button>
+        </div>
+      </div>
 
-        {/* Excalidraw Canvas */}
-        <div style={{ flex: 1 }}>
-          <Excalidraw
-            excalidrawAPI={(api: any) => setExcalidrawAPI(api)}
-            onChange={handleChange}
-          />
-        </div>
+      {/* Excalidraw Canvas */}
+      <div style={{ flex: 1 }}>
+        <Excalidraw
+          excalidrawAPI={(api: any) => setExcalidrawAPI(api)}
+          onChange={handleChange}
+        />
       </div>
     </div>
   );
