@@ -101,15 +101,21 @@ func CheckMeetingRoom(hub *ws.Hub) http.HandlerFunc {
 
 		// Check hub for active quick meeting
 		isActive := false
+		hasPassword := false
 		if floorSlug != "" {
 			isActive = hub.MeetingExists(floorSlug, roomID)
+			if isActive {
+				_, pwReq, _ := hub.VerifyMeetingPassword(floorSlug, roomID, "")
+				hasPassword = pwReq
+			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
-			"exists":    isPermanent || isActive,
-			"permanent": isPermanent,
-			"active":    isActive,
+			"exists":      isPermanent || isActive,
+			"permanent":   isPermanent,
+			"active":      isActive,
+			"hasPassword": hasPassword,
 		})
 	}
 }

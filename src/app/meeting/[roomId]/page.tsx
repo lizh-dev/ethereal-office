@@ -33,6 +33,7 @@ export default function MeetingPage() {
   const [joined, setJoined] = useState(false);
   const [error, setError] = useState('');
   const [roomValid, setRoomValid] = useState<boolean | null>(null); // null = checking
+  const [roomHasPassword, setRoomHasPassword] = useState(false);
 
   // If name is provided in URL, auto-join (coming from the app — room created by this user)
   const autoJoin = !!nameFromUrl;
@@ -171,7 +172,7 @@ export default function MeetingPage() {
     const slugPart = roomId.split('-')[0] || '';
     fetch(`/api/meetings/${encodeURIComponent(roomId)}/check?floor=${encodeURIComponent(slugPart)}`)
       .then(r => r.json())
-      .then(data => setRoomValid(!!data.exists))
+      .then(data => { setRoomValid(!!data.exists); setRoomHasPassword(!!data.hasPassword); })
       .catch(() => setRoomValid(false));
   }, [roomId, autoJoin]);
 
@@ -244,7 +245,7 @@ export default function MeetingPage() {
             />
           </div>
 
-          {!autoJoin && (
+          {roomHasPassword && (
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#475569', marginBottom: 4 }}>パスワード（設定されている場合）</label>
               <input
