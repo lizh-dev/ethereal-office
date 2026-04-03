@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import { useFocusTimer } from '@/hooks/useFocusTimer';
-import JitsiMeetPanel from '@/components/voice/JitsiMeetPanel';
 
 const STAMPS = ['👋', '👍', '👏', '😂', '❤️', '🎉', '🤔', '☕'];
 
@@ -25,30 +24,10 @@ export default function ActionBar() {
   const [meetingName, setMeetingName] = useState('');
   const [meetingPassword, setMeetingPassword] = useState('');
   const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
-  const [showMeeting, setShowMeeting] = useState(false);
 
   const floorSlug = typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '';
 
-  // Listen for meeting tab close via BroadcastChannel
-  // (Must be before any conditional returns — React hook rules)
-  useEffect(() => {
-    let bc: BroadcastChannel | null = null;
-    try {
-      bc = new BroadcastChannel('ethereal-meeting');
-      bc.onmessage = (event) => {
-        if (event.data?.type === 'leave' && event.data.meetingId) {
-          const mid = event.data.meetingId;
-          if (mid === activeMeetingId) {
-            wsSend.meetingLeave(mid);
-            useOfficeStore.getState().setMyMeetingId(null);
-            setActiveMeetingId(null);
-            setShowMeeting(false);
-          }
-        }
-      };
-    } catch { /* BroadcastChannel not supported */ }
-    return () => { bc?.close(); };
-  }, [activeMeetingId, wsSend]);
+  // BroadcastChannel listener is now in the floor page (always-mounted)
 
   if (editorMode === 'edit' || viewMode !== 'floor') return null;
 
@@ -64,7 +43,6 @@ export default function ActionBar() {
     const pw = meetingPassword.trim();
     const id = `${floorSlug}-${name.replace(/\s+/g, '-')}-${Date.now()}`;
     setActiveMeetingId(id);
-    setShowMeeting(true);
     setShowCreateDialog(false);
     setMeetingName('');
     setMeetingPassword('');
@@ -72,7 +50,7 @@ export default function ActionBar() {
     useOfficeStore.getState().setMyMeetingId(id);
     // Broadcast meeting creation to all floor members
     wsSend.meetingStart(id, name, !!pw);
-    const meetingUrl = `/meeting/${id}?name=${encodeURIComponent(currentUser.name)}${pw ? `&pw=${encodeURIComponent(pw)}` : ''}`;
+    const meetingUrl = `/meeting/${id}?name=${encodeURIComponent(currentUser.name)}&uid=${encodeURIComponent(currentUser.id)}${pw ? `&pw=${encodeURIComponent(pw)}` : ''}`;
     window.open(meetingUrl, '_blank');
   };
 
@@ -82,7 +60,7 @@ export default function ActionBar() {
     }
     useOfficeStore.getState().setMyMeetingId(null);
     setActiveMeetingId(null);
-    setShowMeeting(false);
+    ;
   };
 
   return (
@@ -141,7 +119,8 @@ export default function ActionBar() {
             <button
               onClick={() => {
                 if (activeMeetingId) {
-                  setShowMeeting(v => !v);
+                  // Switch to meetings sidebar view
+                  useOfficeStore.getState().setViewMode('meetings');
                 } else {
                   setShowCreateDialog(v => !v);
                 }
@@ -191,16 +170,7 @@ export default function ActionBar() {
         </div>
       </div>
 
-      {/* Jitsi Meeting Panel */}
-      {activeMeetingId && showMeeting && (
-        <JitsiMeetPanel
-          roomName={activeMeetingId}
-          userName={currentUser.name}
-          onClose={handleLeaveMeeting}
-        />
-      )}
-
-      {/* Whiteboard now opens in separate tab — no inline panel */}
+      {/* Meeting status is now shown in the sidebar meeting view — no floating panel */}
     </>
   );
 }

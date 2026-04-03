@@ -95,9 +95,11 @@ func main() {
 	mux.HandleFunc("GET /api/v1/floors/{slug}/members", handler.RequireAPIKeyAuth(handler.PublicGetMembers(hub)))
 	mux.HandleFunc("GET /api/v1/floors/{slug}/zones", handler.RequireAPIKeyAuth(handler.PublicGetZones))
 
-	// Meeting rooms (permanent)
+	// Meeting rooms
 	mux.HandleFunc("/api/floors/{slug}/meeting-rooms", handler.HandleMeetingRooms())
 	mux.HandleFunc("/api/meeting-rooms/", handler.HandleMeetingRoomDelete())
+	mux.HandleFunc("GET /api/meetings/{roomId}/check", handler.CheckMeetingRoom(hub))
+	mux.HandleFunc("POST /api/meetings/leave", handler.HandleMeetingLeave(hub))
 
 	// WebSocket
 	mux.HandleFunc("GET /ws", handler.HandleWebSocket(hub))

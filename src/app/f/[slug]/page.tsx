@@ -172,6 +172,21 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   const { send, connected } = useWebSocket(wsOptions);
   useIdleDetection(send);
 
+  // Listen for meeting tab close via BroadcastChannel (must be in always-mounted component)
+  useEffect(() => {
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('ethereal-meeting');
+      bc.onmessage = (event: MessageEvent) => {
+        if (event.data?.type === 'leave' && event.data.meetingId) {
+          send.meetingLeave(event.data.meetingId);
+          useOfficeStore.getState().setMyMeetingId(null);
+        }
+      };
+    } catch { /* BroadcastChannel not supported */ }
+    return () => { bc?.close(); };
+  }, [send]);
+
   const handleJoin = (name: string, avatarStyle: string, avatarSeed: string) => {
     // Set current user info in store
     useOfficeStore.setState((state) => ({

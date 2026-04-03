@@ -283,6 +283,49 @@ func (h *Hub) HasRecentlyDisconnected(slug, userID string) bool {
 	return time.Since(di.DisconnectAt) < 120*time.Second
 }
 
+// RemoveMeetingParticipant removes a user from a meeting and broadcasts the update.
+// Called from HTTP handler when a meeting tab is closed.
+func (h *Hub) RemoveMeetingParticipant(slug, meetingID, userID string) {
+	h.mu.Lock()
+	room, ok := h.rooms[slug]
+	if !ok {
+		h.mu.Unlock()
+		return
+	}
+	meeting, ok := room.activeMeetings[meetingID]
+	if !ok {
+		h.mu.Unlock()
+		return
+	}
+	delete(meeting.Participants, userID)
+	count := len(meeting.Participants)
+	if count == 0 {
+		delete(room.activeMeetings, meetingID)
+	}
+	h.mu.Unlock()
+
+	h.broadcastToRoom(slug, OutgoingMessage{
+		Type:         MsgMeetingLeft,
+		MeetingID:    meetingID,
+		UserID:       userID,
+		Participants: count,
+	}, "")
+
+	log.Printf("[%s] %s left meeting %s via HTTP (%d remaining)", slug, userID, meetingID, count)
+}
+
+// MeetingExists checks if an active (quick) meeting exists in a room.
+func (h *Hub) MeetingExists(slug, meetingID string) bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	room, ok := h.rooms[slug]
+	if !ok {
+		return false
+	}
+	_, exists := room.activeMeetings[meetingID]
+	return exists
+}
+
 func (h *Hub) getRoomUsers(slug string) []UserInfo {
 	h.mu.RLock()
 	defer h.mu.RUnlock()

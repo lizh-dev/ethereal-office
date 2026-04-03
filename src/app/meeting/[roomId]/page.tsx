@@ -15,17 +15,34 @@ export default function MeetingPage() {
   const roomId = params.roomId as string;
   const nameFromUrl = searchParams.get('name') || '';
   const pwFromUrl = searchParams.get('pw') || '';
+  const uidFromUrl = searchParams.get('uid') || '';
 
   const [userName, setUserName] = useState(nameFromUrl);
   const [password, setPassword] = useState('');
   const [joined, setJoined] = useState(false);
+  const [left, setLeft] = useState(false);
   const [error, setError] = useState('');
+  const [roomValid, setRoomValid] = useState<boolean | null>(null); // null = checking
 
-  // If name is provided in URL, auto-join (coming from the app)
+  // If name is provided in URL, auto-join (coming from the app — room created by this user)
   const autoJoin = !!nameFromUrl;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const jitsiRef = useRef<any>(null);
+  const leftNotifiedRef = useRef(false);
+
+  // Notify backend that user left the meeting (HTTP fallback for BroadcastChannel)
+  const notifyLeave = () => {
+    if (leftNotifiedRef.current) return;
+    leftNotifiedRef.current = true;
+    const floorSlug = roomId.split('-')[0] || '';
+    const body = JSON.stringify({ meetingId: roomId, userId: uidFromUrl || nameFromUrl || 'unknown', floorSlug });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/meetings/leave', new Blob([body], { type: 'application/json' }));
+    } else {
+      fetch('/api/meetings/leave', { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, keepalive: true }).catch(() => {});
+    }
+  };
 
   useEffect(() => {
     if (!joined || !roomId) return;
@@ -98,12 +115,9 @@ export default function MeetingPage() {
         });
 
         jitsiRef.current.addListener('readyToClose', () => {
-          try {
-            const bc = new BroadcastChannel('ethereal-meeting');
-            bc.postMessage({ type: 'leave', meetingId: roomId });
-            bc.close();
-          } catch { /* BroadcastChannel not supported */ }
+          notifyLeave();
           window.close();
+          setLeft(true);
         });
       } catch (err) {
         setError('ミーティングの接続に失敗しました。');
@@ -123,11 +137,7 @@ export default function MeetingPage() {
 
     // Notify floor page on tab close
     const handleBeforeUnload = () => {
-      try {
-        const bc = new BroadcastChannel('ethereal-meeting');
-        bc.postMessage({ type: 'leave', meetingId: roomId });
-        bc.close();
-      } catch { /* ignore */ }
+      notifyLeave();
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
 
@@ -140,12 +150,27 @@ export default function MeetingPage() {
     };
   }, [joined, roomId, userName, pwFromUrl]);
 
+  // Validate room exists (active or permanent) before allowing join
+  useEffect(() => {
+    if (autoJoin) {
+      // Room was just created by this user via the app — skip validation
+      setRoomValid(true);
+      return;
+    }
+    // Extract floor slug from roomId (format: {slug}-{name}-{timestamp})
+    const slugPart = roomId.split('-')[0] || '';
+    fetch(`/api/meetings/${encodeURIComponent(roomId)}/check?floor=${encodeURIComponent(slugPart)}`)
+      .then(r => r.json())
+      .then(data => setRoomValid(!!data.exists))
+      .catch(() => setRoomValid(false));
+  }, [roomId, autoJoin]);
+
   // Auto-join if name is in URL (coming from the app)
   useEffect(() => {
-    if (autoJoin && userName) {
+    if (autoJoin && userName && roomValid) {
       setJoined(true);
     }
-  }, [autoJoin, userName]);
+  }, [autoJoin, userName, roomValid]);
 
   if (error) {
     return (
@@ -155,6 +180,63 @@ export default function MeetingPage() {
           <button onClick={() => window.close()} style={{ marginTop: 16, padding: '8px 20px', borderRadius: 8, border: 'none', background: '#0ea5e9', color: 'white', fontSize: 14, cursor: 'pointer' }}>
             閉じる
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Room validation: checking or not found
+  if (roomValid === null) {
+    return (
+      <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: '#e2e8f0', fontFamily: 'sans-serif' }}>
+        <p style={{ fontSize: 14 }}>ミーティングルームを確認中...</p>
+      </div>
+    );
+  }
+  if (roomValid === false) {
+    return (
+      <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', fontFamily: 'sans-serif' }}>
+        <div style={{ background: 'white', borderRadius: 16, padding: 32, width: 340, boxShadow: '0 8px 32px rgba(0,0,0,0.3)', textAlign: 'center' }}>
+          <p style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>ミーティングが見つかりません</p>
+          <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 20px' }}>このミーティングルームは存在しないか、既に終了しています。</p>
+          <button onClick={() => { window.close(); window.history.back(); }} style={{
+            width: '100%', padding: '10px 0', borderRadius: 8, border: 'none',
+            background: '#0ea5e9', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+          }}>
+            戻る
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Left screen: show after leaving a meeting
+  if (left) {
+    return (
+      <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', fontFamily: 'sans-serif' }}>
+        <div style={{ background: 'white', borderRadius: 16, padding: 32, width: 340, boxShadow: '0 8px 32px rgba(0,0,0,0.3)', textAlign: 'center' }}>
+          <p style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', margin: '0 0 8px' }}>ミーティングを退出しました</p>
+          <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 20px' }}>タブを閉じるか、再入室できます</p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => { leftNotifiedRef.current = false; setLeft(false); setJoined(true); }}
+              style={{
+                flex: 1, padding: '10px 0', borderRadius: 8, border: '1px solid #e2e8f0',
+                background: 'white', color: '#0f172a', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              再入室
+            </button>
+            <button
+              onClick={() => { window.close(); window.history.back(); }}
+              style={{
+                flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
+                background: '#0ea5e9', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              閉じる
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -184,20 +266,22 @@ export default function MeetingPage() {
             />
           </div>
 
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#475569', marginBottom: 4 }}>パスワード（設定されている場合）</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="パスワードを入力"
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: 8,
-                border: '1px solid #e2e8f0', fontSize: 14, outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
+          {pwFromUrl && (
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#475569', marginBottom: 4 }}>パスワード</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="パスワードを入力"
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 8,
+                  border: '1px solid #e2e8f0', fontSize: 14, outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+          )}
 
           <button
             onClick={() => {
@@ -220,18 +304,13 @@ export default function MeetingPage() {
   }
 
   const handleLeave = () => {
-    try {
-      const bc = new BroadcastChannel('ethereal-meeting');
-      bc.postMessage({ type: 'leave', meetingId: roomId });
-      bc.close();
-    } catch { /* BroadcastChannel not supported */ }
+    notifyLeave();
     if (jitsiRef.current) {
       jitsiRef.current.dispose();
       jitsiRef.current = null;
     }
     window.close();
-    // If window.close() doesn't work (not opened by script), show message
-    setJoined(false);
+    setLeft(true);
   };
 
   return (

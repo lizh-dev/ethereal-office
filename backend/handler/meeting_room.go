@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereal-office/backend/db"
 	"github.com/ethereal-office/backend/model"
+	"github.com/ethereal-office/backend/ws"
 )
 
 type createRoomRequest struct {
@@ -72,6 +73,65 @@ func HandleMeetingRooms() http.HandlerFunc {
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
+	}
+}
+
+// CheckMeetingRoom verifies if a meeting room exists (active or permanent).
+func CheckMeetingRoom(hub *ws.Hub) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		roomID := r.PathValue("roomId")
+		if roomID == "" {
+			http.Error(w, "missing roomId", http.StatusBadRequest)
+			return
+		}
+		floorSlug := r.URL.Query().Get("floor")
+
+		// Check DB for permanent room
+		isPermanent := false
+		if db.DB != nil {
+			var room model.MeetingRoom
+			if err := db.DB.Where("room_id = ?", roomID).First(&room).Error; err == nil {
+				isPermanent = true
+				if floorSlug == "" {
+					floorSlug = room.FloorSlug
+				}
+			}
+		}
+
+		// Check hub for active quick meeting
+		isActive := false
+		if floorSlug != "" {
+			isActive = hub.MeetingExists(floorSlug, roomID)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"exists":    isPermanent || isActive,
+			"permanent": isPermanent,
+			"active":    isActive,
+		})
+	}
+}
+
+// HandleMeetingLeave handles POST to notify that a user left a meeting.
+// This is called from the meeting page (which has no WS connection) via HTTP.
+func HandleMeetingLeave(hub *ws.Hub) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var body struct {
+			MeetingID string `json:"meetingId"`
+			UserID    string `json:"userId"`
+			FloorSlug string `json:"floorSlug"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.MeetingID == "" || body.FloorSlug == "" {
+			http.Error(w, "invalid body", http.StatusBadRequest)
+			return
+		}
+		hub.RemoveMeetingParticipant(body.FloorSlug, body.MeetingID, body.UserID)
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
