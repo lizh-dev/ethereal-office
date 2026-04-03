@@ -35,6 +35,9 @@ services:
       STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
       STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
       STRIPE_PRO_PRICE_ID: "${STRIPE_PRO_PRICE_ID:-}"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
+      APP_BASE_URL: "${APP_BASE_URL:-http://localhost:3000}"
     depends_on:
       db:
         condition: service_healthy
