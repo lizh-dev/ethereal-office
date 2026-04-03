@@ -16,6 +16,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - default
 
   api:
     build:
@@ -23,14 +25,119 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
+    networks:
+      - default
     environment:
       DATABASE_URL: "host=db user=ethereal password=ethereal_dev dbname=ethereal_office port=5432 sslmode=disable"
       WS_ALLOWED_ORIGINS: "http://localhost:3000"
       PORT: "8080"
+      ADMIN_SECRET: "${ADMIN_SECRET:-admin-dev-secret}"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
+      STRIPE_PRO_PRICE_ID: "${STRIPE_PRO_PRICE_ID:-}"
     depends_on:
       db:
         condition: service_healthy
 
+  # Jitsi Meet — ビデオ会議サーバー
+  jitsi-web:
+    image: jitsi/web:stable-9823
+    ports:
+      - "8443:443"
+      - "8880:80"
+    environment:
+      ENABLE_AUTH: "0"
+      ENABLE_GUESTS: "1"
+      ENABLE_XMPP_WEBSOCKET: "1"
+      ENABLE_HTTP_REDIRECT: "0"
+      PUBLIC_URL: "https://localhost:8443"
+      XMPP_DOMAIN: meet.jitsi
+      XMPP_AUTH_DOMAIN: auth.meet.jitsi
+      XMPP_BOSH_URL_BASE: http://jitsi-prosody:5280
+      XMPP_MUC_DOMAIN: muc.meet.jitsi
+      XMPP_INTERNAL_MUC_DOMAIN: internal-muc.meet.jitsi
+      XMPP_SERVER: jitsi-prosody
+      JICOFO_AUTH_USER: focus
+      DEFAULT_LANGUAGE: ja
+      TZ: Asia/Tokyo
+    volumes:
+      - jitsi-web-config:/config
+      - jitsi-web-certs:/etc/jitsi/meet/certs
+      - ./jitsi-cert.pem:/config/keys/cert.crt:ro
+      - ./jitsi-key.pem:/config/keys/cert.key:ro
+      - ./jitsi/custom-config.js:/config/custom-config.js:ro
+      - ./jitsi/custom-interface_config.js:/config/custom-interface_config.js:ro
+    depends_on:
+      - jitsi-prosody
+    networks:
+      - jitsi-meet
+
+  jitsi-prosody:
+    image: jitsi/prosody:stable-9823
+    environment:
+      XMPP_DOMAIN: meet.jitsi
+      XMPP_AUTH_DOMAIN: auth.meet.jitsi
+      XMPP_MUC_DOMAIN: muc.meet.jitsi
+      XMPP_INTERNAL_MUC_DOMAIN: internal-muc.meet.jitsi
+      JICOFO_AUTH_USER: focus
+      JICOFO_AUTH_PASSWORD: jitsi-jicofo-secret
+      JVB_AUTH_USER: jvb
+      JVB_AUTH_PASSWORD: jitsi-jvb-secret
+      TZ: Asia/Tokyo
+    volumes:
+      - jitsi-prosody-config:/config
+      - jitsi-prosody-plugins:/prosody-plugins-custom
+    networks:
+      - jitsi-meet
+
+  jitsi-jicofo:
+    image: jitsi/jicofo:stable-9823
+    environment:
+      XMPP_SERVER: jitsi-prosody
+      XMPP_DOMAIN: meet.jitsi
+      XMPP_AUTH_DOMAIN: auth.meet.jitsi
+      XMPP_MUC_DOMAIN: muc.meet.jitsi
+      XMPP_INTERNAL_MUC_DOMAIN: internal-muc.meet.jitsi
+      JICOFO_AUTH_USER: focus
+      JICOFO_AUTH_PASSWORD: jitsi-jicofo-secret
+      TZ: Asia/Tokyo
+    volumes:
+      - jitsi-jicofo-config:/config
+    depends_on:
+      - jitsi-prosody
+    networks:
+      - jitsi-meet
+
+  jitsi-jvb:
+    image: jitsi/jvb:stable-9823
+    ports:
+      - "10000:10000/udp"
+    environment:
+      XMPP_SERVER: jitsi-prosody
+      XMPP_AUTH_DOMAIN: auth.meet.jitsi
+      XMPP_INTERNAL_MUC_DOMAIN: internal-muc.meet.jitsi
+      JVB_AUTH_USER: jvb
+      JVB_AUTH_PASSWORD: jitsi-jvb-secret
+      JVB_PORT: "10000"
+      JVB_STUN_SERVERS: stun:stun.l.google.com:19302
+      PUBLIC_URL: "https://localhost:8443"
+      TZ: Asia/Tokyo
+    volumes:
+      - jitsi-jvb-config:/config
+    depends_on:
+      - jitsi-prosody
+    networks:
+      - jitsi-meet
+
 volumes:
   ethereal-db:
     name: ethereal-office-db
+  jitsi-web-config:
+  jitsi-web-certs:
+  jitsi-prosody-config:
+  jitsi-prosody-plugins:
+  jitsi-jicofo-config:
+  jitsi-jvb-config:
+
+networks:
+  jitsi-meet:

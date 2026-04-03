@@ -13,6 +13,7 @@ import NotificationToast from '@/components/layout/NotificationToast';
 import JoinDialog from '@/components/JoinDialog';
 import ChatView from '@/components/views/ChatView';
 import MembersView from '@/components/views/MembersView';
+import MeetingRoom from '@/components/voice/MeetingRoom';
 import ProfileView from '@/components/views/ProfileView';
 import DMPanel from '@/components/chat/DMPanel';
 import VoiceManager from '@/components/voice/VoiceManager';
@@ -287,7 +288,14 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
                 )}
               </>
             )}
-            {viewMode === 'meetings' && <MembersView />}
+            {viewMode === 'meetings' && (
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'auto' }}>
+                <MeetingRoom />
+                <div style={{ borderTop: '1px solid #e2e8f0' }}>
+                  <MembersView />
+                </div>
+              </div>
+            )}
             {viewMode === 'chat' && <ChatView />}
             {viewMode === 'profile' && <ProfileView />}
           </div>

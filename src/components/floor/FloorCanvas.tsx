@@ -32,16 +32,22 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 // Convert Excalidraw scene coords to screen pixel coords (relative to container)
-// Note: appState.offsetLeft/offsetTop are viewport offsets, NOT needed here
-// because the overlay div is positioned relative to the same container.
-function sceneToScreen(sceneX: number, sceneY: number, appState: any): { x: number; y: number } {
+// Uses containerRect to account for the delta between the Excalidraw canvas offset
+// and the overlay container origin.
+function sceneToScreen(sceneX: number, sceneY: number, appState: any, containerRect?: DOMRect): { x: number; y: number } {
   if (!appState) return { x: sceneX, y: sceneY };
   const zoom = appState.zoom?.value || 1;
   const scrollX = appState.scrollX || 0;
   const scrollY = appState.scrollY || 0;
+  const offsetLeft = appState.offsetLeft || 0;
+  const offsetTop = appState.offsetTop || 0;
+  // offsetLeft/offsetTop are viewport coords of the Excalidraw canvas.
+  // Subtract container's viewport position to get the delta.
+  const dx = containerRect ? offsetLeft - containerRect.left : 0;
+  const dy = containerRect ? offsetTop - containerRect.top : 0;
   return {
-    x: (sceneX + scrollX) * zoom,
-    y: (sceneY + scrollY) * zoom,
+    x: (sceneX + scrollX) * zoom + dx,
+    y: (sceneY + scrollY) * zoom + dy,
   };
 }
 
@@ -239,7 +245,9 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
 
   const searchQuery = useOfficeStore((s) => s.searchQuery);
   const reactions = useOfficeStore((s) => s.reactions);
-  const allUsers = [...users, currentUser];
+  const allUsers = users.some((u) => u.id === currentUser.id)
+    ? users
+    : [...users, currentUser];
 
   // Check if there are nearby users for whisper input visibility
   const hasNearbyUsers = useMemo(() => {
@@ -359,13 +367,15 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
       )}
 
       {/* Avatar overlay in view mode */}
-      {isViewMode && appState && (
+      {isViewMode && appState && (() => {
+        const cRect = ref.current?.getBoundingClientRect();
+        return (
         <div
           style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}
         >
           {/* Proximity voice range indicator (shown when not seated and auto-voice enabled) */}
           {!currentSeatId && autoVoiceEnabled && (() => {
-            const pos = sceneToScreen(currentUser.position.x, currentUser.position.y, appState);
+            const pos = sceneToScreen(currentUser.position.x, currentUser.position.y, appState, cRect);
             const zoom = appState.zoom?.value || 1;
             const radius = 180 * zoom; // PROXIMITY_CONNECT_DIST
             return (
@@ -389,8 +399,8 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             {allUsers.map((a, i) => allUsers.slice(i + 1).map(b => {
               const dist = Math.hypot(a.position.x - b.position.x, a.position.y - b.position.y);
               if (dist > PROXIMITY_DIST || a.status === 'offline' || b.status === 'offline') return null;
-              const posA = sceneToScreen(a.position.x, a.position.y, appState);
-              const posB = sceneToScreen(b.position.x, b.position.y, appState);
+              const posA = sceneToScreen(a.position.x, a.position.y, appState, cRect);
+              const posB = sceneToScreen(b.position.x, b.position.y, appState, cRect);
               const alpha = (1 - dist / PROXIMITY_DIST) * 0.4;
               return (
                 <line key={`${a.id}-${b.id}`}
@@ -402,7 +412,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
           </svg>
 
           {allUsers.map((user) => {
-            const pos = sceneToScreen(user.position.x, user.position.y, appState);
+            const pos = sceneToScreen(user.position.x, user.position.y, appState, cRect);
             // Skip users outside viewport
             const vw = ref.current?.clientWidth || 2000;
             const vh = ref.current?.clientHeight || 2000;
@@ -691,7 +701,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
           {zones.flatMap(z => z.seats).map((seat: any, i) => {
             if (seat.occupied && seat.occupiedBy !== currentUser.id) return null;
             const zoom = appState.zoom?.value || 1;
-            const pos = sceneToScreen(seat.x, seat.y, appState);
+            const pos = sceneToScreen(seat.x, seat.y, appState, cRect);
             // Skip seats outside viewport
             if (pos.x < -50 || pos.x > (ref.current?.clientWidth || 2000) + 50 ||
                 pos.y < -50 || pos.y > (ref.current?.clientHeight || 2000) + 50) return null;
@@ -744,7 +754,8 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             );
           })}
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

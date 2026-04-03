@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import { useFocusTimer } from '@/hooks/useFocusTimer';
+import ProBadge from '@/components/plan/ProBadge';
 
 const STAMPS = ['👋', '👍', '👏', '😂', '❤️', '🎉', '🤔', '☕'];
 
@@ -18,6 +19,8 @@ export default function ActionBar() {
   const setAutoVoiceEnabled = useOfficeStore((s) => s.setAutoVoiceEnabled);
   const editorMode = useOfficeStore((s) => s.editorMode);
   const viewMode = useOfficeStore((s) => s.viewMode);
+  const canVoiceCall = useOfficeStore((s) => s.planPermissions.voiceCall);
+  const activeJitsiRoom = useOfficeStore((s) => s.activeJitsiRoom);
   const wsSend = useWsSend();
 
   const [chatInput, setChatInput] = useState('');
@@ -84,24 +87,40 @@ export default function ActionBar() {
         <div className="w-px h-5 bg-gray-200 flex-shrink-0" />
 
         {/* Action icons */}
-        <button
-          onClick={() => setAutoVoiceEnabled(!autoVoiceEnabled)}
-          className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-            autoVoiceEnabled ? 'text-indigo-500 bg-indigo-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-          }`}
-          title={autoVoiceEnabled ? '自動通話ON' : '自動通話OFF'}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            {autoVoiceEnabled ? (
-              <>
-                <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" fill="currentColor" />
-                <path d="M19 10v2a7 7 0 01-14 0v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </>
-            ) : (
+        {canVoiceCall ? (
+          <button
+            onClick={() => setAutoVoiceEnabled(!autoVoiceEnabled)}
+            className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all relative ${
+              activeJitsiRoom ? 'text-green-500 bg-green-50' : autoVoiceEnabled ? 'text-indigo-500 bg-indigo-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+            }`}
+            title={activeJitsiRoom ? '通話中' : autoVoiceEnabled ? '自動通話ON' : '自動通話OFF'}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              {autoVoiceEnabled ? (
+                <>
+                  <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" fill="currentColor" />
+                  <path d="M19 10v2a7 7 0 01-14 0v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </>
+              ) : (
+                <path d="M1 1l22 22M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6M17 16.95A7 7 0 015 12v-2m14 0v2c0 .76-.12 1.5-.35 2.18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              )}
+            </svg>
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              const slug = window.location.pathname.split('/')[2];
+              window.open(`/f/${slug}/upgrade`, '_blank');
+            }}
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all text-gray-300 hover:text-gray-400 relative"
+            title="音声通話（Proプラン）"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
               <path d="M1 1l22 22M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6M17 16.95A7 7 0 015 12v-2m14 0v2c0 .76-.12 1.5-.35 2.18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            )}
-          </svg>
-        </button>
+            </svg>
+            <ProBadge />
+          </button>
+        )}
 
         {focusTimer.isActive ? (
           <button onClick={() => focusTimer.stopFocus()}

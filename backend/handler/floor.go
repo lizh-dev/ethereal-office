@@ -41,6 +41,10 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
 }
 
+func decodeJSON(r *http.Request, v any) error {
+	return json.NewDecoder(r.Body).Decode(v)
+}
+
 // POST /api/floors
 func CreateFloor(w http.ResponseWriter, r *http.Request) {
 	var req CreateFloorRequest

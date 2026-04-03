@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { FloorPlan, User, ViewMode, EditorMode, Camera, Furniture, Room, FurnitureType, RoomType, Zone, UserAction, PresenceStatus, DMMessage } from '@/types';
+import type { PlanType, PlanPermissions } from '@/types/plan';
+import { DEFAULT_PERMISSIONS } from '@/types/plan';
 
 interface ChatMessage {
   userId: string;
@@ -41,8 +43,13 @@ interface OfficeState {
   showAvatarSelector: boolean;
   autoVoiceEnabled: boolean;
   setAutoVoiceEnabled: (enabled: boolean) => void;
-  screenShareUserId: string | null;
-  screenShareUserName: string | null;
+  // Jitsi voice state
+  activeJitsiRoom: string | null;
+  activeJitsiMode: 'zone' | 'call' | null;
+  activeJitsiZoneName: string | null;
+  jitsiParticipantCount: number;
+  setActiveJitsiRoom: (room: string | null, mode: 'zone' | 'call' | null, zoneName?: string) => void;
+  setJitsiParticipantCount: (count: number) => void;
   chatMessages: ChatMessage[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   excalidrawAPI: any | null;
@@ -81,6 +88,12 @@ interface OfficeState {
   // Permissions
   isFloorOwner: boolean;
   setIsFloorOwner: (v: boolean) => void;
+
+  // Plan-based RBAC
+  floorPlanType: PlanType;
+  planPermissions: PlanPermissions;
+  setFloorPlanInfo: (plan: PlanType, permissions: PlanPermissions) => void;
+  canUseFeature: (feature: keyof PlanPermissions) => boolean;
 
   // Kick notification overlay
   kickedNotification: boolean;
@@ -181,8 +194,12 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   showGrid: true,
   showAvatarSelector: false,
   autoVoiceEnabled: typeof window !== 'undefined' ? localStorage.getItem('ethereal-auto-voice') !== 'false' : true,
-  screenShareUserId: null,
-  screenShareUserName: null,
+  activeJitsiRoom: null,
+  activeJitsiMode: null,
+  activeJitsiZoneName: null,
+  jitsiParticipantCount: 0,
+  setActiveJitsiRoom: (room, mode, zoneName) => set({ activeJitsiRoom: room, activeJitsiMode: mode, activeJitsiZoneName: zoneName || null }),
+  setJitsiParticipantCount: (count) => set({ jitsiParticipantCount: count }),
   chatMessages: [],
   excalidrawAPI: null,
   excalidrawAppState: null,
@@ -241,6 +258,15 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   // Permissions
   isFloorOwner: false,
   setIsFloorOwner: (v) => set({ isFloorOwner: v }),
+
+  // Plan-based RBAC
+  floorPlanType: 'free' as PlanType,
+  planPermissions: DEFAULT_PERMISSIONS,
+  setFloorPlanInfo: (plan, permissions) => set({ floorPlanType: plan, planPermissions: permissions }),
+  canUseFeature: (feature) => {
+    const perms = get().planPermissions;
+    return !!perms[feature];
+  },
 
   // Kick notification overlay
   kickedNotification: false,

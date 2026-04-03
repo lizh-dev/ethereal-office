@@ -96,6 +96,32 @@ func (h *Hub) addClient(client *Client) {
 	room := h.getOrCreateRoom(client.room)
 
 	h.mu.Lock()
+
+	// Enforce max members per plan
+	floorPlan := model.PlanFree
+	var floorRecord model.Floor
+	if db.DB != nil {
+		if err := db.DB.Where("slug = ?", client.room).First(&floorRecord).Error; err == nil {
+			var sub model.Subscription
+			if err := db.DB.Where("floor_id = ? AND status IN ?", floorRecord.ID, []string{"active", "trialing"}).First(&sub).Error; err == nil {
+				floorPlan = sub.Plan
+			}
+		}
+	}
+	perms := model.PlanPermissionsMap[floorPlan]
+	if perms.MaxMembers > 0 && len(room.clients) >= perms.MaxMembers {
+		h.mu.Unlock()
+		log.Printf("[%s] rejected %s: room full (%d/%d, plan=%s)", client.room, client.info.Name, len(room.clients), perms.MaxMembers, floorPlan)
+		reject := OutgoingMessage{
+			Type:   "error",
+			Status: "room_full",
+			Text:   "このフロアの同時接続数上限に達しました。Proプランにアップグレードすると最大50人まで接続できます。",
+		}
+		client.send <- MarshalMessage(reject)
+		go func() { client.conn.Close() }()
+		return
+	}
+
 	// Check if this user was recently disconnected — restore position only, NOT seat
 	if di, ok := room.recentlyDisconnected[client.info.ID]; ok {
 		if time.Since(di.DisconnectAt) < 120*time.Second {
@@ -155,7 +181,9 @@ func (h *Hub) addClient(client *Client) {
 		}
 	}
 
-	// Send welcome with existing users, chat history, and DM history from DB
+	// floorPlan and perms already resolved at top of addClient
+
+	// Send welcome with existing users, chat history, DM history, and plan permissions
 	users := h.getRoomUsers(client.room)
 	welcome := OutgoingMessage{
 		Type:        MsgWelcome,
@@ -166,6 +194,8 @@ func (h *Hub) addClient(client *Client) {
 		SeatID:      client.info.SeatID,
 		X:           client.info.X,
 		Y:           client.info.Y,
+		Plan:        string(floorPlan),
+		Permissions: &perms,
 	}
 	client.send <- MarshalMessage(welcome)
 
@@ -432,84 +462,6 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 			AvatarSeed:  client.info.AvatarSeed,
 		}, client.info.ID)
 
-	case MsgRTCOffer:
-		if msg.TargetUserID == "" || msg.SDP == "" {
-			return
-		}
-		h.mu.RLock()
-		room := h.rooms[client.room]
-		h.mu.RUnlock()
-		if room == nil {
-			return
-		}
-		h.mu.RLock()
-		target, ok := room.clients[msg.TargetUserID]
-		h.mu.RUnlock()
-		if !ok {
-			return
-		}
-		data := MarshalMessage(OutgoingMessage{
-			Type:   MsgRTCOfferRelay,
-			UserID: client.info.ID,
-			SDP:    msg.SDP,
-		})
-		select {
-		case target.send <- data:
-		default:
-		}
-
-	case MsgRTCAnswer:
-		if msg.TargetUserID == "" || msg.SDP == "" {
-			return
-		}
-		h.mu.RLock()
-		room := h.rooms[client.room]
-		h.mu.RUnlock()
-		if room == nil {
-			return
-		}
-		h.mu.RLock()
-		target, ok := room.clients[msg.TargetUserID]
-		h.mu.RUnlock()
-		if !ok {
-			return
-		}
-		data := MarshalMessage(OutgoingMessage{
-			Type:   MsgRTCAnswerRelay,
-			UserID: client.info.ID,
-			SDP:    msg.SDP,
-		})
-		select {
-		case target.send <- data:
-		default:
-		}
-
-	case MsgRTCCandidate:
-		if msg.TargetUserID == "" || msg.Candidate == "" {
-			return
-		}
-		h.mu.RLock()
-		room := h.rooms[client.room]
-		h.mu.RUnlock()
-		if room == nil {
-			return
-		}
-		h.mu.RLock()
-		target, ok := room.clients[msg.TargetUserID]
-		h.mu.RUnlock()
-		if !ok {
-			return
-		}
-		data := MarshalMessage(OutgoingMessage{
-			Type:      MsgRTCCandidateRelay,
-			UserID:    client.info.ID,
-			Candidate: msg.Candidate,
-		})
-		select {
-		case target.send <- data:
-		default:
-		}
-
 	case MsgDM:
 		if msg.TargetUserID == "" || msg.Text == "" {
 			return
@@ -669,20 +621,14 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 		default:
 		}
 
-	case MsgScreenShareStart:
+	case MsgBoardUpdate:
+		// Relay board data to all users in the same room (except sender)
 		h.broadcastToRoom(client.room, OutgoingMessage{
-			Type:   MsgScreenShareStartBroadcast,
-			UserID: client.info.ID,
-			Name:   client.info.Name,
-		}, "")
-		log.Printf("[%s] %s started screen sharing", client.room, client.info.Name)
-
-	case MsgScreenShareStop:
-		h.broadcastToRoom(client.room, OutgoingMessage{
-			Type:   MsgScreenShareStopBroadcast,
-			UserID: client.info.ID,
-		}, "")
-		log.Printf("[%s] %s stopped screen sharing", client.room, client.info.Name)
+			Type:      MsgBoardUpdated,
+			UserID:    client.info.ID,
+			BoardData: msg.BoardData,
+			MeetingID: msg.MeetingID,
+		}, client.info.ID)
 
 	case MsgWhisper:
 		if msg.Text == "" {

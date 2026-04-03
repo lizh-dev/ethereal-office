@@ -23,7 +23,7 @@ const STATUS_OPTIONS: { value: PresenceStatus; label: string; color: string }[] 
 ];
 
 export default function TopBar() {
-  const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, setStatusMessage, statusMessage, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode } = useOfficeStore();
+  const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, setStatusMessage, statusMessage, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode, floorPlanType } = useOfficeStore();
   const wsSend = useWsSend();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -121,6 +121,23 @@ export default function TopBar() {
       </div>
 
       <div className="flex items-center gap-2 md:gap-3">
+        {/* Pro badge or upgrade link */}
+        {floorPlanType === 'free' ? (
+          <Link
+            href={`/f/${typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : ''}/upgrade`}
+            className="text-[11px] px-2 md:px-3 py-1.5 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 rounded-lg font-semibold text-white transition-all shadow-sm"
+            title="Proプランにアップグレード"
+          >
+            <span className="md:hidden">⚡</span>
+            <span className="hidden md:inline">⚡ Pro</span>
+          </Link>
+        ) : (
+          <span className="text-[11px] px-2 md:px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg font-semibold text-white shadow-sm">
+            <span className="md:hidden">✓</span>
+            <span className="hidden md:inline">✓ Pro</span>
+          </span>
+        )}
+
         {/* Share button - icon only on mobile */}
         <button onClick={() => setShowQR(true)} title="フロアを共有" className="text-[11px] px-2 md:px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
           <span className="md:hidden">📱</span>

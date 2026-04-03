@@ -45,3 +45,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .claude/worktrees/
+
+# Terminal Paste Image folder
+.cp-images/
+stripe.exe
+backend/.env

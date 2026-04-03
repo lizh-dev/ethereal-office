@@ -1,6 +1,10 @@
 package ws
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/ethereal-office/backend/model"
+)
 
 // Client→Server message types
 const (
@@ -15,16 +19,12 @@ const (
 	MsgKick          = "kick"
 	MsgProfileUpdate = "profile_update"
 	MsgDM            = "dm"
-	MsgRTCOffer      = "rtc_offer"
-	MsgRTCAnswer     = "rtc_answer"
-	MsgRTCCandidate  = "rtc_candidate"
 	MsgWhisper       = "whisper"
 	MsgCallRequest   = "call_request"
 	MsgCallAccept    = "call_accept"
 	MsgCallDecline   = "call_decline"
-	MsgCallEnd          = "call_end"
-	MsgScreenShareStart = "screen_share_start"
-	MsgScreenShareStop  = "screen_share_stop"
+	MsgCallEnd     = "call_end"
+	MsgBoardUpdate = "board_update"
 )
 
 // Server→Client message types
@@ -42,17 +42,13 @@ const (
 	MsgSceneUpdated     = "scene_updated"
 	MsgKicked             = "kicked"
 	MsgUserProfileUpdated = "user_profile_updated"
-	MsgDMReceived         = "dm_received"
-	MsgRTCOfferRelay         = "rtc_offer"
-	MsgRTCAnswerRelay        = "rtc_answer"
-	MsgRTCCandidateRelay     = "rtc_candidate"
-	MsgUserWhisper           = "user_whisper"
+	MsgDMReceived  = "dm_received"
+	MsgUserWhisper = "user_whisper"
 	MsgCallRequestReceived   = "call_request_received"
 	MsgCallAcceptReceived    = "call_accept_received"
 	MsgCallDeclineReceived   = "call_decline_received"
-	MsgCallEndReceived            = "call_end_received"
-	MsgScreenShareStartBroadcast = "screen_share_started"
-	MsgScreenShareStopBroadcast  = "screen_share_stopped"
+	MsgCallEndReceived = "call_end_received"
+	MsgBoardUpdated    = "board_updated"
 )
 
 type IncomingMessage struct {
@@ -72,6 +68,8 @@ type IncomingMessage struct {
 	AvatarSeed   string  `json:"avatarSeed,omitempty"`
 	SDP          string  `json:"sdp,omitempty"`
 	Candidate    string  `json:"candidate,omitempty"`
+	BoardData    string  `json:"boardData,omitempty"`
+	MeetingID    string  `json:"meetingId,omitempty"`
 }
 
 type UserInfo struct {
@@ -125,8 +123,12 @@ type OutgoingMessage struct {
 	To            string          `json:"to,omitempty"`
 	Text          string          `json:"text,omitempty"`
 	Timestamp     string          `json:"timestamp,omitempty"`
-	SDP           string          `json:"sdp,omitempty"`
-	Candidate     string          `json:"candidate,omitempty"`
+	SDP           string                  `json:"sdp,omitempty"`
+	Candidate     string                  `json:"candidate,omitempty"`
+	Plan          string                  `json:"plan,omitempty"`
+	Permissions   *model.PlanPermissions  `json:"permissions,omitempty"`
+	BoardData     string                  `json:"boardData,omitempty"`
+	MeetingID     string                  `json:"meetingId,omitempty"`
 }
 
 func MarshalMessage(msg OutgoingMessage) []byte {

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
+import type { FeatureKey } from '@/types/plan';
 
 type ChatTab = 'public' | 'dm';
 
@@ -16,12 +17,50 @@ export default function ChatView() {
 
   const allUsers = [currentUser, ...users];
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const canFileShare = useOfficeStore(s => s.planPermissions.fileShare);
+  const [uploading, setUploading] = useState(false);
+
   const handleSend = () => {
     if (!input.trim()) return;
     const text = input.trim();
     wsSend.chat(text);
     setInput('');
   };
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const slug = window.location.pathname.split('/')[2];
+    if (!slug) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', currentUser.id);
+      formData.append('userName', currentUser.name);
+
+      const res = await fetch(`/api/floors/${slug}/files`, { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (res.ok) {
+        wsSend.chat(`📎 ${file.name} ${data.url}`);
+      } else {
+        if (data.error === 'upgrade_required') {
+          useOfficeStore.getState().addNotification('ファイル共有はProプランで利用できます');
+        } else {
+          useOfficeStore.getState().addNotification('ファイルのアップロードに失敗しました');
+        }
+      }
+    } catch {
+      useOfficeStore.getState().addNotification('ファイルのアップロードに失敗しました');
+    } finally {
+      setUploading(false);
+    }
+  }, [currentUser.id, currentUser.name, wsSend]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -113,7 +152,21 @@ export default function ChatView() {
                           ? 'bg-indigo-500 text-white rounded-tr-sm'
                           : 'bg-white text-gray-800 border border-gray-100 rounded-tl-sm'
                       }`}>
-                        {msg.text}
+                        {msg.text.startsWith('📎 ') && msg.text.includes('/api/floors/') ? (
+                          <a
+                            href={msg.text.split(' ').pop()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center gap-1.5 ${isMe ? 'text-white underline' : 'text-indigo-600 underline'}`}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+                            </svg>
+                            {msg.text.replace('📎 ', '').replace(/\s*\/api\/floors\/.*$/, '')}
+                          </a>
+                        ) : (
+                          msg.text
+                        )}
                       </div>
                     </div>
                   </div>
@@ -125,7 +178,26 @@ export default function ChatView() {
 
           {/* Input */}
           <div className="p-3 bg-white border-t border-gray-200">
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              {canFileShare && (
+                <>
+                  <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                    title="ファイルを添付"
+                  >
+                    {uploading ? (
+                      <span className="w-4 h-4 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+                      </svg>
+                    )}
+                  </button>
+                </>
+              )}
               <input
                 type="text"
                 value={input}

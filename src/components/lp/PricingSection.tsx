@@ -10,7 +10,7 @@ const plans = [
     description: '今すぐお使いいただけます',
     features: [
       'フロア作成 無制限',
-      '同時接続 人数制限なし',
+      '同時接続 10人まで',
       'チャット・ダイレクトメッセージ',
       'フロアエディター（自由配置）',
       'アバターカスタマイズ',
@@ -21,38 +21,25 @@ const plans = [
     badge: 'おすすめ',
   },
   {
-    name: 'Pro（準備中）',
-    price: '未定',
-    period: '',
-    description: 'より便利な機能を追加予定',
+    name: 'Pro',
+    price: '980',
+    period: '/月',
+    description: 'すべての機能を解放',
     features: [
       'Freeプランの全機能',
-      '音声通話（近接ボイス）',
+      '同時接続 無制限',
+      '音声・ビデオ通話',
       '画面共有',
-      'フロアテンプレート',
-      '管理者向け機能',
-      '優先サポート',
+      'ファイル共有',
+      '共有ホワイトボード',
+      'メンバー管理',
+      'カスタムブランディング',
+      'SSO対応',
+      'APIアクセス',
+      '優先サポート・SLA保証',
     ],
-    cta: 'リリースをお待ちください',
+    cta: 'Proプランを始める',
     highlighted: false,
-    comingSoon: true,
-  },
-  {
-    name: 'Enterprise（準備中）',
-    price: 'お問い合わせ',
-    period: '',
-    description: '大規模な組織向け',
-    features: [
-      'Proプランの全機能',
-      '接続数の拡張',
-      'シングルサインオン対応',
-      '専用環境のご提供',
-      'サービス品質の保証',
-      '導入・運用のサポート',
-    ],
-    cta: 'お問い合わせ',
-    highlighted: false,
-    comingSoon: true,
   },
 ];
 
@@ -72,22 +59,17 @@ export default function PricingSection() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
           {plans.map((plan) => (
             <div key={plan.name}
               className={`relative rounded-2xl p-8 transition-all duration-300 ${
                 plan.highlighted
                   ? 'bg-white border-2 border-sky-400 shadow-xl shadow-sky-100 scale-[1.02]'
                   : 'bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md'
-              } ${'comingSoon' in plan && plan.comingSoon ? 'opacity-75' : ''}`}>
+              }`}>
               {plan.badge && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-sky-500 text-white text-xs font-semibold rounded-full">
                   {plan.badge}
-                </div>
-              )}
-              {'comingSoon' in plan && plan.comingSoon && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-gray-400 text-white text-xs font-semibold rounded-full">
-                  準備中
                 </div>
               )}
               <div className="mb-6">
@@ -95,14 +77,8 @@ export default function PricingSection() {
                 <p className="text-xs text-gray-500">{plan.description}</p>
               </div>
               <div className="mb-6">
-                {plan.price === 'お問い合わせ' || plan.price === '未定' ? (
-                  <span className="text-2xl font-bold text-gray-900">{plan.price}</span>
-                ) : (
-                  <>
-                    <span className="text-4xl font-extrabold text-gray-900">¥{plan.price}</span>
-                    <span className="text-sm text-gray-500 ml-1">{plan.period}</span>
-                  </>
-                )}
+                <span className="text-4xl font-extrabold text-gray-900">¥{plan.price}</span>
+                <span className="text-sm text-gray-500 ml-1">{plan.period}</span>
               </div>
               <ul className="space-y-3 mb-8">
                 {plan.features.map((f) => (
@@ -118,9 +94,7 @@ export default function PricingSection() {
                 className={`block w-full text-center py-3 rounded-xl text-sm font-semibold transition-all ${
                   plan.highlighted
                     ? 'bg-sky-500 hover:bg-sky-400 text-white shadow-md shadow-sky-200'
-                    : 'comingSoon' in plan && plan.comingSoon
-                      ? 'bg-gray-100 text-gray-400 cursor-default'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                 }`}>
                 {plan.cta}
               </a>

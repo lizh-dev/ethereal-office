@@ -78,13 +78,13 @@ export function initSeatsFromElements(elements: readonly unknown[]) {
     return a.x - b.x;
   });
 
-  // Preserve existing labels
+  // Preserve existing labels and occupancy
   const existingZones = useOfficeStore.getState().zones;
-  const existingSeatsMap = new Map<string, { label?: string; id: string }>();
+  const existingSeatsMap = new Map<string, { label?: string; id: string; occupied?: boolean; occupiedBy?: string }>();
   for (const z of existingZones) {
     for (const s of z.seats) {
       const key = `${Math.round(s.x / 5) * 5},${Math.round(s.y / 5) * 5}`;
-      existingSeatsMap.set(key, { label: s.label, id: s.id });
+      existingSeatsMap.set(key, { label: s.label, id: s.id, occupied: s.occupied, occupiedBy: s.occupiedBy });
     }
   }
 
@@ -125,8 +125,8 @@ export function initSeatsFromElements(elements: readonly unknown[]) {
           w: c.width,
           h: c.height,
           label: existing?.label || defaultLabel,
-          occupied: false,
-          occupiedBy: undefined as string | undefined,
+          occupied: existing?.occupied || false,
+          occupiedBy: existing?.occupiedBy,
         };
       }),
     };
@@ -156,8 +156,8 @@ export function initSeatsFromElements(elements: readonly unknown[]) {
           w: c.width,
           h: c.height,
           label: existing?.label || defaultLabel,
-          occupied: false,
-          occupiedBy: undefined as string | undefined,
+          occupied: existing?.occupied || false,
+          occupiedBy: existing?.occupiedBy,
         };
       }),
     });

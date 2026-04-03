@@ -153,6 +153,9 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         // Normal saved scene — pass through as-is (already converted from DB)
         const cleanElements = scene.elements.filter((el: { type: string }) => el.type !== '__isometric_marker__');
         const baseAppState = scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 };
+        // Clear selection to prevent all-selected state in view mode
+        baseAppState.selectedElementIds = {};
+        baseAppState.selectedGroupIds = {};
         // Restore saved zoom level from localStorage
         try {
           const savedZoom = localStorage.getItem('ethereal-zoom');
@@ -261,8 +264,8 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         .excalidraw-view-mode .excalidraw [class*="popover"] {
           display: none !important;
         }
-        /* Edit mode: hide file menu and library button */
-        .excalidraw-edit-mode .excalidraw .App-menu,
+        /* Edit mode: hide file menu items (keep help button visible) and library button */
+        .excalidraw-edit-mode .excalidraw .App-menu__left,
         .excalidraw-edit-mode .excalidraw [class*="library-button"],
         .excalidraw-edit-mode .excalidraw .library-button {
           display: none !important;

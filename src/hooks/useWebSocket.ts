@@ -6,15 +6,6 @@ import type { PresenceStatus } from '@/types';
 
 const RECONNECT_INTERVAL = 3000;
 
-// Event emitter for WebRTC signaling messages
-type RTCSignalHandler = (msg: { type: string; userId: string; sdp?: string; candidate?: string }) => void;
-const rtcSignalListeners = new Set<RTCSignalHandler>();
-
-export function onRTCSignal(handler: RTCSignalHandler): () => void {
-  rtcSignalListeners.add(handler);
-  return () => { rtcSignalListeners.delete(handler); };
-}
-
 interface WsSend {
   move: (x: number, y: number) => void;
   sit: (seatId: string, x: number, y: number) => void;
@@ -27,16 +18,12 @@ interface WsSend {
   kick: (targetUserId: string) => void;
   profileUpdate: (name: string, avatarStyle: string, avatarSeed: string) => void;
   dm: (targetUserId: string, text: string) => void;
-  rtcOffer: (targetUserId: string, sdp: string) => void;
-  rtcAnswer: (targetUserId: string, sdp: string) => void;
-  rtcCandidate: (targetUserId: string, candidate: string) => void;
   whisper: (text: string) => void;
   callRequest: (targetUserId: string) => void;
   callAccept: (targetUserId: string) => void;
   callDecline: (targetUserId: string) => void;
   callEnd: (targetUserId: string) => void;
-  screenShareStart: () => void;
-  screenShareStop: () => void;
+  boardUpdate: (meetingId: string, boardData: string) => void;
 }
 
 interface UseWebSocketOptions {
@@ -163,6 +150,10 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
             for (const chatMsg of msg.chatHistory) {
               addChatMessage(chatMsg.userId, chatMsg.text, chatMsg.timestamp);
             }
+          }
+          // Set plan permissions from server
+          if (msg.plan && msg.permissions) {
+            useOfficeStore.getState().setFloorPlanInfo(msg.plan, msg.permissions);
           }
           // Restore DM history from DB
           if (msg.dmHistory && msg.dmHistory.length > 0) {
@@ -331,28 +322,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           break;
 
         case 'call_end_received':
-          // Dispatch to WebRTC hook to disconnect
-          for (const handler of rtcSignalListeners) {
-            handler({ type: 'call_end', userId: msg.userId, sdp: '', candidate: '' });
-          }
-          break;
-
-        case 'screen_share_started':
-          useOfficeStore.setState({ screenShareUserId: msg.userId, screenShareUserName: msg.name });
-          addNotification(`${msg.name} が画面共有を開始しました`);
-          break;
-
-        case 'screen_share_stopped':
-          useOfficeStore.setState({ screenShareUserId: null, screenShareUserName: null });
-          break;
-
-        case 'rtc_offer':
-        case 'rtc_answer':
-        case 'rtc_candidate':
-          // Dispatch to WebRTC hook listeners
-          for (const handler of rtcSignalListeners) {
-            handler({ type: msg.type, userId: msg.userId, sdp: msg.sdp, candidate: msg.candidate });
-          }
+          // Call ended — Jitsi handles disconnect via its own UI
           break;
       }
     };
@@ -464,18 +434,6 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
       (targetUserId: string, text: string) => sendRaw({ type: 'dm', targetUserId, text }),
       [sendRaw],
     ),
-    rtcOffer: useCallback(
-      (targetUserId: string, sdp: string) => sendRaw({ type: 'rtc_offer', targetUserId, sdp }),
-      [sendRaw],
-    ),
-    rtcAnswer: useCallback(
-      (targetUserId: string, sdp: string) => sendRaw({ type: 'rtc_answer', targetUserId, sdp }),
-      [sendRaw],
-    ),
-    rtcCandidate: useCallback(
-      (targetUserId: string, candidate: string) => sendRaw({ type: 'rtc_candidate', targetUserId, candidate }),
-      [sendRaw],
-    ),
     whisper: useCallback(
       (text: string) => sendRaw({ type: 'whisper', text }),
       [sendRaw],
@@ -496,12 +454,8 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
       (targetUserId: string) => sendRaw({ type: 'call_end', targetUserId }),
       [sendRaw],
     ),
-    screenShareStart: useCallback(
-      () => sendRaw({ type: 'screen_share_start' }),
-      [sendRaw],
-    ),
-    screenShareStop: useCallback(
-      () => sendRaw({ type: 'screen_share_stop' }),
+    boardUpdate: useCallback(
+      (meetingId: string, boardData: string) => sendRaw({ type: 'board_update', meetingId, boardData }),
       [sendRaw],
     ),
   };
