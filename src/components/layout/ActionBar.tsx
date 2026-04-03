@@ -4,10 +4,7 @@ import { useState, useEffect } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import { useFocusTimer } from '@/hooks/useFocusTimer';
-import dynamic from 'next/dynamic';
 import JitsiMeetPanel from '@/components/voice/JitsiMeetPanel';
-
-const MeetingBoard = dynamic(() => import('@/components/voice/MeetingBoard'), { ssr: false });
 
 const STAMPS = ['👋', '👍', '👏', '😂', '❤️', '🎉', '🤔', '☕'];
 
@@ -29,7 +26,6 @@ export default function ActionBar() {
   const [meetingPassword, setMeetingPassword] = useState('');
   const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
   const [showMeeting, setShowMeeting] = useState(false);
-  const [showBoard, setShowBoard] = useState(false);
 
   const floorSlug = typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '';
 
@@ -159,14 +155,15 @@ export default function ActionBar() {
             </button>
           )}
 
-          {/* Whiteboard button */}
+          {/* Whiteboard button — opens in new tab */}
           {canMeetingBoard && (
             <button
-              onClick={() => setShowBoard(v => !v)}
-              className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                showBoard ? 'text-indigo-500 bg-indigo-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-              }`}
-              title="ホワイトボード"
+              onClick={() => {
+                const boardUrl = `/board/${floorSlug}-board?name=${encodeURIComponent(currentUser.name)}&floor=${encodeURIComponent(floorSlug)}`;
+                window.open(boardUrl, '_blank');
+              }}
+              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+              title="ホワイトボード（別タブ）"
             >
               <span className="text-[13px]">📝</span>
             </button>
@@ -203,13 +200,7 @@ export default function ActionBar() {
         />
       )}
 
-      {/* Standalone Whiteboard */}
-      {showBoard && (
-        <MeetingBoard
-          meetingId={`${floorSlug}-board`}
-          onClose={() => setShowBoard(false)}
-        />
-      )}
+      {/* Whiteboard now opens in separate tab — no inline panel */}
     </>
   );
 }

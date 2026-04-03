@@ -102,7 +102,7 @@ export interface Zone {
 
 export type UserAction = 'working' | 'meeting' | 'break' | 'away' | 'idle';
 
-export type ViewMode = 'floor' | 'meetings' | 'chat' | 'profile';
+export type ViewMode = 'floor' | 'members' | 'meetings' | 'chat' | 'profile';
 export type EditorMode = 'view' | 'edit';
 
 export interface Camera {

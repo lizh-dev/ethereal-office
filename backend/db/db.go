@@ -27,7 +27,7 @@ func Init() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	if err := DB.AutoMigrate(&model.Floor{}, &model.ChatMessage{}, &model.DMMessage{}, &model.Subscription{}, &model.Transaction{}, &model.File{}, &model.Account{}, &model.FloorMember{}, &model.FloorBranding{}, &model.APIKey{}, &model.FloorSSOConfig{}, &model.FloorSSOSession{}); err != nil {
+	if err := DB.AutoMigrate(&model.Floor{}, &model.ChatMessage{}, &model.DMMessage{}, &model.Subscription{}, &model.Transaction{}, &model.File{}, &model.Account{}, &model.FloorMember{}, &model.FloorBranding{}, &model.APIKey{}, &model.FloorSSOConfig{}, &model.FloorSSOSession{}, &model.MeetingRoom{}); err != nil {
 		log.Fatalf("Failed to migrate: %v", err)
 	}
 

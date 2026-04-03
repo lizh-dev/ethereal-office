@@ -320,12 +320,14 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
                 )}
               </>
             )}
+            {viewMode === 'members' && (
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'auto' }}>
+                <MembersView />
+              </div>
+            )}
             {viewMode === 'meetings' && (
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'auto' }}>
                 <MeetingRoom />
-                <div style={{ borderTop: '1px solid #e2e8f0' }}>
-                  <MembersView />
-                </div>
               </div>
             )}
             {viewMode === 'chat' && <ChatView />}

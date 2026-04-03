@@ -7,7 +7,8 @@ import { ViewMode } from '@/types';
 
 const navItems: { mode: ViewMode; label: string; icon: string }[] = [
   { mode: 'floor', label: 'フロア', icon: '🏢' },
-  { mode: 'meetings', label: 'メンバー', icon: '👥' },
+  { mode: 'members', label: 'メンバー', icon: '👥' },
+  { mode: 'meetings', label: '会議室', icon: '🎥' },
   { mode: 'chat', label: 'チャット', icon: '💬' },
   { mode: 'profile', label: '設定', icon: '⚙️' },
 ];
