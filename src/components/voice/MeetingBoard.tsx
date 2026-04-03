@@ -1,8 +1,16 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useWsSend } from '@/contexts/WebSocketContext';
+
+function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
+  let timer: ReturnType<typeof setTimeout>;
+  return ((...args: any[]) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  }) as unknown as T;
+}
 
 const Excalidraw = dynamic(
   () => import('@excalidraw/excalidraw').then(mod => mod.Excalidraw),
@@ -61,13 +69,20 @@ export default function MeetingBoard({ meetingId, onClose }: MeetingBoardProps) 
     return () => window.removeEventListener('ws-board-update', handleWsMessage as any);
   }, [meetingId, excalidrawAPI]);
 
+  // Debounced send — only transmit every 500ms at most
+  const debouncedSend = useMemo(
+    () => debounce((data: string) => {
+      if (data === lastSentRef.current) return;
+      lastSentRef.current = data;
+      wsSend.boardUpdate?.(meetingId, data);
+    }, 500),
+    [meetingId, wsSend]
+  );
+
   const handleChange = useCallback((elements: readonly any[]) => {
     if (isRemoteUpdateRef.current) return;
-    const data = JSON.stringify({ elements });
-    if (data === lastSentRef.current) return;
-    lastSentRef.current = data;
-    wsSend.boardUpdate?.(meetingId, data);
-  }, [meetingId, wsSend]);
+    debouncedSend(JSON.stringify({ elements }));
+  }, [isRemoteUpdateRef, debouncedSend]);
 
   const handleExport = () => {
     if (!excalidrawAPI) return;
