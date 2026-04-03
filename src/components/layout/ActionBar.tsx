@@ -49,7 +49,7 @@ export default function ActionBar() {
     useOfficeStore.getState().addActivity('meeting', `${currentUser.name} がミーティング「${name}」を開始`);
     useOfficeStore.getState().setMyMeetingId(id);
     // Broadcast meeting creation to all floor members
-    wsSend.meetingStart(id, name, !!pw);
+    wsSend.meetingStart(id, name, !!pw, pw);
     // Store password in localStorage (never in URL)
     if (pw) {
       try { localStorage.setItem(`meeting-pw-${id}`, pw); } catch { /* ignore */ }

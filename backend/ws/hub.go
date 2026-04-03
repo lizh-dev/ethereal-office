@@ -25,7 +25,8 @@ type activeMeeting struct {
 	CreatedBy    string // userId
 	CreatorName  string
 	HasPassword  bool
-	Participants map[string]bool // userId set
+	Password     string              // plain text for now; only checked server-side
+	Participants map[string]bool     // userId set
 	CreatedAt    time.Time
 }
 
@@ -323,6 +324,25 @@ func (h *Hub) RemoveMeetingParticipant(slug, meetingID, userID string) {
 	}, "")
 
 	log.Printf("[%s] %s left meeting %s via HTTP (%d remaining)", slug, userID, meetingID, count)
+}
+
+// VerifyMeetingPassword checks if the given password matches the meeting's password.
+// Returns (exists, passwordRequired, passwordCorrect).
+func (h *Hub) VerifyMeetingPassword(slug, meetingID, password string) (bool, bool, bool) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	room, ok := h.rooms[slug]
+	if !ok {
+		return false, false, false
+	}
+	meeting, ok := room.activeMeetings[meetingID]
+	if !ok {
+		return false, false, false
+	}
+	if !meeting.HasPassword {
+		return true, false, true
+	}
+	return true, true, meeting.Password == password
 }
 
 // MeetingExists checks if an active (quick) meeting exists in a room.
@@ -833,6 +853,7 @@ func (h *Hub) handleMeetingStart(client *Client, msg IncomingMessage) {
 		CreatedBy:    client.info.ID,
 		CreatorName:  client.info.Name,
 		HasPassword:  msg.HasPassword,
+		Password:     msg.Password,
 		Participants: map[string]bool{client.info.ID: true},
 		CreatedAt:    time.Now(),
 	}

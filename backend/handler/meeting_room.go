@@ -138,6 +138,55 @@ func HandleMeetingLeave(hub *ws.Hub) http.HandlerFunc {
 	}
 }
 
+// HandleVerifyMeetingPassword verifies a password for an active or permanent meeting.
+func HandleVerifyMeetingPassword(hub *ws.Hub) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var body struct {
+			MeetingID string `json:"meetingId"`
+			Password  string `json:"password"`
+			FloorSlug string `json:"floorSlug"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.MeetingID == "" {
+			http.Error(w, "invalid body", http.StatusBadRequest)
+			return
+		}
+
+		// Check active meeting first
+		if body.FloorSlug != "" {
+			exists, pwRequired, pwCorrect := hub.VerifyMeetingPassword(body.FloorSlug, body.MeetingID, body.Password)
+			if exists {
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]any{
+					"allowed":          !pwRequired || pwCorrect,
+					"passwordRequired": pwRequired,
+				})
+				return
+			}
+		}
+
+		// Check permanent room
+		if db.DB != nil {
+			var room model.MeetingRoom
+			if err := db.DB.Where("room_id = ?", body.MeetingID).First(&room).Error; err == nil {
+				allowed := !room.HasPassword || room.Password == body.Password
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]any{
+					"allowed":          allowed,
+					"passwordRequired": room.HasPassword,
+				})
+				return
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"allowed": false, "passwordRequired": false})
+	}
+}
+
 // HandleMeetingLogs returns archived meeting logs for a floor.
 func HandleMeetingLogs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

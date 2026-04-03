@@ -521,8 +521,8 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
       [sendRaw],
     ),
     meetingStart: useCallback(
-      (meetingId: string, meetingName: string, hasPassword: boolean) =>
-        sendRaw({ type: 'meeting_start', meetingId, meetingName, hasPassword }),
+      (meetingId: string, meetingName: string, hasPassword: boolean, password?: string) =>
+        sendRaw({ type: 'meeting_start', meetingId, meetingName, hasPassword, password: password || '' }),
       [sendRaw],
     ),
     meetingJoin: useCallback(

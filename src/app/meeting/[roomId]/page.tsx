@@ -29,6 +29,7 @@ export default function MeetingPage() {
 
   const [userName, setUserName] = useState(nameFromUrl);
   const [password, setPassword] = useState('');
+  const [gateError, setGateError] = useState('');
   const [joined, setJoined] = useState(false);
   const [left, setLeft] = useState(false);
   const [error, setError] = useState('');
@@ -293,9 +294,26 @@ export default function MeetingPage() {
             </div>
           )}
 
+          {gateError && <p style={{ color: '#ef4444', fontSize: 12, margin: '0 0 8px' }}>{gateError}</p>}
           <button
-            onClick={() => {
+            onClick={async () => {
               if (!userName.trim()) return;
+              setGateError('');
+              const floorSlug = decodedRoomId.split('-')[0] || '';
+              try {
+                const res = await fetch('/api/meetings/verify-password', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ meetingId: decodedRoomId, password: password, floorSlug }),
+                });
+                const data = await res.json();
+                if (!data.allowed) {
+                  setGateError(data.passwordRequired ? 'パスワードが正しくありません' : '参加できません');
+                  return;
+                }
+              } catch {
+                // If verification fails, allow join
+              }
               setJoined(true);
             }}
             disabled={!userName.trim()}

@@ -81,6 +81,7 @@ type IncomingMessage struct {
 	MeetingID    string  `json:"meetingId,omitempty"`
 	MeetingName  string  `json:"meetingName,omitempty"`
 	HasPassword  bool    `json:"hasPassword,omitempty"`
+	Password     string  `json:"password,omitempty"` // Only used in meeting_start (client→server), never broadcast
 }
 
 type UserInfo struct {
