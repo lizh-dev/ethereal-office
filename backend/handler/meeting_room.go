@@ -138,7 +138,7 @@ func HandleMeetingLeave(hub *ws.Hub) http.HandlerFunc {
 	}
 }
 
-// HandleVerifyMeetingPassword verifies a password for an active or permanent meeting.
+// HandleVerifyMeetingPassword verifies password + participant limit, and registers join.
 func HandleVerifyMeetingPassword(hub *ws.Hub) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -148,6 +148,7 @@ func HandleVerifyMeetingPassword(hub *ws.Hub) http.HandlerFunc {
 		var body struct {
 			MeetingID string `json:"meetingId"`
 			Password  string `json:"password"`
+			UserID    string `json:"userId"`
 			FloorSlug string `json:"floorSlug"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.MeetingID == "" {
@@ -155,35 +156,54 @@ func HandleVerifyMeetingPassword(hub *ws.Hub) http.HandlerFunc {
 			return
 		}
 
-		// Check active meeting first
+		// Check active meeting — password + participant limit + register join
 		if body.FloorSlug != "" {
-			exists, pwRequired, pwCorrect := hub.VerifyMeetingPassword(body.FloorSlug, body.MeetingID, body.Password)
+			exists, pwRequired, pwCorrect, full, count, max := hub.TryJoinMeeting(body.FloorSlug, body.MeetingID, body.UserID, body.Password)
 			if exists {
+				allowed := pwCorrect && !full
+				reason := ""
+				if !pwCorrect {
+					reason = "パスワードが正しくありません"
+				} else if full {
+					reason = fmt.Sprintf("参加上限（%d人）に達しています", max)
+				}
+				// Broadcast updated participant count
+				if allowed {
+					hub.BroadcastMeetingJoined(body.FloorSlug, body.MeetingID, body.UserID, count)
+				}
 				w.Header().Set("Content-Type", "application/json")
 				json.NewEncoder(w).Encode(map[string]any{
-					"allowed":          !pwRequired || pwCorrect,
+					"allowed":          allowed,
 					"passwordRequired": pwRequired,
+					"reason":           reason,
+					"participants":     count,
+					"maxParticipants":  max,
 				})
 				return
 			}
 		}
 
-		// Check permanent room
+		// Check permanent room (password only, no participant limit for permanent)
 		if db.DB != nil {
 			var room model.MeetingRoom
 			if err := db.DB.Where("room_id = ?", body.MeetingID).First(&room).Error; err == nil {
 				allowed := !room.HasPassword || room.Password == body.Password
+				reason := ""
+				if !allowed {
+					reason = "パスワードが正しくありません"
+				}
 				w.Header().Set("Content-Type", "application/json")
 				json.NewEncoder(w).Encode(map[string]any{
 					"allowed":          allowed,
 					"passwordRequired": room.HasPassword,
+					"reason":           reason,
 				})
 				return
 			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"allowed": false, "passwordRequired": false})
+		json.NewEncoder(w).Encode(map[string]any{"allowed": false, "reason": "ミーティングが見つかりません"})
 	}
 }
 

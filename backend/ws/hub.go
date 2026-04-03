@@ -326,6 +326,49 @@ func (h *Hub) RemoveMeetingParticipant(slug, meetingID, userID string) {
 	log.Printf("[%s] %s left meeting %s via HTTP (%d remaining)", slug, userID, meetingID, count)
 }
 
+// TryJoinMeeting verifies password and participant limit, and adds the user if allowed.
+// Returns (exists, passwordRequired, passwordCorrect, full, participantCount, maxParticipants).
+func (h *Hub) TryJoinMeeting(slug, meetingID, userID, password string) (exists, pwRequired, pwCorrect, full bool, count, max int) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	room, ok := h.rooms[slug]
+	if !ok {
+		return false, false, false, false, 0, 0
+	}
+	meeting, ok := room.activeMeetings[meetingID]
+	if !ok {
+		return false, false, false, false, 0, 0
+	}
+
+	// Password check
+	if meeting.HasPassword && meeting.Password != password {
+		return true, true, false, false, len(meeting.Participants), 0
+	}
+
+	// Participant limit check
+	perms := h.getFloorPerms(slug)
+	max = perms.MaxMeetingParticipants
+	count = len(meeting.Participants)
+	if max > 0 && count >= max && !meeting.Participants[userID] {
+		return true, meeting.HasPassword, true, true, count, max
+	}
+
+	// Add participant
+	meeting.Participants[userID] = true
+	count = len(meeting.Participants)
+	return true, meeting.HasPassword, true, false, count, max
+}
+
+// BroadcastMeetingJoined broadcasts a meeting_joined event to all clients in a room.
+func (h *Hub) BroadcastMeetingJoined(slug, meetingID, userID string, count int) {
+	h.broadcastToRoom(slug, OutgoingMessage{
+		Type:         MsgMeetingJoined,
+		MeetingID:    meetingID,
+		UserID:       userID,
+		Participants: count,
+	}, "")
+}
+
 // VerifyMeetingPassword checks if the given password matches the meeting's password.
 // Returns (exists, passwordRequired, passwordCorrect).
 func (h *Hub) VerifyMeetingPassword(slug, meetingID, password string) (bool, bool, bool) {

@@ -31,7 +31,6 @@ export default function MeetingPage() {
   const [password, setPassword] = useState('');
   const [gateError, setGateError] = useState('');
   const [joined, setJoined] = useState(false);
-  const [left, setLeft] = useState(false);
   const [error, setError] = useState('');
   const [roomValid, setRoomValid] = useState<boolean | null>(null); // null = checking
 
@@ -128,7 +127,7 @@ export default function MeetingPage() {
         jitsiRef.current.addListener('readyToClose', () => {
           notifyLeave();
           window.close();
-          setLeft(true);
+          setTimeout(() => window.history.back(), 200);
         });
       } catch (err) {
         setError('ミーティングの接続に失敗しました。');
@@ -221,38 +220,6 @@ export default function MeetingPage() {
     );
   }
 
-  // Left screen: show after leaving a meeting
-  if (left) {
-    return (
-      <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', fontFamily: 'sans-serif' }}>
-        <div style={{ background: 'white', borderRadius: 16, padding: 32, width: 340, boxShadow: '0 8px 32px rgba(0,0,0,0.3)', textAlign: 'center' }}>
-          <p style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', margin: '0 0 8px' }}>ミーティングを退出しました</p>
-          <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 20px' }}>タブを閉じるか、再入室できます</p>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={() => { leftNotifiedRef.current = false; setLeft(false); setJoined(true); }}
-              style={{
-                flex: 1, padding: '10px 0', borderRadius: 8, border: '1px solid #e2e8f0',
-                background: 'white', color: '#0f172a', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              }}
-            >
-              再入室
-            </button>
-            <button
-              onClick={() => { window.close(); window.history.back(); }}
-              style={{
-                flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
-                background: '#0ea5e9', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              }}
-            >
-              閉じる
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Gate screen: name input required for external users
   if (!joined) {
     return (
@@ -304,11 +271,11 @@ export default function MeetingPage() {
                 const res = await fetch('/api/meetings/verify-password', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ meetingId: decodedRoomId, password: password, floorSlug }),
+                  body: JSON.stringify({ meetingId: decodedRoomId, password: password, userId: userName.trim(), floorSlug }),
                 });
                 const data = await res.json();
                 if (!data.allowed) {
-                  setGateError(data.passwordRequired ? 'パスワードが正しくありません' : '参加できません');
+                  setGateError(data.reason || '参加できません');
                   return;
                 }
               } catch {
@@ -338,7 +305,8 @@ export default function MeetingPage() {
       jitsiRef.current = null;
     }
     window.close();
-    setLeft(true);
+    // Fallback: if window.close() doesn't work, navigate back
+    setTimeout(() => window.history.back(), 200);
   };
 
   return (
