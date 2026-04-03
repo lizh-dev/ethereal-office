@@ -19,11 +19,11 @@ export default function ActionBar() {
   const wsSend = useWsSend();
   const focusTimer = useFocusTimer();
 
+  const myMeetingId = useOfficeStore((s) => s.myMeetingId);
   const [showStamps, setShowStamps] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [meetingName, setMeetingName] = useState('');
   const [meetingPassword, setMeetingPassword] = useState('');
-  const [activeMeetingId, setActiveMeetingId] = useState<string | null>(null);
 
   const floorSlug = typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '';
 
@@ -50,12 +50,11 @@ export default function ActionBar() {
     const name = meetingName.trim() || 'ミーティング';
     const pw = meetingPassword.trim();
     const id = `${floorSlug}-${name.replace(/\s+/g, '-')}-${Date.now()}`;
-    setActiveMeetingId(id);
     setShowCreateDialog(false);
     setMeetingName('');
     setMeetingPassword('');
-    useOfficeStore.getState().addActivity('meeting', `${currentUser.name} がミーティング「${name}」を開始`);
     useOfficeStore.getState().setMyMeetingId(id);
+    useOfficeStore.getState().addActivity('meeting', `${currentUser.name} がミーティング「${name}」を開始`);
     wsSend.meetingStart(id, name, !!pw, pw);
     if (pw) {
       try { localStorage.setItem(`meeting-pw-${id}`, pw); } catch { /* ignore */ }
@@ -65,12 +64,10 @@ export default function ActionBar() {
   };
 
   const handleLeaveMeeting = () => {
-    if (activeMeetingId) {
-      wsSend.meetingLeave(activeMeetingId);
+    if (myMeetingId) {
+      wsSend.meetingLeave(myMeetingId);
     }
     useOfficeStore.getState().setMyMeetingId(null);
-    setActiveMeetingId(null);
-    ;
   };
 
   return (
@@ -88,7 +85,7 @@ export default function ActionBar() {
         )}
 
         {/* Meeting create popover — floats above */}
-        {showCreateDialog && !activeMeetingId && (
+        {showCreateDialog && !myMeetingId && (
           <div className="flex flex-col gap-2 items-center mb-2 px-3 py-2.5 bg-white rounded-2xl shadow-lg border border-gray-100">
             <div className="flex items-center gap-2 w-full">
               <input
@@ -128,7 +125,7 @@ export default function ActionBar() {
           {canVoiceCall && (
             <button
               onClick={() => {
-                if (activeMeetingId) {
+                if (myMeetingId) {
                   // Switch to meetings sidebar view
                   useOfficeStore.getState().setViewMode('meetings');
                 } else {
@@ -136,9 +133,9 @@ export default function ActionBar() {
                 }
               }}
               className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                activeMeetingId ? 'text-green-500 bg-green-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                myMeetingId ? 'text-green-500 bg-green-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
               }`}
-              title={activeMeetingId ? 'ミーティング表示/非表示' : 'ミーティングを開始'}
+              title={myMeetingId ? 'ミーティング表示/非表示' : 'ミーティングを開始'}
             >
               <span className="text-[13px]">🎥</span>
             </button>
