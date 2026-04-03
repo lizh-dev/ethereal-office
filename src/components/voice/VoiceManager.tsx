@@ -10,7 +10,7 @@ export default function VoiceManager() {
   const handleAcceptCall = (_fromUserId: string) => {
     // 1:1 calls now redirect to Jitsi in a new tab
     const slug = window.location.pathname.split('/')[2] || '';
-    const jitsiUrl = `https://localhost:8443/${slug}-call-${Date.now()}`;
+    const jitsiUrl = `http://localhost:8880/${slug}-call-${Date.now()}`;
     window.open(jitsiUrl, '_blank');
   };
 

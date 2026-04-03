@@ -45,20 +45,15 @@ services:
   # Jitsi Meet — ビデオ会議サーバー
   jitsi-web:
     image: jitsi/web:stable-9823
+    # localhostのみにバインド（外部非公開）
     ports:
-      - "8443:443"
-      - "8880:80"
+      - "127.0.0.1:8880:80"
     environment:
-      ENABLE_AUTH: "1"
-      AUTH_TYPE: "jwt"
-      JWT_APP_ID: "ethereal_office"
-      JWT_APP_SECRET: "${JWT_JITSI_SECRET:-ethereal-jitsi-secret-key-change-in-production}"
-      JWT_ACCEPTED_ISSUERS: "ethereal_office"
-      JWT_ACCEPTED_AUDIENCES: "jitsi"
-      ENABLE_GUESTS: "0"
+      ENABLE_AUTH: "0"
+      ENABLE_GUESTS: "1"
       ENABLE_XMPP_WEBSOCKET: "1"
       ENABLE_HTTP_REDIRECT: "0"
-      PUBLIC_URL: "https://localhost:8443"
+      PUBLIC_URL: "http://localhost:8880"
       XMPP_DOMAIN: meet.jitsi
       XMPP_AUTH_DOMAIN: auth.meet.jitsi
       XMPP_BOSH_URL_BASE: http://jitsi-prosody:5280
@@ -78,18 +73,12 @@ services:
     depends_on:
       - jitsi-prosody
     networks:
+      - default
       - jitsi-meet
 
   jitsi-prosody:
     image: jitsi/prosody:stable-9823
     environment:
-      ENABLE_AUTH: "1"
-      AUTH_TYPE: "jwt"
-      JWT_APP_ID: "ethereal_office"
-      JWT_APP_SECRET: "${JWT_JITSI_SECRET:-ethereal-jitsi-secret-key-change-in-production}"
-      JWT_ACCEPTED_ISSUERS: "ethereal_office"
-      JWT_ACCEPTED_AUDIENCES: "jitsi"
-      ENABLE_GUESTS: "0"
       XMPP_DOMAIN: meet.jitsi
       XMPP_AUTH_DOMAIN: auth.meet.jitsi
       XMPP_MUC_DOMAIN: muc.meet.jitsi
@@ -135,7 +124,7 @@ services:
       JVB_AUTH_PASSWORD: jitsi-jvb-secret
       JVB_PORT: "10000"
       JVB_STUN_SERVERS: stun:stun.l.google.com:19302
-      PUBLIC_URL: "https://localhost:8443"
+      PUBLIC_URL: "http://localhost:8880"
       TZ: Asia/Tokyo
     volumes:
       - jitsi-jvb-config:/config

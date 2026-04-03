@@ -41,7 +41,7 @@ export default function ActionBar() {
     setShowStamps(false);
   };
 
-  const handleStartMeeting = async () => {
+  const handleStartMeeting = () => {
     const name = meetingName.trim() || 'ミーティング';
     const id = `${floorSlug}-${name.replace(/\s+/g, '-')}-${Date.now()}`;
     setActiveMeetingId(id);
@@ -49,21 +49,7 @@ export default function ActionBar() {
     setShowCreateDialog(false);
     setMeetingName('');
     useOfficeStore.getState().addActivity('meeting', `${currentUser.name} がミーティング「${name}」を開始`);
-    // Get JWT token and open Jitsi in a new tab
-    try {
-      const res = await fetch('/api/jitsi/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ room: id, userName: currentUser.name }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch {
-      // Fallback without JWT
-      window.open(`https://localhost:8443/${id}`, '_blank');
-    }
+    window.open(`http://localhost:8880/${id}#userInfo.displayName="${encodeURIComponent(currentUser.name)}"`, '_blank');
   };
 
   const handleLeaveMeeting = () => {

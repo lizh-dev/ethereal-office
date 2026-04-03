@@ -19,7 +19,7 @@ export default function JitsiMeetPanel({ roomName, userName, onClose }: JitsiMee
     })
       .then(r => r.json())
       .then(data => setJitsiUrl(data.url || ''))
-      .catch(() => setJitsiUrl(`https://localhost:8443/${roomName}`));
+      .catch(() => setJitsiUrl(`http://localhost:8880/${roomName}`));
   }, [roomName, userName]);
 
   return (

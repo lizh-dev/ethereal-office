@@ -60,9 +60,6 @@ func main() {
 	mux.HandleFunc("POST /api/floors/{slug}/branding/logo", handler.RequirePlanFeature("customBranding", handler.UploadBrandingLogo))
 	mux.HandleFunc("GET /api/floors/{slug}/branding/logo/{file}", handler.ServeBrandingLogo)
 
-	// Jitsi JWT
-	mux.HandleFunc("POST /api/jitsi/token", handler.CreateJitsiToken)
-
 	// Auth
 	mux.HandleFunc("POST /api/auth/register", handler.Register)
 	mux.HandleFunc("POST /api/auth/login", handler.Login)
