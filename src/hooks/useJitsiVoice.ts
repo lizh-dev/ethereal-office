@@ -50,12 +50,10 @@ export function useJitsiVoice(): JitsiVoiceState {
 
   const jitsiApiRef = useRef<any>(null);
   const scriptLoadedRef = useRef(false);
-  const prevSeatRef = useRef<string | null>(null);
   const joiningRef = useRef(false);
 
   const currentUser = useOfficeStore(s => s.currentUser);
   const currentSeatId = useOfficeStore(s => s.currentSeatId);
-  const autoVoiceEnabled = useOfficeStore(s => s.autoVoiceEnabled);
   const callRequestStatus = useOfficeStore(s => s.callRequestStatus);
   const callTargetUserId = useOfficeStore(s => s.callTargetUserId);
   const manualJoinTrigger = useOfficeStore(s => s.jitsiManualJoinTrigger);
@@ -242,48 +240,6 @@ export function useJitsiVoice(): JitsiVoiceState {
     createJitsiRoom(roomName, 'call', `${targetUserName}との通話`);
   }, [getFloorSlug, currentUser.id, createJitsiRoom]);
 
-  // Auto zone voice: join/leave when sitting/standing
-  useEffect(() => {
-    if (!autoVoiceEnabled) {
-      prevSeatRef.current = currentSeatId;
-      return;
-    }
-
-    const wasSitting = prevSeatRef.current !== null;
-    const isSitting = currentSeatId !== null;
-
-    if (!wasSitting && isSitting) {
-      // Just sat down → try joining zone voice with retries
-      let attempts = 0;
-      let cancelled = false;
-      const tryJoin = () => {
-        if (cancelled) return;
-        attempts++;
-        const store = useOfficeStore.getState();
-        const seatId = store.currentSeatId;
-        const userId = store.currentUser.id;
-        if (!seatId || userId === 'pending') return;
-
-        const zone = getZoneForSeat(userId, seatId);
-        if (zone && zone.hasPeers && !jitsiApiRef.current) {
-          joinZoneRoom(zone.zoneId, zone.zoneName);
-        } else if (attempts < 10) {
-          setTimeout(tryJoin, 500);
-        }
-      };
-      const timer = setTimeout(tryJoin, 1000);
-      prevSeatRef.current = currentSeatId;
-      return () => { cancelled = true; clearTimeout(timer); };
-    } else if (wasSitting && !isSitting) {
-      // Just stood up → leave zone voice
-      if (activeMode === 'zone') {
-        leaveRoom();
-      }
-    }
-
-    prevSeatRef.current = currentSeatId;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSeatId, autoVoiceEnabled]);
 
   // Handle call request accepted → join 1:1 call room
   const prevCallStatusRef = useRef(callRequestStatus);

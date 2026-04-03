@@ -15,8 +15,6 @@ const STAMPS = ['👋', '👍', '👏', '😂', '❤️', '🎉', '🤔', '☕']
 export default function ActionBar() {
   const currentUser = useOfficeStore((s) => s.currentUser);
   const currentSeatId = useOfficeStore((s) => s.currentSeatId);
-  const autoVoiceEnabled = useOfficeStore((s) => s.autoVoiceEnabled);
-  const setAutoVoiceEnabled = useOfficeStore((s) => s.setAutoVoiceEnabled);
   const editorMode = useOfficeStore((s) => s.editorMode);
   const viewMode = useOfficeStore((s) => s.viewMode);
   const canVoiceCall = useOfficeStore((s) => s.planPermissions.voiceCall);
@@ -92,7 +90,7 @@ export default function ActionBar() {
           <button
             onClick={() => triggerJitsiManualJoin()}
             className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all relative ${
-              activeJitsiRoom ? 'text-green-500 bg-green-50' : autoVoiceEnabled ? 'text-indigo-500 bg-indigo-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+              activeJitsiRoom ? 'text-green-500 bg-green-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
             }`}
             title={activeJitsiRoom ? '通話中（クリックで退出）' : '通話を開始'}
           >
