@@ -88,7 +88,10 @@ export default function MeetingRoom() {
   const handleJoin = (meetingId: string, password?: string) => {
     wsSend.meetingJoin(meetingId);
     useOfficeStore.getState().setMyMeetingId(meetingId);
-    const meetingUrl = `/meeting/${meetingId}?name=${encodeURIComponent(currentUser.name)}&uid=${encodeURIComponent(currentUser.id)}${password ? `&pw=${encodeURIComponent(password)}` : ''}`;
+    if (password) {
+      try { localStorage.setItem(`meeting-pw-${meetingId}`, password); } catch { /* ignore */ }
+    }
+    const meetingUrl = `/meeting/${meetingId}?name=${encodeURIComponent(currentUser.name)}&uid=${encodeURIComponent(currentUser.id)}`;
     window.open(meetingUrl, '_blank');
     setJoiningMeetingId(null);
     setPasswordInput('');

@@ -13,9 +13,19 @@ export default function MeetingPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const roomId = params.roomId as string;
+  const decodedRoomId = decodeURIComponent(roomId);
   const nameFromUrl = searchParams.get('name') || '';
-  const pwFromUrl = searchParams.get('pw') || '';
   const uidFromUrl = searchParams.get('uid') || '';
+
+  // Read password from localStorage (set by creator/joiner), never from URL
+  const [storedPw] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      const pw = localStorage.getItem(`meeting-pw-${decodedRoomId}`) || '';
+      if (pw) localStorage.removeItem(`meeting-pw-${decodedRoomId}`);
+      return pw;
+    } catch { return ''; }
+  });
 
   const [userName, setUserName] = useState(nameFromUrl);
   const [password, setPassword] = useState('');
@@ -35,7 +45,6 @@ export default function MeetingPage() {
   const notifyLeave = () => {
     if (leftNotifiedRef.current) return;
     leftNotifiedRef.current = true;
-    const decodedRoomId = decodeURIComponent(roomId);
     const floorSlug = decodedRoomId.split('-')[0] || '';
     const body = JSON.stringify({ meetingId: decodedRoomId, userId: uidFromUrl || nameFromUrl || 'unknown', floorSlug });
     if (navigator.sendBeacon) {
@@ -100,8 +109,8 @@ export default function MeetingPage() {
           },
         });
 
-        // Set password if provided (from URL or gate screen input)
-        const meetingPassword = pwFromUrl || password;
+        // Set password if provided (from localStorage or gate screen input)
+        const meetingPassword = storedPw || password;
         if (meetingPassword) {
           jitsiRef.current.addListener('videoConferenceJoined', () => {
             jitsiRef.current.executeCommand('password', meetingPassword);
@@ -149,7 +158,7 @@ export default function MeetingPage() {
         jitsiRef.current = null;
       }
     };
-  }, [joined, roomId, userName, pwFromUrl]);
+  }, [joined, roomId, userName, storedPw]);
 
   // Validate room exists (active or permanent) before allowing join
   useEffect(() => {
@@ -267,9 +276,9 @@ export default function MeetingPage() {
             />
           </div>
 
-          {pwFromUrl && (
+          {!autoJoin && (
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#475569', marginBottom: 4 }}>パスワード</label>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#475569', marginBottom: 4 }}>パスワード（設定されている場合）</label>
               <input
                 type="password"
                 value={password}

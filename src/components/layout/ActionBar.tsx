@@ -50,7 +50,11 @@ export default function ActionBar() {
     useOfficeStore.getState().setMyMeetingId(id);
     // Broadcast meeting creation to all floor members
     wsSend.meetingStart(id, name, !!pw);
-    const meetingUrl = `/meeting/${id}?name=${encodeURIComponent(currentUser.name)}&uid=${encodeURIComponent(currentUser.id)}${pw ? `&pw=${encodeURIComponent(pw)}` : ''}`;
+    // Store password in localStorage (never in URL)
+    if (pw) {
+      try { localStorage.setItem(`meeting-pw-${id}`, pw); } catch { /* ignore */ }
+    }
+    const meetingUrl = `/meeting/${id}?name=${encodeURIComponent(currentUser.name)}&uid=${encodeURIComponent(currentUser.id)}`;
     window.open(meetingUrl, '_blank');
   };
 
