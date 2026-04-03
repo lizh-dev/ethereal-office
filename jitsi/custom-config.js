@@ -9,3 +9,7 @@ config.localSubject = '';
 config.feedbackPercentage = 0;
 config.enableClosePage = false;
 config.enableWelcomePage = false;
+// Prevent auto-disconnect when alone
+config.p2p = { enabled: false };
+config.channelLastN = -1;
+config.enableLobbyChat = false;

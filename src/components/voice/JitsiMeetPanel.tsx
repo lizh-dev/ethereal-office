@@ -1,7 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
 interface JitsiMeetPanelProps {
   roomName: string;
   userName: string;
@@ -9,18 +7,7 @@ interface JitsiMeetPanelProps {
 }
 
 export default function JitsiMeetPanel({ roomName, userName, onClose }: JitsiMeetPanelProps) {
-  const [jitsiUrl, setJitsiUrl] = useState('');
-
-  useEffect(() => {
-    fetch('/api/jitsi/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ room: roomName, userName }),
-    })
-      .then(r => r.json())
-      .then(data => setJitsiUrl(data.url || ''))
-      .catch(() => setJitsiUrl(`http://localhost:8880/${roomName}`));
-  }, [roomName, userName]);
+  const meetingUrl = `/meeting/${roomName}#name=${encodeURIComponent(userName)}`;
 
   return (
     <div style={{
@@ -37,20 +24,18 @@ export default function JitsiMeetPanel({ roomName, userName, onClose }: JitsiMee
         別タブでビデオ会議が開いています。
       </p>
       <div style={{ display: 'flex', gap: 8 }}>
-        {jitsiUrl && (
-          <a
-            href={jitsiUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              flex: 1, padding: '8px 0', borderRadius: 8, border: 'none',
-              background: '#0ea5e9', color: 'white', fontSize: 12, fontWeight: 600,
-              textAlign: 'center', textDecoration: 'none', display: 'block',
-            }}
-          >
-            会議を開く
-          </a>
-        )}
+        <a
+          href={meetingUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            flex: 1, padding: '8px 0', borderRadius: 8, border: 'none',
+            background: '#0ea5e9', color: 'white', fontSize: 12, fontWeight: 600,
+            textAlign: 'center', textDecoration: 'none', display: 'block',
+          }}
+        >
+          会議を開く
+        </a>
         <button
           onClick={onClose}
           style={{
