@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -127,9 +128,11 @@ func HandleMeetingLeave(hub *ws.Hub) http.HandlerFunc {
 			FloorSlug string `json:"floorSlug"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.MeetingID == "" || body.FloorSlug == "" {
+			log.Printf("[meeting-leave] bad request: meetingId=%q floor=%q err=%v", body.MeetingID, body.FloorSlug, err)
 			http.Error(w, "invalid body", http.StatusBadRequest)
 			return
 		}
+		log.Printf("[meeting-leave] user=%s leaving meeting=%s floor=%s", body.UserID, body.MeetingID, body.FloorSlug)
 		hub.RemoveMeetingParticipant(body.FloorSlug, body.MeetingID, body.UserID)
 		w.WriteHeader(http.StatusOK)
 	}

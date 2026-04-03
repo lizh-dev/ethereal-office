@@ -143,7 +143,7 @@ type OutgoingMessage struct {
 	MeetingName   string                  `json:"meetingName,omitempty"`
 	HasPassword   bool                    `json:"hasPassword,omitempty"`
 	Meetings      []ActiveMeetingInfo     `json:"meetings,omitempty"`
-	Participants  int                     `json:"participants,omitempty"`
+	Participants  int                     `json:"participants"`
 	MaxParticipants int                   `json:"maxParticipants,omitempty"`
 }
 

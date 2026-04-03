@@ -35,8 +35,9 @@ export default function MeetingPage() {
   const notifyLeave = () => {
     if (leftNotifiedRef.current) return;
     leftNotifiedRef.current = true;
-    const floorSlug = roomId.split('-')[0] || '';
-    const body = JSON.stringify({ meetingId: roomId, userId: uidFromUrl || nameFromUrl || 'unknown', floorSlug });
+    const decodedRoomId = decodeURIComponent(roomId);
+    const floorSlug = decodedRoomId.split('-')[0] || '';
+    const body = JSON.stringify({ meetingId: decodedRoomId, userId: uidFromUrl || nameFromUrl || 'unknown', floorSlug });
     if (navigator.sendBeacon) {
       navigator.sendBeacon('/api/meetings/leave', new Blob([body], { type: 'application/json' }));
     } else {
