@@ -57,6 +57,7 @@ const (
 	MsgMeetingLeft      = "meeting_left"
 	MsgMeetingList      = "meeting_list"
 	MsgMeetingError     = "meeting_error"
+	MsgMeetingEnded     = "meeting_ended" // Creator left → all participants must leave
 )
 
 type IncomingMessage struct {

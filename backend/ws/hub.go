@@ -284,6 +284,7 @@ func (h *Hub) HasRecentlyDisconnected(slug, userID string) bool {
 }
 
 // RemoveMeetingParticipant removes a user from a meeting and broadcasts the update.
+// For quick (non-permanent) meetings: if the creator leaves, the meeting is forcefully ended.
 // Called from HTTP handler when a meeting tab is closed.
 func (h *Hub) RemoveMeetingParticipant(slug, meetingID, userID string) {
 	h.mu.Lock()
@@ -297,8 +298,11 @@ func (h *Hub) RemoveMeetingParticipant(slug, meetingID, userID string) {
 		h.mu.Unlock()
 		return
 	}
+
 	delete(meeting.Participants, userID)
 	count := len(meeting.Participants)
+
+	// Remove quick meeting when last person leaves
 	if count == 0 {
 		delete(room.activeMeetings, meetingID)
 	}
@@ -908,7 +912,7 @@ func (h *Hub) handleMeetingLeave(client *Client, msg IncomingMessage) {
 	delete(meeting.Participants, client.info.ID)
 	count := len(meeting.Participants)
 
-	// Remove meeting if empty
+	// Remove quick meeting when last person leaves
 	if count == 0 {
 		delete(room.activeMeetings, msg.MeetingID)
 	}
