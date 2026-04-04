@@ -23,6 +23,7 @@ export default function BoardPage() {
   const [api, setApi] = useState<any>(null);
   const [userCount, setUserCount] = useState(1);
   const [isConnected, setIsConnected] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const ydocRef = useRef<Y.Doc | null>(null);
   const providerRef = useRef<HocuspocusProvider | null>(null);
@@ -110,15 +111,27 @@ export default function BoardPage() {
     URL.revokeObjectURL(url);
   }, [api, boardId]);
 
-  const handleClear = useCallback(() => {
+  const executeClear = useCallback(() => {
     if (!api || !ydocRef.current) return;
-    if (!confirm('ボードの内容をすべて消去しますか？')) return;
     const yElements = ydocRef.current.getArray('elements');
     ydocRef.current.transact(() => {
       yElements.delete(0, yElements.length);
     });
     api.resetScene();
+    setShowClearConfirm(false);
   }, [api]);
+
+  const handleClose = useCallback(() => {
+    // window.close() only works for JS-opened tabs
+    try { window.close(); } catch {}
+    // Fallback: navigate to floor or home
+    const floorSlug = new URLSearchParams(window.location.search).get('floor');
+    if (floorSlug) {
+      window.location.href = `/f/${floorSlug}`;
+    } else {
+      window.location.href = '/';
+    }
+  }, []);
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: 'white' }}>
@@ -165,7 +178,7 @@ export default function BoardPage() {
             <Download style={{ width: 13, height: 13 }} strokeWidth={1.8} />
             エクスポート
           </button>
-          <button onClick={handleClear} style={{
+          <button onClick={() => setShowClearConfirm(true)} style={{
             display: 'flex', alignItems: 'center', gap: 4,
             padding: '5px 12px', borderRadius: 8, border: '1px solid #e2e8f0',
             background: 'white', color: '#ef4444', fontSize: 12, cursor: 'pointer',
@@ -173,7 +186,7 @@ export default function BoardPage() {
             <Trash2 style={{ width: 13, height: 13 }} strokeWidth={1.8} />
             クリア
           </button>
-          <button onClick={() => window.close()} style={{
+          <button onClick={handleClose} style={{
             display: 'flex', alignItems: 'center', gap: 4,
             padding: '5px 12px', borderRadius: 8, border: 'none',
             background: '#64748b', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer',
@@ -184,8 +197,39 @@ export default function BoardPage() {
         </div>
       </div>
 
+      {/* Clear confirmation */}
+      {showClearConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+        }} onClick={() => setShowClearConfirm(false)}>
+          <div style={{
+            background: 'white', borderRadius: 16, padding: 24, maxWidth: 360,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          }} onClick={e => e.stopPropagation()}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
+              ボードをクリア
+            </p>
+            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
+              すべての描画内容が消去されます。この操作は元に戻せません。
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowClearConfirm(false)} style={{
+                padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0',
+                background: 'white', color: '#475569', fontSize: 13, cursor: 'pointer',
+              }}>キャンセル</button>
+              <button onClick={executeClear} style={{
+                padding: '8px 16px', borderRadius: 8, border: 'none',
+                background: '#ef4444', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              }}>消去する</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Excalidraw Canvas */}
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0 }}>
         <Excalidraw
           excalidrawAPI={(excalidrawApi: any) => setApi(excalidrawApi)}
           isCollaborating={isConnected}
@@ -193,6 +237,7 @@ export default function BoardPage() {
           initialData={{ elements: [], appState: { viewBackgroundColor: '#ffffff' } }}
           onPointerUpdate={bindingRef.current?.onPointerUpdate}
         />
+        </div>
       </div>
     </div>
   );

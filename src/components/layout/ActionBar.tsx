@@ -146,7 +146,7 @@ export default function ActionBar() {
           {canMeetingBoard && (
             <button
               onClick={() => {
-                const boardUrl = `/board/${floorSlug}-board?name=${encodeURIComponent(currentUser.name)}&floor=${encodeURIComponent(floorSlug)}`;
+                const boardUrl = `/board/${floorSlug}-board?name=${encodeURIComponent(currentUser.name)}&floor=${encodeURIComponent(floorSlug)}&avatar=${encodeURIComponent(currentUser.avatarSeed || '')}&style=${encodeURIComponent(currentUser.avatarStyle || 'notionists')}`;
                 window.open(boardUrl, '_blank');
               }}
               className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all text-gray-400 hover:text-gray-600 hover:bg-gray-50"
