@@ -28,6 +28,13 @@ export default function BoardPage() {
   const userName = searchParams.get('name') || 'Guest';
   const floorSlug = searchParams.get('floor') || '';
 
+  // Guard: floor and name are required (board must be opened from a floor)
+  useEffect(() => {
+    if (!floorSlug || !userName || userName === 'Guest') {
+      window.location.href = '/';
+    }
+  }, [floorSlug, userName]);
+
   const [api, setApi] = useState<any>(null);
   const [userCount, setUserCount] = useState(1);
   const [isConnected, setIsConnected] = useState(false);
@@ -178,6 +185,9 @@ export default function BoardPage() {
       window.location.href = '/';
     }
   }, [floorSlug]);
+
+  // Don't render if no floor context
+  if (!floorSlug || !userName || userName === 'Guest') return null;
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: 'white' }}>
