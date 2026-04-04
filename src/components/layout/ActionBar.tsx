@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import { useFocusTimer } from '@/hooks/useFocusTimer';
+import { Video, PenTool, Smile, Coffee, Target } from 'lucide-react';
 
 const STAMPS = ['👋', '👍', '👏', '😂', '❤️', '🎉', '🤔', '☕'];
 
@@ -137,7 +138,7 @@ export default function ActionBar() {
               }`}
               title={myMeetingId ? 'ミーティング表示/非表示' : 'ミーティングを開始'}
             >
-              <span className="text-[13px]">🎥</span>
+              <Video className="w-4 h-4" strokeWidth={1.8} />
             </button>
           )}
 
@@ -151,7 +152,7 @@ export default function ActionBar() {
               className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all text-gray-400 hover:text-gray-600 hover:bg-gray-50"
               title="ホワイトボード（別タブ）"
             >
-              <span className="text-[13px]">📝</span>
+              <PenTool className="w-4 h-4" strokeWidth={1.8} />
             </button>
           )}
 
@@ -161,7 +162,7 @@ export default function ActionBar() {
               showStamps ? 'text-indigo-500 bg-indigo-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
             }`}
             title="スタンプ">
-            <span className="text-[13px]">😀</span>
+            <Smile className="w-4 h-4" strokeWidth={1.8} />
           </button>
 
           {/* Focus timer display (when active) */}
@@ -170,7 +171,7 @@ export default function ActionBar() {
               className={`h-8 px-2 rounded-xl flex items-center gap-1 flex-shrink-0 text-[11px] font-semibold tabular-nums transition-all ${
                 focusTimer.isBreak ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
               }`}>
-              {focusTimer.isBreak ? '☕' : '🎯'}
+              {focusTimer.isBreak ? <Coffee className="w-3.5 h-3.5" strokeWidth={1.8} /> : <Target className="w-3.5 h-3.5" strokeWidth={1.8} />}
               {Math.floor(focusTimer.remainingSeconds / 60)}:{(focusTimer.remainingSeconds % 60).toString().padStart(2, '0')}
             </button>
           )}

@@ -4,13 +4,15 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useOfficeStore } from '@/store/officeStore';
 import { ViewMode } from '@/types';
+import { Building2, Users, Video, MessageCircle, Settings, Pencil, Lock } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-const navItems: { mode: ViewMode; label: string; icon: string }[] = [
-  { mode: 'floor', label: 'フロア', icon: '🏢' },
-  { mode: 'members', label: 'メンバー', icon: '👥' },
-  { mode: 'meetings', label: '会議室', icon: '🎥' },
-  { mode: 'chat', label: 'チャット', icon: '💬' },
-  { mode: 'profile', label: '設定', icon: '⚙️' },
+const navItems: { mode: ViewMode; label: string; Icon: LucideIcon }[] = [
+  { mode: 'floor', label: 'フロア', Icon: Building2 },
+  { mode: 'members', label: 'メンバー', Icon: Users },
+  { mode: 'meetings', label: '会議室', Icon: Video },
+  { mode: 'chat', label: 'チャット', Icon: MessageCircle },
+  { mode: 'profile', label: '設定', Icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -105,14 +107,14 @@ export default function Sidebar() {
             <button
               key={item.mode}
               onClick={() => handleNavClick(item.mode)}
-              className={`relative w-11 h-11 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all text-[18px] ${
+              className={`relative w-11 h-11 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${
                 viewMode === item.mode
                   ? 'bg-blue-50 text-blue-600'
                   : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
               }`}
               title={item.label}
             >
-              <span>{item.icon}</span>
+              <item.Icon className="w-[18px] h-[18px]" strokeWidth={1.8} />
               <span className="text-[7px] font-semibold tracking-wide">{item.label}</span>
               {item.mode === 'chat' && unreadChatCount > 0 && viewMode !== 'chat' && (
                 <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center border border-white">
@@ -134,7 +136,7 @@ export default function Sidebar() {
             }`}
             title={editorMode === 'edit' ? '編集終了' : 'フロアを編集（管理者パスワード必要）'}
           >
-            <span className="text-lg">{isFloorOwner ? '✏️' : '🔒'}</span>
+            {isFloorOwner ? <Pencil className="w-[18px] h-[18px]" strokeWidth={1.8} /> : <Lock className="w-[18px] h-[18px]" strokeWidth={1.8} />}
           </button>
           {!isFloorOwner && editorMode !== 'edit' && (
             <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block z-50">
@@ -159,7 +161,7 @@ export default function Sidebar() {
                 : 'text-gray-400'
             }`}
           >
-            <span className="text-[18px]">{item.icon}</span>
+            <item.Icon className="w-[18px] h-[18px]" strokeWidth={1.8} />
             <span className="text-[9px] font-semibold">{item.label}</span>
             {item.mode === 'chat' && unreadChatCount > 0 && viewMode !== 'chat' && (
               <span className="absolute top-1 right-1/4 w-4 h-4 bg-red-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center">
@@ -176,7 +178,9 @@ export default function Sidebar() {
               : 'text-gray-400'
           }`}
         >
-          <span className="text-[18px]">{editorMode === 'edit' ? '✏️' : (isFloorOwner ? '✏️' : '🔒')}</span>
+          {editorMode === 'edit' || isFloorOwner
+            ? <Pencil className="w-[18px] h-[18px]" strokeWidth={1.8} />
+            : <Lock className="w-[18px] h-[18px]" strokeWidth={1.8} />}
           <span className="text-[9px] font-semibold">編集</span>
         </button>
       </nav>
@@ -185,7 +189,7 @@ export default function Sidebar() {
       {showPwModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999]" onClick={() => setShowPwModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-gray-800 mb-1">🔒 管理者認証</h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-1 flex items-center gap-2"><Lock className="w-5 h-5" strokeWidth={1.8} /> 管理者認証</h2>
             <p className="text-sm text-gray-500 mb-4">フロアを編集するには管理者パスワードを入力してください</p>
             <input
               type="password"
