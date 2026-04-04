@@ -52,7 +52,8 @@ export default function ActionBar() {
 
     const name = meetingName.trim() || 'ミーティング';
     const pw = meetingPassword.trim();
-    const id = `${floorSlug}-${name.replace(/\s+/g, '-')}-${Date.now()}`;
+    const token = Math.random().toString(36).substring(2, 10);
+    const id = `${floorSlug}-${name.replace(/\s+/g, '-')}-${Date.now()}-${token}`;
     const ib = individualBoard;
     setShowCreateDialog(false);
     setMeetingName('');

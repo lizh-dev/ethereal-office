@@ -47,6 +47,13 @@ export function useParticipantBoard({ meetingId, participantId, floorSlug, userN
   useEffect(() => {
     if (!api) return;
 
+    // Reset so template copy runs again for new participant
+    templateCopiedRef.current = false;
+    let cancelled = false;
+    let templateProviderRef: HocuspocusProvider | null = null;
+    let templateDocRef: Y.Doc | null = null;
+    let templateTimeoutRef: ReturnType<typeof setTimeout> | null = null;
+
     const boardDocName = `board-${meetingId}-${participantId}`;
     const ydoc = new Y.Doc();
     ydocRef.current = ydoc;
@@ -85,9 +92,48 @@ export function useParticipantBoard({ meetingId, participantId, floorSlug, userN
         api.updateScene({ elements: combined });
         setTimeout(() => { isRemoteRef.current = false; }, 200);
       } else if (!templateCopiedRef.current) {
-        // Scene is empty - try to copy from template
+        // Scene is empty - try to copy from template (inline with cancellation support)
         templateCopiedRef.current = true;
-        copyFromTemplate(meetingId, floorSlug, userId, yScene, api, isRemoteRef);
+        const tDoc = new Y.Doc();
+        const tProvider = new HocuspocusProvider({
+          url: hocuspocusUrl,
+          name: `board-${meetingId}-template`,
+          document: tDoc,
+          token: JSON.stringify({ floor: floorSlug, boardId: `${floorSlug}-${meetingId}-template`, userId }),
+        });
+        templateProviderRef = tProvider;
+        templateDocRef = tDoc;
+        templateTimeoutRef = setTimeout(() => {
+          tProvider.destroy();
+          tDoc.destroy();
+          templateProviderRef = null;
+          templateDocRef = null;
+        }, 5000);
+        tProvider.on('synced', ({ state: tState }: { state: boolean }) => {
+          if (!tState || cancelled) {
+            if (templateTimeoutRef) clearTimeout(templateTimeoutRef);
+            tProvider.destroy();
+            tDoc.destroy();
+            templateProviderRef = null;
+            templateDocRef = null;
+            return;
+          }
+          if (templateTimeoutRef) clearTimeout(templateTimeoutRef);
+          const tScene = tDoc.getMap('scene');
+          const tElements = tScene.get('elements');
+          if (!cancelled && tElements && Array.isArray(tElements) && tElements.length > 0) {
+            isRemoteRef.current = true;
+            yScene.set('elements', tElements);
+            api.updateScene({ elements: tElements });
+            setTimeout(() => { if (!cancelled) isRemoteRef.current = false; }, 200);
+          }
+          setTimeout(() => {
+            tProvider.destroy();
+            tDoc.destroy();
+            templateProviderRef = null;
+            templateDocRef = null;
+          }, 500);
+        });
       }
 
       if (annotations && Array.isArray(annotations)) {
@@ -124,6 +170,10 @@ export function useParticipantBoard({ meetingId, participantId, floorSlug, userN
     });
 
     return () => {
+      cancelled = true;
+      if (templateProviderRef) { templateProviderRef.destroy(); templateProviderRef = null; }
+      if (templateDocRef) { templateDocRef.destroy(); templateDocRef = null; }
+      if (templateTimeoutRef) { clearTimeout(templateTimeoutRef); templateTimeoutRef = null; }
       provider.awareness?.off('change', updateCount);
       provider.destroy();
       providerRef.current = null;
@@ -159,34 +209,35 @@ export function useParticipantBoard({ meetingId, participantId, floorSlug, userN
 
     if (isRedPen && isHost) {
       // In red pen mode: separate annotations from scene elements
-      const currentAnnotations = annotationElements;
-      const newAnnotations: any[] = [];
+      const existingAnnotationIds = new Set(annotationElements.map((a: any) => a.id));
+      const existingSceneIds = new Set(sceneElements.map((s: any) => s.id));
+
+      const updatedAnnotations: any[] = [];
       const sceneOnly: any[] = [];
 
       for (const el of elements) {
-        if (el.customData?.annotation) {
-          newAnnotations.push(el);
-        } else {
-          // Check if this is a NEW element not in the current scene
-          const existsInScene = sceneElements.some(s => s.id === el.id);
-          if (!existsInScene && el.type !== 'selection') {
-            // New element drawn by host in red pen mode -> mark as annotation
-            newAnnotations.push({
-              ...el,
-              strokeColor: '#ef4444',
-              customData: { annotation: true, annotatorId: userId },
-            });
-          } else {
-            sceneOnly.push(el);
-          }
+        if (el.customData?.annotation || existingAnnotationIds.has(el.id)) {
+          // Existing annotation (possibly modified)
+          updatedAnnotations.push({
+            ...el,
+            strokeColor: '#ef4444',
+            customData: { annotation: true, annotatorId: userId },
+          });
+        } else if (existingSceneIds.has(el.id)) {
+          // Existing scene element
+          sceneOnly.push(el);
+        } else if (el.type !== 'selection') {
+          // New element drawn by host -> make it an annotation
+          updatedAnnotations.push({
+            ...el,
+            strokeColor: '#ef4444',
+            customData: { annotation: true, annotatorId: userId },
+          });
         }
       }
 
-      if (newAnnotations.length > 0 || newAnnotations.length !== currentAnnotations.length) {
-        const allAnnotations = [...currentAnnotations.filter((a: any) => !newAnnotations.some((n: any) => n.id === a.id)), ...newAnnotations];
-        setAnnotationElements(allAnnotations);
-        syncAnnotations(allAnnotations);
-      }
+      setAnnotationElements(updatedAnnotations);
+      syncAnnotations(updatedAnnotations);
     } else {
       // Normal mode: sync all non-annotation elements to scene
       syncToYjs([...elements]);
@@ -196,43 +247,3 @@ export function useParticipantBoard({ meetingId, participantId, floorSlug, userN
   return { api, setApi, isConnected, userCount, handleChange, ydocRef, syncToYjs, sceneElements, annotationElements };
 }
 
-// Helper: copy template elements to participant's board
-async function copyFromTemplate(
-  meetingId: string, floorSlug: string, userId: string,
-  yScene: Y.Map<any>, api: any, isRemoteRef: React.MutableRefObject<boolean>
-) {
-  const hocuspocusUrl = process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || `ws://${window.location.hostname}:3002`;
-  const templateDoc = new Y.Doc();
-  const templateProvider = new HocuspocusProvider({
-    url: hocuspocusUrl,
-    name: `board-${meetingId}-template`,
-    document: templateDoc,
-    token: JSON.stringify({ floor: floorSlug, boardId: `${floorSlug}-${meetingId}-template`, userId }),
-  });
-
-  return new Promise<void>((resolve) => {
-    const timeout = setTimeout(() => {
-      templateProvider.destroy();
-      templateDoc.destroy();
-      resolve();
-    }, 5000);
-
-    templateProvider.on('synced', ({ state }: { state: boolean }) => {
-      if (!state) return;
-      clearTimeout(timeout);
-      const templateScene = templateDoc.getMap('scene');
-      const elements = templateScene.get('elements');
-      if (elements && Array.isArray(elements) && elements.length > 0) {
-        isRemoteRef.current = true;
-        yScene.set('elements', elements);
-        api.updateScene({ elements });
-        setTimeout(() => { isRemoteRef.current = false; }, 200);
-      }
-      setTimeout(() => {
-        templateProvider.destroy();
-        templateDoc.destroy();
-        resolve();
-      }, 500);
-    });
-  });
-}
