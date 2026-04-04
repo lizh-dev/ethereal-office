@@ -60,7 +60,7 @@ const plans = [
       '導入・運用サポート',
     ],
     cta: 'お問い合わせ',
-    ctaHref: '#create',
+    ctaHref: 'mailto:contact@smartoffice.app',
     highlighted: false,
   },
 ];
