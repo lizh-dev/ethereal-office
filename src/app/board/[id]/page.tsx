@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { PenTool, Download, Trash2, X, Users } from 'lucide-react';
+import { PenTool, Download, Upload, Trash2, X, Users } from 'lucide-react';
 import '@excalidraw/excalidraw/index.css';
 import * as Y from 'yjs';
 import { HocuspocusProvider } from '@hocuspocus/provider';
@@ -122,6 +122,31 @@ export default function BoardPage() {
     URL.revokeObjectURL(url);
   }, [api, boardId]);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImport = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !api) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        if (data.elements && Array.isArray(data.elements)) {
+          api.updateScene({ elements: data.elements });
+          if (data.appState?.viewBackgroundColor) {
+            api.updateScene({ appState: { viewBackgroundColor: data.appState.viewBackgroundColor } });
+          }
+        }
+      } catch { /* invalid file */ }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }, [api]);
+
   const executeClear = useCallback(() => {
     if (!api || !ydocRef.current) return;
     const yElements = ydocRef.current.getArray('elements');
@@ -146,6 +171,11 @@ export default function BoardPage() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: 'white' }}>
+      {/* Hide Excalidraw's built-in library button and hamburger menu */}
+      <style>{`
+        .layer-ui__wrapper__top-right { display: none !important; }
+        .main-menu-trigger { display: none !important; }
+      `}</style>
       {/* Header */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -181,11 +211,20 @@ export default function BoardPage() {
           )}
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input ref={fileInputRef} type="file" accept=".excalidraw,.json" onChange={handleFileChange} style={{ display: 'none' }} />
+          <button onClick={handleImport} style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '5px 12px', borderRadius: 8, border: '1px solid #e2e8f0',
+            background: 'white', color: '#475569', fontSize: 12, cursor: 'pointer',
+          }} title="ファイルからインポート">
+            <Upload style={{ width: 13, height: 13 }} strokeWidth={1.8} />
+            インポート
+          </button>
           <button onClick={handleExport} style={{
             display: 'flex', alignItems: 'center', gap: 4,
             padding: '5px 12px', borderRadius: 8, border: '1px solid #e2e8f0',
             background: 'white', color: '#475569', fontSize: 12, cursor: 'pointer',
-          }} title="JSONファイルとしてエクスポート">
+          }} title="ファイルとしてエクスポート">
             <Download style={{ width: 13, height: 13 }} strokeWidth={1.8} />
             エクスポート
           </button>
