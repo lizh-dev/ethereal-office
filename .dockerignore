@@ -1,0 +1,5 @@
+node_modules
+.next
+.git
+hocuspocus/node_modules
+backend

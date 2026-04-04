@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET() {
-  const jitsiUrl = process.env.NEXT_PUBLIC_JITSI_URL || 'https://localhost:8443';
+  const jitsiUrl = process.env.JITSI_INTERNAL_URL || process.env.NEXT_PUBLIC_JITSI_URL || 'https://localhost:8443';
   const isHttps = jitsiUrl.startsWith('https');
   try {
     const mod = isHttps ? await import('node:https') : await import('node:http');

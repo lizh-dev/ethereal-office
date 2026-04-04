@@ -7,12 +7,14 @@ type PlanPermissions struct {
 	ScreenShare            bool `json:"screenShare"`
 	FileShare              bool `json:"fileShare"`
 	MeetingBoard           bool `json:"meetingBoard"`
+	MeetingInlineBoard     bool `json:"meetingInlineBoard"`
 	FloorTemplates         bool `json:"floorTemplates"`
 	AdminFeatures          bool `json:"adminFeatures"`
 	PrioritySupport        bool `json:"prioritySupport"`
 	MaxMembers             int  `json:"maxMembers"`             // 0 = unlimited
 	MaxMeetingParticipants int  `json:"maxMeetingParticipants"` // 0 = unlimited
 	MaxConcurrentMeetings  int  `json:"maxConcurrentMeetings"`  // 0 = unlimited
+	MaxBoards              int  `json:"maxBoards"`              // 0 = unlimited
 	CustomBranding         bool `json:"customBranding"`
 	SSO                    bool `json:"sso"`
 	DedicatedEnv           bool `json:"dedicatedEnv"`
@@ -27,12 +29,14 @@ var PlanPermissionsMap = map[PlanType]PlanPermissions{
 		ScreenShare:            true,  // Jitsi内蔵、ゲートなし
 		FileShare:              false, // file.go でゲート済み
 		MeetingBoard:           true,
+		MeetingInlineBoard:     false, // Pro限定: ミーティング内ボード
 		FloorTemplates:         false, // EditorPanel で Pro 判定
 		AdminFeatures:          true,
 		PrioritySupport:        false,
 		MaxMembers:             10,  // hub.go で強制
 		MaxMeetingParticipants: 4,   // hub.go で強制
 		MaxConcurrentMeetings:  1,   // hub.go で強制
+		MaxBoards:              1,   // board.go で強制
 		CustomBranding:         false, // main.go でゲート済み
 		SSO:                    false, // main.go でゲート済み
 		DedicatedEnv:           false,
@@ -45,12 +49,14 @@ var PlanPermissionsMap = map[PlanType]PlanPermissions{
 		ScreenShare:            true,
 		FileShare:              true,
 		MeetingBoard:           true,
+		MeetingInlineBoard:     true,
 		FloorTemplates:         true,
 		AdminFeatures:          true,
 		PrioritySupport:        true,
 		MaxMembers:             0, // unlimited
 		MaxMeetingParticipants: 0, // unlimited
 		MaxConcurrentMeetings:  0, // unlimited
+		MaxBoards:              0, // unlimited
 		CustomBranding:         true,
 		SSO:                    true,
 		DedicatedEnv:           true,

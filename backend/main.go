@@ -44,6 +44,7 @@ func main() {
 	mux.HandleFunc("DELETE /api/floors/{slug}", handler.DeleteFloor)
 	mux.HandleFunc("GET /api/floors/{slug}/subscription", handler.GetFloorSubscription)
 	mux.HandleFunc("GET /api/floors/{slug}/permissions", handler.GetFloorPermissions)
+	mux.HandleFunc("GET /api/floors/{slug}/board-access", handler.CheckBoardAccess)
 	mux.HandleFunc("POST /api/floors/{slug}/files", handler.UploadFile)
 	mux.HandleFunc("GET /api/floors/{slug}/files/{id}", handler.DownloadFile)
 

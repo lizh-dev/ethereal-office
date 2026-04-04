@@ -3,12 +3,18 @@ package ws
 import (
 	"log"
 	"math"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/ethereal-office/backend/db"
 	"github.com/ethereal-office/backend/model"
 )
+
+// chatPersistence controls whether chat/DM messages are saved to DB.
+// Cloud (Free/Pro): false (default) — messages relay only via WebSocket.
+// Self-Hosted: true — messages persist in DB for history.
+var chatPersistence = os.Getenv("CHAT_PERSISTENCE") == "true"
 
 const maxChatHistory = 100
 
@@ -158,28 +164,38 @@ func (h *Hub) addClient(client *Client) {
 	room.clients[client.info.ID] = client
 	h.mu.Unlock()
 
-	// Load chat history from DB (last 50 messages)
-	var dbMessages []model.ChatMessage
-	if db.DB != nil {
+	// Load chat history
+	var chatHistory []ChatMessage
+	if chatPersistence && db.DB != nil {
+		// Self-Hosted: load from DB (last 50 messages)
+		var dbMessages []model.ChatMessage
 		db.DB.Where("floor_slug = ?", client.room).
 			Order("created_at DESC").
 			Limit(50).
 			Find(&dbMessages)
-	}
-	// Convert to ws ChatMessage in chronological order (oldest first)
-	chatHistory := make([]ChatMessage, 0, len(dbMessages))
-	for i := len(dbMessages) - 1; i >= 0; i-- {
-		chatHistory = append(chatHistory, ChatMessage{
-			UserID:    dbMessages[i].UserID,
-			UserName:  dbMessages[i].UserName,
-			Text:      dbMessages[i].Text,
-			Timestamp: dbMessages[i].CreatedAt.UnixMilli(),
-		})
+		chatHistory = make([]ChatMessage, 0, len(dbMessages))
+		for i := len(dbMessages) - 1; i >= 0; i-- {
+			chatHistory = append(chatHistory, ChatMessage{
+				UserID:    dbMessages[i].UserID,
+				UserName:  dbMessages[i].UserName,
+				Text:      dbMessages[i].Text,
+				Timestamp: dbMessages[i].CreatedAt.UnixMilli(),
+			})
+		}
+	} else {
+		// Cloud: use in-memory history only
+		h.mu.RLock()
+		if room != nil {
+			chatHistory = make([]ChatMessage, len(room.chatHistory))
+			copy(chatHistory, room.chatHistory)
+		}
+		h.mu.RUnlock()
 	}
 
-	// Load DM history for this user (last 100 DMs sent or received)
+	// Load DM history
 	var dmHistory []DMHistoryItem
-	if db.DB != nil {
+	if chatPersistence && db.DB != nil {
+		// Self-Hosted: load from DB (last 100 DMs sent or received)
 		var dbDMs []model.DMMessage
 		db.DB.Where("floor_slug = ? AND (from_id = ? OR to_id = ?)", client.room, client.info.ID, client.info.ID).
 			Order("created_at DESC").
@@ -497,8 +513,8 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 		}
 		h.mu.Unlock()
 
-		// Persist to DB
-		if db.DB != nil {
+		// Persist to DB (Self-Hosted only)
+		if chatPersistence && db.DB != nil {
 			dbMsg := model.ChatMessage{
 				FloorSlug: client.room,
 				UserID:    client.info.ID,
@@ -616,8 +632,8 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 		now := time.Now()
 		ts := now.UTC().Format(time.RFC3339)
 
-		// Persist DM to DB
-		if db.DB != nil {
+		// Persist DM to DB (Self-Hosted only)
+		if chatPersistence && db.DB != nil {
 			dbDM := model.DMMessage{
 				FloorSlug: client.room,
 				FromID:    client.info.ID,

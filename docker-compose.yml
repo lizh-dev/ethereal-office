@@ -38,9 +38,36 @@ services:
       GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
       GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
       APP_BASE_URL: "${APP_BASE_URL:-http://localhost:3000}"
+      CHAT_PERSISTENCE: "${CHAT_PERSISTENCE:-false}"
     depends_on:
       db:
         condition: service_healthy
+
+  # Next.js フロントエンド
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      API_INTERNAL_URL: "http://api:8080"
+      JITSI_INTERNAL_URL: "https://jitsi-web:443"
+      NEXT_PUBLIC_API_URL: "http://localhost:8080"
+      NEXT_PUBLIC_WS_URL: "ws://localhost:8080/ws"
+      NEXT_PUBLIC_HOCUSPOCUS_URL: "ws://localhost:3002"
+      NEXT_PUBLIC_JITSI_DOMAIN: "localhost:8443"
+      NEXT_PUBLIC_JITSI_URL: "https://localhost:8443"
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}"
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./next.config.ts:/app/next.config.ts
+    depends_on:
+      - api
+      - hocuspocus
+    networks:
+      - default
 
   # Hocuspocus — 共同編集ボード（Yjs CRDT）
   hocuspocus:
@@ -49,6 +76,10 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3002:3002"
+    environment:
+      API_INTERNAL_URL: "http://api:8080"
+    depends_on:
+      - api
     networks:
       - default
 

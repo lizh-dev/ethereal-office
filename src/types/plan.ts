@@ -6,6 +6,7 @@ export interface PlanPermissions {
   screenShare: boolean;
   fileShare: boolean;
   meetingBoard: boolean;
+  meetingInlineBoard: boolean;
   floorTemplates: boolean;
   adminFeatures: boolean;
   prioritySupport: boolean;
@@ -25,6 +26,7 @@ export const DEFAULT_PERMISSIONS: PlanPermissions = {
   screenShare: true,
   fileShare: false,
   meetingBoard: true,
+  meetingInlineBoard: false,
   floorTemplates: false,
   adminFeatures: true,
   prioritySupport: false,
@@ -38,7 +40,7 @@ export const DEFAULT_PERMISSIONS: PlanPermissions = {
   apiAccess: false,
 };
 
-export type FeatureKey = keyof Omit<PlanPermissions, 'maxMembers' | 'maxMeetingParticipants' | 'maxConcurrentMeetings'>;
+export type FeatureKey = keyof Omit<PlanPermissions, 'maxMembers' | 'maxMeetingParticipants' | 'maxConcurrentMeetings' | 'maxBoards'>;
 
 export const FEATURE_LABELS: Record<FeatureKey, string> = {
   voiceCall: '音声通話',
@@ -46,6 +48,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   screenShare: '画面共有',
   fileShare: 'ファイル共有',
   meetingBoard: '共有ホワイトボード',
+  meetingInlineBoard: 'ミーティング内ボード',
   floorTemplates: 'フロアテンプレート',
   adminFeatures: 'メンバー管理',
   prioritySupport: '優先サポート',

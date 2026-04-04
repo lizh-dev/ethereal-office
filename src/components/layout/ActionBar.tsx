@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import { useFocusTimer } from '@/hooks/useFocusTimer';
-import { Video, PenTool, Smile, Coffee, Target } from 'lucide-react';
+import { Video, PenTool, Smile, Coffee, Target, PhoneCall } from 'lucide-react';
 
 const STAMPS = ['👋', '👍', '👏', '😂', '❤️', '🎉', '🤔', '☕'];
 
@@ -86,7 +86,7 @@ export default function ActionBar() {
         )}
 
         {/* Meeting create popover — floats above */}
-        {showCreateDialog && !myMeetingId && (
+        {showCreateDialog && (
           <div className="flex flex-col gap-2 items-center mb-2 px-3 py-2.5 bg-white rounded-2xl shadow-lg border border-gray-100">
             <div className="flex items-center gap-2 w-full">
               <input
@@ -122,23 +122,24 @@ export default function ActionBar() {
         <div className="flex items-center gap-1 px-1.5 py-1 bg-white rounded-2xl shadow-lg border border-gray-200/80"
           style={{ backdropFilter: 'blur(12px)' }}>
 
-          {/* Meeting button */}
+          {/* New meeting button — always available */}
           {canVoiceCall && (
             <button
-              onClick={() => {
-                if (myMeetingId) {
-                  // Switch to meetings sidebar view
-                  useOfficeStore.getState().setViewMode('meetings');
-                } else {
-                  setShowCreateDialog(v => !v);
-                }
-              }}
-              className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                myMeetingId ? 'text-green-500 bg-green-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-              }`}
-              title={myMeetingId ? 'ミーティング表示/非表示' : 'ミーティングを開始'}
+              onClick={(e) => { e.stopPropagation(); setShowCreateDialog(v => !v); }}
+              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+              title="ミーティングを開始"
             >
               <Video className="w-4 h-4" strokeWidth={1.8} />
+            </button>
+          )}
+          {/* Active meeting indicator */}
+          {myMeetingId && (
+            <button
+              onClick={() => useOfficeStore.getState().setViewMode('meetings')}
+              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all text-green-500 bg-green-50"
+              title="参加中のミーティング"
+            >
+              <PhoneCall className="w-4 h-4" strokeWidth={1.8} />
             </button>
           )}
 

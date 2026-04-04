@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { PenTool, Download, Upload, Trash2, X, Users } from 'lucide-react';
+import { PenTool, Download, Upload, Trash2, X, Users, AlertTriangle, ShieldX, Loader2 } from 'lucide-react';
 import '@excalidraw/excalidraw/index.css';
 import * as Y from 'yjs';
 import { HocuspocusProvider } from '@hocuspocus/provider';
@@ -21,6 +21,87 @@ function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
   }) as unknown as T;
 }
 
+type AccessError = { error: string; maxBoards?: number };
+type AccessState = 'loading' | 'allowed' | AccessError;
+
+// ---------- Error screen ----------
+function BoardErrorScreen({ err, floorSlug, boardId }: { err: AccessError; floorSlug: string; boardId: string }) {
+  const config: Record<string, { icon: typeof AlertTriangle; title: string; desc: string; buttons: { label: string; href: string; primary?: boolean }[] }> = {
+    floor_not_found: {
+      icon: AlertTriangle,
+      title: 'フロアが見つかりません',
+      desc: 'このボードに紐づくフロアが存在しないか、削除されています。',
+      buttons: [{ label: 'トップページに戻る', href: '/', primary: true }],
+    },
+    board_limit: {
+      icon: ShieldX,
+      title: 'ボード数の上限に達しています',
+      desc: `Freeプランでは共有ボードを${err.maxBoards ?? 1}つまでご利用いただけます。`,
+      buttons: [
+        { label: 'ボードを開く', href: `/board/${floorSlug}-board?name=${new URLSearchParams(location.search).get('name') || ''}&floor=${floorSlug}`, primary: true },
+        { label: 'フロアに戻る', href: `/f/${floorSlug}` },
+      ],
+    },
+    invalid_board: {
+      icon: ShieldX,
+      title: 'アクセスできません',
+      desc: 'このボードはお使いのフロアに紐づいていません。',
+      buttons: [{ label: 'フロアに戻る', href: `/f/${floorSlug}`, primary: true }],
+    },
+    auth_failed: {
+      icon: ShieldX,
+      title: '接続が拒否されました',
+      desc: 'ボードへの接続が許可されませんでした。フロアからボードを開いてください。',
+      buttons: [{ label: 'フロアに戻る', href: `/f/${floorSlug}`, primary: true }],
+    },
+  };
+
+  const c = config[err.error] || {
+    icon: AlertTriangle,
+    title: 'エラーが発生しました',
+    desc: 'ボードにアクセスできませんでした。',
+    buttons: [{ label: 'トップページに戻る', href: '/', primary: true }],
+  };
+  const Icon = c.icon;
+
+  return (
+    <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+      <div style={{ background: 'white', borderRadius: 16, padding: 32, maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.1)', textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon style={{ width: 24, height: 24, color: '#ef4444' }} strokeWidth={1.8} />
+          </div>
+        </div>
+        <p style={{ fontSize: 17, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>{c.title}</p>
+        <p style={{ fontSize: 13, color: '#64748b', marginBottom: 24, lineHeight: 1.6 }}>{c.desc}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {c.buttons.map((btn, i) => (
+            <a key={i} href={btn.href} style={{
+              display: 'block', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+              textDecoration: 'none', cursor: 'pointer', textAlign: 'center',
+              ...(btn.primary
+                ? { background: '#0ea5e9', color: 'white', border: 'none' }
+                : { background: 'white', color: '#475569', border: '1px solid #e2e8f0' }),
+            }}>{btn.label}</a>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Loading screen ----------
+function BoardLoadingScreen() {
+  return (
+    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', gap: 12 }}>
+      <Loader2 style={{ width: 28, height: 28, color: '#94a3b8', animation: 'spin 1s linear infinite' }} strokeWidth={2} />
+      <span style={{ fontSize: 13, color: '#94a3b8' }}>ボードを準備しています...</span>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+// ---------- Main ----------
 export default function BoardPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -35,6 +116,7 @@ export default function BoardPage() {
     }
   }, [floorSlug, userName]);
 
+  const [accessState, setAccessState] = useState<AccessState>('loading');
   const [api, setApi] = useState<any>(null);
   const [userCount, setUserCount] = useState(1);
   const [isConnected, setIsConnected] = useState(false);
@@ -45,9 +127,24 @@ export default function BoardPage() {
   const isRemoteRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Setup Yjs + Hocuspocus (simple scene-level sync, no y-excalidraw)
+  // Access validation: check floor exists + plan allows this board
   useEffect(() => {
-    if (!api) return;
+    if (!floorSlug || !userName || userName === 'Guest') return;
+    fetch(`/api/floors/${encodeURIComponent(floorSlug)}/board-access?boardId=${encodeURIComponent(boardId)}`)
+      .then(async (r) => {
+        const data = await r.json().catch(() => ({}));
+        if (r.ok && data.allowed) {
+          setAccessState('allowed');
+        } else {
+          setAccessState({ error: data.error || 'unknown', maxBoards: data.maxBoards });
+        }
+      })
+      .catch(() => setAccessState({ error: 'network' }));
+  }, [floorSlug, boardId, userName]);
+
+  // Setup Yjs + Hocuspocus — only when access is allowed
+  useEffect(() => {
+    if (accessState !== 'allowed' || !api) return;
 
     const ydoc = new Y.Doc();
     ydocRef.current = ydoc;
@@ -58,8 +155,10 @@ export default function BoardPage() {
       url: hocuspocusUrl,
       name: `board-${boardId}`,
       document: ydoc,
+      token: JSON.stringify({ floor: floorSlug, boardId }),
       onConnect: () => setIsConnected(true),
       onDisconnect: () => setIsConnected(false),
+      onAuthenticationFailed: () => setAccessState({ error: 'auth_failed' }),
     });
     providerRef.current = provider;
 
@@ -101,7 +200,7 @@ export default function BoardPage() {
       ydoc.destroy();
       ydocRef.current = null;
     };
-  }, [api, boardId, userName]);
+  }, [api, boardId, userName, accessState, floorSlug]);
 
   // Debounced sync: local changes → Yjs
   const syncToYjs = useMemo(
@@ -152,14 +251,12 @@ export default function BoardPage() {
       try {
         const data = JSON.parse(ev.target?.result as string);
         if (data.elements && Array.isArray(data.elements)) {
-          // Update local Excalidraw
           api.updateScene({
             elements: data.elements,
             ...(data.appState?.viewBackgroundColor
               ? { appState: { viewBackgroundColor: data.appState.viewBackgroundColor } }
               : {}),
           });
-          // Sync to Yjs immediately (not debounced) → other users get it
           const yScene = ydocRef.current!.getMap('scene');
           yScene.set('elements', data.elements);
         }
@@ -188,6 +285,12 @@ export default function BoardPage() {
 
   // Don't render if no floor context
   if (!floorSlug || !userName || userName === 'Guest') return null;
+
+  // Loading state
+  if (accessState === 'loading') return <BoardLoadingScreen />;
+
+  // Error state
+  if (typeof accessState === 'object') return <BoardErrorScreen err={accessState} floorSlug={floorSlug} boardId={boardId} />;
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: 'white' }}>

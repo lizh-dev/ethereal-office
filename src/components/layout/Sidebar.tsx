@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useOfficeStore } from '@/store/officeStore';
 import { ViewMode } from '@/types';
-import { Building2, Users, Video, MessageCircle, Settings, Pencil, Lock } from 'lucide-react';
+import { Building2, Users, Video, MessageCircle, Settings, Pencil, Lock, CreditCard, Palette, KeyRound, Code } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 const navItems: { mode: ViewMode; label: string; Icon: LucideIcon }[] = [
@@ -15,20 +15,50 @@ const navItems: { mode: ViewMode; label: string; Icon: LucideIcon }[] = [
   { mode: 'profile', label: '設定', Icon: Settings },
 ];
 
+const proMenuItems: { label: string; Icon: LucideIcon; action: 'branding' | 'sso' | 'api' | 'billing' }[] = [
+  { label: '外観', Icon: Palette, action: 'branding' },
+  { label: 'SSO', Icon: KeyRound, action: 'sso' },
+  { label: 'API', Icon: Code, action: 'api' },
+  { label: '請求', Icon: CreditCard, action: 'billing' },
+];
+
 export default function Sidebar() {
-  const { viewMode, setViewMode, editorMode, setEditorMode, unreadChatCount, markChatRead, isFloorOwner } = useOfficeStore();
+  const { viewMode, setViewMode, editorMode, setEditorMode, unreadChatCount, markChatRead, isFloorOwner, floorPlanType } = useOfficeStore();
   const [showPwModal, setShowPwModal] = useState(false);
   const [ownerPw, setOwnerPw] = useState('');
   const [pwError, setPwError] = useState('');
+
+  const isPro = floorPlanType === 'pro';
+  const floorSlug = typeof window !== 'undefined' ? (window.location.pathname.split('/f/')[1] || '') : '';
 
   const handleNavClick = (mode: ViewMode) => {
     setViewMode(mode);
     if (mode === 'chat') markChatRead();
   };
 
+  const handleProMenuClick = async (action: string) => {
+    if (action === 'billing') {
+      // Open Stripe billing portal
+      try {
+        const ownerPassword = sessionStorage.getItem(`ethereal-owner-pw-${floorSlug}`) || '';
+        const res = await fetch('/api/payments/portal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ floorSlug, ownerPassword }),
+        });
+        const data = await res.json();
+        if (data.url) {
+          window.open(data.url, '_blank');
+        }
+      } catch { /* ignore */ }
+    } else {
+      // Navigate to settings view (branding, sso, api are in ProfileView)
+      setViewMode('profile');
+    }
+  };
+
   const handleEditClick = () => {
     if (editorMode === 'edit') {
-      // Reload to discard unsaved Excalidraw changes
       window.location.reload();
       return;
     }
@@ -36,11 +66,9 @@ export default function Sidebar() {
       setEditorMode('edit');
       return;
     }
-    // Check if we have a legacy editToken (creator without owner password)
     const slug = window.location.pathname.split('/f/')[1];
     const tokens = JSON.parse(localStorage.getItem('ethereal-edit-tokens') || '{}');
     if (tokens[slug]) {
-      // Try editToken auth first
       fetch(`/api/floors/${slug}/verify-owner`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Edit-Token': tokens[slug] },
@@ -125,8 +153,44 @@ export default function Sidebar() {
           ))}
         </nav>
 
+        {/* Pro management section */}
+        {isPro && isFloorOwner && (
+          <div className="flex flex-col items-center gap-1 mb-2 pt-2 border-t border-gray-100">
+            {proMenuItems.map((item) => (
+              <button
+                key={item.action}
+                onClick={() => handleProMenuClick(item.action)}
+                className="relative group w-11 h-11 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all text-gray-400 hover:bg-sky-50 hover:text-sky-600"
+                title={item.label}
+              >
+                <item.Icon className="w-[16px] h-[16px]" strokeWidth={1.8} />
+                <span className="text-[7px] font-semibold tracking-wide">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Plan badge */}
+        {isPro ? (
+          <button
+            onClick={() => handleProMenuClick('billing')}
+            className="mb-2 px-2 py-0.5 rounded-full text-[8px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+            title="請求管理"
+          >
+            Pro
+          </button>
+        ) : (
+          <Link
+            href={`/f/${floorSlug}/upgrade`}
+            className="mb-2 px-2 py-0.5 rounded-full text-[8px] font-bold bg-gray-50 text-gray-400 border border-gray-200 hover:bg-sky-50 hover:text-sky-500 hover:border-sky-200 transition-colors"
+            title="Proプランにアップグレード"
+          >
+            Free
+          </Link>
+        )}
+
         {/* Edit mode */}
-        <div className="relative group mb-2">
+        <div className="relative group">
           <button
             onClick={handleEditClick}
             className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
