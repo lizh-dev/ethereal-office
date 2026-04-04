@@ -275,7 +275,7 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       <Excalidraw
         excalidrawAPI={handleAPI}
         initialData={initialData}
-        gridModeEnabled={true}
+        gridModeEnabled={!viewMode}
         theme="light"
         langCode="ja-JP"
         viewModeEnabled={viewMode}

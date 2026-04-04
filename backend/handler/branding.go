@@ -16,10 +16,17 @@ import (
 
 const brandingUploadDir = "/tmp/ethereal-uploads/branding"
 
+type AccentTargets struct {
+	Header  bool `json:"header"`
+	Sidebar bool `json:"sidebar"`
+	Buttons bool `json:"buttons"`
+}
+
 type UpdateBrandingRequest struct {
-	LogoURL     string `json:"logoUrl"`
-	AccentColor string `json:"accentColor"`
-	FloorTitle  string `json:"floorTitle"`
+	LogoURL       string        `json:"logoUrl"`
+	AccentColor   string        `json:"accentColor"`
+	FloorTitle    string        `json:"floorTitle"`
+	AccentTargets *AccentTargets `json:"accentTargets,omitempty"`
 }
 
 // GET /api/floors/{slug}/branding
@@ -43,6 +50,11 @@ func GetFloorBranding(w http.ResponseWriter, r *http.Request) {
 			"logoUrl":     "",
 			"accentColor": "#0ea5e9",
 			"floorTitle":  "",
+			"accentTargets": map[string]bool{
+				"header":  false,
+				"sidebar": false,
+				"buttons": false,
+			},
 		})
 		return
 	}
@@ -51,6 +63,11 @@ func GetFloorBranding(w http.ResponseWriter, r *http.Request) {
 		"logoUrl":     branding.LogoURL,
 		"accentColor": branding.AccentColor,
 		"floorTitle":  branding.FloorTitle,
+		"accentTargets": map[string]bool{
+			"header":  branding.AccentHeader,
+			"sidebar": branding.AccentSidebar,
+			"buttons": branding.AccentButtons,
+		},
 	})
 }
 
@@ -93,13 +110,26 @@ func UpdateFloorBranding(w http.ResponseWriter, r *http.Request) {
 	var branding model.FloorBranding
 	result := db.DB.Where("floor_id = ?", floor.ID).First(&branding)
 
+	// Extract accent targets
+	accentHeader := false
+	accentSidebar := false
+	accentButtons := false
+	if req.AccentTargets != nil {
+		accentHeader = req.AccentTargets.Header
+		accentSidebar = req.AccentTargets.Sidebar
+		accentButtons = req.AccentTargets.Buttons
+	}
+
 	if result.Error != nil {
 		// Create new record
 		branding = model.FloorBranding{
-			FloorID:     floor.ID,
-			LogoURL:     req.LogoURL,
-			AccentColor: req.AccentColor,
-			FloorTitle:  req.FloorTitle,
+			FloorID:       floor.ID,
+			LogoURL:       req.LogoURL,
+			AccentColor:   req.AccentColor,
+			FloorTitle:    req.FloorTitle,
+			AccentHeader:  accentHeader,
+			AccentSidebar: accentSidebar,
+			AccentButtons: accentButtons,
 		}
 		if branding.AccentColor == "" {
 			branding.AccentColor = "#0ea5e9"
@@ -111,9 +141,12 @@ func UpdateFloorBranding(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// Update existing record
 		updates := map[string]any{
-			"logo_url":     req.LogoURL,
-			"accent_color": req.AccentColor,
-			"floor_title":  req.FloorTitle,
+			"logo_url":       req.LogoURL,
+			"accent_color":   req.AccentColor,
+			"floor_title":    req.FloorTitle,
+			"accent_header":  accentHeader,
+			"accent_sidebar": accentSidebar,
+			"accent_buttons": accentButtons,
 		}
 		if req.AccentColor == "" {
 			updates["accent_color"] = "#0ea5e9"
@@ -129,6 +162,11 @@ func UpdateFloorBranding(w http.ResponseWriter, r *http.Request) {
 		"logoUrl":     branding.LogoURL,
 		"accentColor": branding.AccentColor,
 		"floorTitle":  branding.FloorTitle,
+		"accentTargets": map[string]bool{
+			"header":  branding.AccentHeader,
+			"sidebar": branding.AccentSidebar,
+			"buttons": branding.AccentButtons,
+		},
 	})
 }
 

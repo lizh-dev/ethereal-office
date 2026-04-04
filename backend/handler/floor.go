@@ -5,15 +5,19 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"regexp"
 
 	"github.com/ethereal-office/backend/db"
 	"github.com/ethereal-office/backend/model"
 	"gorm.io/datatypes"
 )
 
+var validSlugRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]{2,29}$`)
+
 type CreateFloorRequest struct {
 	Name            string          `json:"name"`
 	OwnerEmail      string          `json:"ownerEmail"`
+	CustomSlug      string          `json:"customSlug,omitempty"`
 	CreatorName     string          `json:"creatorName,omitempty"`
 	Password        string          `json:"password,omitempty"`
 	OwnerPassword   string          `json:"ownerPassword,omitempty"`
@@ -22,6 +26,7 @@ type CreateFloorRequest struct {
 
 type UpdateFloorRequest struct {
 	Name            *string         `json:"name,omitempty"`
+	CustomSlug      *string         `json:"customSlug,omitempty"`
 	ExcalidrawScene json.RawMessage `json:"excalidrawScene,omitempty"`
 	Zones           json.RawMessage `json:"zones,omitempty"`
 	Settings        json.RawMessage `json:"settings,omitempty"`
@@ -79,9 +84,42 @@ func CreateFloor(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Determine slug: custom (Pro only) or random
+	slug := generateSlug()
+	if req.CustomSlug != "" {
+		// Custom slug requires Pro
+		var sub model.Subscription
+		hasPro := db.DB.Where("owner_email = ? AND status IN ?", req.OwnerEmail, []string{"active", "trialing"}).First(&sub).Error == nil
+		if !hasPro {
+			writeJSON(w, http.StatusForbidden, map[string]any{
+				"error":   "pro_required",
+				"message": "カスタムIDはProプラン限定です",
+			})
+			return
+		}
+		if !validSlugRegex.MatchString(req.CustomSlug) {
+			writeJSON(w, http.StatusBadRequest, map[string]any{
+				"error":   "invalid_slug",
+				"message": "IDは英数字・ハイフン・アンダースコアで3〜30文字です",
+			})
+			return
+		}
+		// Check availability
+		var count int64
+		db.DB.Model(&model.Floor{}).Where("slug = ?", req.CustomSlug).Count(&count)
+		if count > 0 {
+			writeJSON(w, http.StatusConflict, map[string]any{
+				"error":   "slug_taken",
+				"message": "このIDは既に使用されています",
+			})
+			return
+		}
+		slug = req.CustomSlug
+	}
+
 	editToken := generateSlug() + generateSlug() // 16 hex chars
 	floor := model.Floor{
-		Slug:       generateSlug(),
+		Slug:       slug,
 		Name:       req.Name,
 		OwnerEmail: req.OwnerEmail,
 		EditToken:  editToken,
@@ -184,6 +222,29 @@ func UpdateFloor(w http.ResponseWriter, r *http.Request) {
 	if req.Name != nil {
 		updates["name"] = *req.Name
 	}
+	if req.CustomSlug != nil && *req.CustomSlug != "" {
+		newSlug := *req.CustomSlug
+		// Pro check
+		if floor.OwnerEmail != "" {
+			var sub model.Subscription
+			hasPro := db.DB.Where("owner_email = ? AND status IN ?", floor.OwnerEmail, []string{"active", "trialing"}).First(&sub).Error == nil
+			if !hasPro {
+				writeJSON(w, http.StatusForbidden, map[string]any{"error": "pro_required", "message": "カスタムIDはProプラン限定です"})
+				return
+			}
+		}
+		if !validSlugRegex.MatchString(newSlug) {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid_slug", "message": "IDは英数字・ハイフン・アンダースコアで3〜30文字です"})
+			return
+		}
+		var count int64
+		db.DB.Model(&model.Floor{}).Where("slug = ? AND id != ?", newSlug, floor.ID).Count(&count)
+		if count > 0 {
+			writeJSON(w, http.StatusConflict, map[string]any{"error": "slug_taken", "message": "このIDは既に使用されています"})
+			return
+		}
+		updates["slug"] = newSlug
+	}
 	if req.ExcalidrawScene != nil {
 		updates["excalidraw_scene"] = req.ExcalidrawScene
 	}
@@ -212,9 +273,13 @@ func UpdateFloor(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Reload
-	db.DB.Where("slug = ?", slug).First(&floor)
-	writeJSON(w, http.StatusOK, floor)
+	// Reload (use ID since slug may have changed)
+	db.DB.First(&floor, floor.ID)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"slug":    floor.Slug,
+		"name":    floor.Name,
+		"updated": true,
+	})
 }
 
 // POST /api/floors/{slug}/verify-owner
@@ -272,6 +337,22 @@ func VerifyPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": body.Password == *floor.Password})
+}
+
+// GET /api/floors/check-slug?slug=xxx
+func CheckSlugAvailability(w http.ResponseWriter, r *http.Request) {
+	slug := r.URL.Query().Get("slug")
+	if slug == "" {
+		writeError(w, http.StatusBadRequest, "slug is required")
+		return
+	}
+	if !validSlugRegex.MatchString(slug) {
+		writeJSON(w, http.StatusOK, map[string]any{"available": false, "reason": "IDは英数字・ハイフン・アンダースコアで3〜30文字です"})
+		return
+	}
+	var count int64
+	db.DB.Model(&model.Floor{}).Where("slug = ?", slug).Count(&count)
+	writeJSON(w, http.StatusOK, map[string]any{"available": count == 0})
 }
 
 // GET /api/floors/by-owner?email=xxx

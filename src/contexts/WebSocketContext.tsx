@@ -12,7 +12,7 @@ export interface WsSend {
   reaction: (emoji: string) => void;
   sceneUpdate: () => void;
   kick: (targetUserId: string) => void;
-  profileUpdate: (name: string, avatarStyle: string, avatarSeed: string) => void;
+  profileUpdate: (name: string, avatarStyle: string, avatarSeed: string, customAvatarUrl?: string) => void;
   dm: (targetUserId: string, text: string) => void;
   whisper: (text: string) => void;
   callRequest: (targetUserId: string) => void;

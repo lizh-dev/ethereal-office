@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
-import { getAvatarUrl } from '@/components/floor/assets';
+import { resolveAvatarUrl } from '@/components/floor/assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import type { FeatureKey } from '@/types/plan';
 import { MessageCircle } from 'lucide-react';
@@ -131,15 +131,14 @@ export default function ChatView() {
                 const user = allUsers.find(u => u.id === msg.userId);
                 const isMe = msg.userId === currentUser.id;
                 const displayName = user?.name || (isMe ? currentUser.name : 'ゲスト');
-                const displaySeed = user?.avatarSeed || (isMe ? currentUser.avatarSeed : undefined) || 'default';
-                const displayStyle = user?.avatarStyle || (isMe ? currentUser.avatarStyle : undefined) || 'notionists';
+                const displayUser = user || (isMe ? currentUser : { avatarSeed: 'default', avatarStyle: 'notionists' });
                 const time = new Date(msg.timestamp);
                 const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
 
                 return (
                   <div key={`${msg.timestamp}-${i}`} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''}`}>
                     <img
-                      src={getAvatarUrl(displaySeed, displayStyle)}
+                      src={resolveAvatarUrl(displayUser)}
                       alt=""
                       className="w-8 h-8 rounded-full border border-gray-200 flex-shrink-0"
                     />
@@ -229,8 +228,7 @@ export default function ChatView() {
             <div className="divide-y divide-gray-100">
               {dmConversations.map(({ userId, user, lastMsg, unread }) => {
                 const displayName = user?.name || 'ゲスト';
-                const displaySeed = user?.avatarSeed || 'default';
-                const displayStyle = user?.avatarStyle || 'notionists';
+                const dmUser = user || { avatarSeed: 'default', avatarStyle: 'notionists' };
                 const time = lastMsg ? new Date(lastMsg.timestamp) : null;
                 const timeStr = time ? `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}` : '';
                 const isFromMe = lastMsg?.from === currentUser.id;
@@ -242,7 +240,7 @@ export default function ChatView() {
                     className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
                   >
                     <img
-                      src={getAvatarUrl(displaySeed, displayStyle)}
+                      src={resolveAvatarUrl(dmUser)}
                       alt=""
                       className="w-10 h-10 rounded-full border border-gray-200 flex-shrink-0"
                     />

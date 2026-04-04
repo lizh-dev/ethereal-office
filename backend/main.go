@@ -54,12 +54,14 @@ func main() {
 	mux.HandleFunc("POST /api/floors/{slug}/files", handler.UploadFile)
 	mux.HandleFunc("GET /api/floors/{slug}/files/{id}", handler.DownloadFile)
 
-	// SSO
-	mux.HandleFunc("GET /api/floors/{slug}/sso/config", handler.GetSSOConfig)
-	mux.HandleFunc("PUT /api/floors/{slug}/sso/config", handler.RequirePlanFeature("sso", handler.UpdateSSOConfig))
-	mux.HandleFunc("GET /api/floors/{slug}/sso/login", handler.SSOLogin)
-	mux.HandleFunc("GET /api/floors/{slug}/sso/callback", handler.SSOCallback)
-	mux.HandleFunc("GET /api/floors/{slug}/sso/verify", handler.VerifySSOSession)
+	// SSO (Self-Hosted only: ENABLE_SSO=true)
+	if os.Getenv("ENABLE_SSO") == "true" {
+		mux.HandleFunc("GET /api/floors/{slug}/sso/config", handler.GetSSOConfig)
+		mux.HandleFunc("PUT /api/floors/{slug}/sso/config", handler.RequirePlanFeature("sso", handler.UpdateSSOConfig))
+		mux.HandleFunc("GET /api/floors/{slug}/sso/login", handler.SSOLogin)
+		mux.HandleFunc("GET /api/floors/{slug}/sso/callback", handler.SSOCallback)
+		mux.HandleFunc("GET /api/floors/{slug}/sso/verify", handler.VerifySSOSession)
+	}
 
 	// Branding
 	mux.HandleFunc("GET /api/floors/{slug}/branding", handler.GetFloorBranding)
@@ -92,15 +94,17 @@ func main() {
 	mux.HandleFunc("POST /api/payments/webhook", handler.HandleStripeWebhook)
 	mux.HandleFunc("POST /api/payments/portal", handler.CreatePortalSession)
 
-	// API key management (owner auth + Pro plan)
-	mux.HandleFunc("POST /api/floors/{slug}/api-keys", handler.RequirePlanFeature("apiAccess", handler.CreateAPIKey))
-	mux.HandleFunc("GET /api/floors/{slug}/api-keys", handler.RequirePlanFeature("apiAccess", handler.ListAPIKeys))
-	mux.HandleFunc("DELETE /api/floors/{slug}/api-keys/{keyId}", handler.RequirePlanFeature("apiAccess", handler.RevokeAPIKey))
+	// API key management & Public API (Self-Hosted only: ENABLE_API_ACCESS=true)
+	if os.Getenv("ENABLE_API_ACCESS") == "true" {
+		mux.HandleFunc("POST /api/floors/{slug}/api-keys", handler.RequirePlanFeature("apiAccess", handler.CreateAPIKey))
+		mux.HandleFunc("GET /api/floors/{slug}/api-keys", handler.RequirePlanFeature("apiAccess", handler.ListAPIKeys))
+		mux.HandleFunc("DELETE /api/floors/{slug}/api-keys/{keyId}", handler.RequirePlanFeature("apiAccess", handler.RevokeAPIKey))
 
-	// Public API (API key auth)
-	mux.HandleFunc("GET /api/v1/floors/{slug}", handler.RequireAPIKeyAuth(handler.PublicGetFloor))
-	mux.HandleFunc("GET /api/v1/floors/{slug}/members", handler.RequireAPIKeyAuth(handler.PublicGetMembers(hub)))
-	mux.HandleFunc("GET /api/v1/floors/{slug}/zones", handler.RequireAPIKeyAuth(handler.PublicGetZones))
+		// Public API (API key auth)
+		mux.HandleFunc("GET /api/v1/floors/{slug}", handler.RequireAPIKeyAuth(handler.PublicGetFloor))
+		mux.HandleFunc("GET /api/v1/floors/{slug}/members", handler.RequireAPIKeyAuth(handler.PublicGetMembers(hub)))
+		mux.HandleFunc("GET /api/v1/floors/{slug}/zones", handler.RequireAPIKeyAuth(handler.PublicGetZones))
+	}
 
 	// Meeting rooms
 	mux.HandleFunc("/api/floors/{slug}/meeting-rooms", handler.HandleMeetingRooms())

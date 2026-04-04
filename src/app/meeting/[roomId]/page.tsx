@@ -396,7 +396,7 @@ export default function MeetingPage() {
             hideConferenceSubject: true,
             notifications: [],
             disableThirdPartyRequests: true,
-            p2p: { enabled: false },
+            p2p: { enabled: true },
             enableWelcomePage: false,
             enableClosePage: false,
             feedbackPercentage: 0,
@@ -475,9 +475,17 @@ export default function MeetingPage() {
       .catch(() => setRoomValid(false));
   }, [roomId, autoJoin]);
 
+  // Auto-join: register participant via verify-password API then join
   useEffect(() => {
-    if (autoJoin && userName && roomValid) setJoined(true);
-  }, [autoJoin, userName, roomValid]);
+    if (!autoJoin || !userName || !roomValid) return;
+    fetch('/api/meetings/verify-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meetingId: decodedRoomId, password: storedPw || '', userId: uidFromUrl || userName, floorSlug }),
+    })
+      .catch(() => {})
+      .finally(() => setJoined(true));
+  }, [autoJoin, userName, roomValid, decodedRoomId, uidFromUrl, floorSlug, storedPw]);
 
   if (error) {
     return (
@@ -560,8 +568,17 @@ export default function MeetingPage() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#1a1a2e', position: 'relative' }}>
-      {/* Jitsi container — hidden when board is shown (audio continues) */}
-      <div ref={containerRef} style={{ width: '100%', height: '100%', display: showBoard ? 'none' : 'block' }} />
+      {/* Jitsi container — PiP when board is shown (audio+video continue) */}
+      <div
+        ref={containerRef}
+        style={showBoard ? {
+          position: 'fixed', bottom: 60, left: 16, width: 340, height: 220,
+          zIndex: 60, borderRadius: 12, overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)', border: '2px solid #334155',
+        } : {
+          width: '100%', height: '100%',
+        }}
+      />
 
       {/* Excalidraw board — stays mounted once opened, hidden via CSS to preserve Yjs connection */}
       {boardMounted && (

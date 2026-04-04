@@ -50,4 +50,7 @@ next-env.d.ts
 .cp-images/
 stripe.exe
 backend/.env
-EtherealOffice_OAuth2.0_goole.jsonhocuspocus/node_modules/
+EtherealOffice_OAuth2.0_goole.json
+hocuspocus/node_modules/
+hocuspocus/package-lock.json
+test-*.js

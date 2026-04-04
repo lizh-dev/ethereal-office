@@ -30,7 +30,9 @@
       "Bash(curl -s http://localhost:8080/api/floors/cd6ba98b)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''''name:'''', d.get\\(''''name''''\\)\\); z=d.get\\(''''zones'''',[]\\); print\\(''''zones:'''', len\\(z\\) if z else 0\\); print\\(''''hasScene:'''', bool\\(d.get\\(''''excalidrawScene''''\\)\\)\\)\")",
       "Bash(curl -sI http://localhost:3000/demo.webm)",
-      "Bash(find /c/workspaces/ethereal-office -name *.ts -path */api/*)"
+      "Bash(find /c/workspaces/ethereal-office -name *.ts -path */api/*)",
+      "Bash(grep -r \"Board\\\\|board\" /c/workspaces/ethereal-office/backend/model/*.go)",
+      "Bash(find:*)"
     ]
   }
 }

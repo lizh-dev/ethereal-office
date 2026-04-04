@@ -1,5 +1,7 @@
 package model
 
+import "os"
+
 // PlanPermissions defines what features each plan can access.
 type PlanPermissions struct {
 	VoiceCall              bool `json:"voiceCall"`
@@ -19,6 +21,7 @@ type PlanPermissions struct {
 	MaxFloors              int  `json:"maxFloors"`              // 0 = unlimited
 	PremiumThemes          bool `json:"premiumThemes"`
 	CustomBranding         bool `json:"customBranding"`
+	CustomAvatar           bool `json:"customAvatar"`
 	SSO                    bool `json:"sso"`
 	DedicatedEnv           bool `json:"dedicatedEnv"`
 	SLA                    bool `json:"sla"`
@@ -44,6 +47,7 @@ var PlanPermissionsMap = map[PlanType]PlanPermissions{
 		MaxFloors:              1,   // floor.go で強制
 		PremiumThemes:          false,
 		CustomBranding:         false, // main.go でゲート済み
+		CustomAvatar:           false, // Pro限定: カスタムアバター画像
 		SSO:                    false, // main.go でゲート済み
 		DedicatedEnv:           false,
 		SLA:                    false,
@@ -67,11 +71,26 @@ var PlanPermissionsMap = map[PlanType]PlanPermissions{
 		MaxFloors:              0, // unlimited
 		PremiumThemes:          true,
 		CustomBranding:         true,
-		SSO:                    true,
+		CustomAvatar:           true,
+		SSO:                    false, // Self-Hosted only: ENABLE_SSO=true
 		DedicatedEnv:           true,
 		SLA:                    true,
-		APIAccess:              true,
+		APIAccess:              false, // Self-Hosted only: ENABLE_API_ACCESS=true
 	},
+}
+
+func init() {
+	// Enable SSO/APIAccess for Pro plan only when explicitly enabled via env vars (Self-Hosted)
+	if os.Getenv("ENABLE_SSO") == "true" {
+		pro := PlanPermissionsMap[PlanPro]
+		pro.SSO = true
+		PlanPermissionsMap[PlanPro] = pro
+	}
+	if os.Getenv("ENABLE_API_ACCESS") == "true" {
+		pro := PlanPermissionsMap[PlanPro]
+		pro.APIAccess = true
+		PlanPermissionsMap[PlanPro] = pro
+	}
 }
 
 // GetFloorPlan returns the active plan for a floor slug.

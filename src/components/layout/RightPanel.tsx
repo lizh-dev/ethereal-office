@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
-import { getAvatarUrl } from '@/components/floor/assets';
+import { resolveAvatarUrl } from '@/components/floor/assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import type { UserAction, User, Zone } from '@/types';
 
@@ -40,7 +40,7 @@ function UserRow({ user, action, zoneName, onClickUser }: {
     >
       <div className="relative flex-shrink-0">
         <img
-          src={getAvatarUrl(user.avatarSeed || user.name, user.avatarStyle || 'notionists')}
+          src={resolveAvatarUrl(user)}
           alt={user.name}
           className="w-[28px] h-[28px] rounded-full bg-gray-100"
           style={{ border: `2px solid ${STATUS_COLORS[user.status]}` }}
@@ -191,7 +191,7 @@ export default function RightPanel() {
         <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100">
           <div className="relative flex-shrink-0">
             <img
-              src={getAvatarUrl(currentUser.avatarSeed || currentUser.name, currentUser.avatarStyle || 'notionists')}
+              src={resolveAvatarUrl(currentUser)}
               alt={currentUser.name}
               className="w-[36px] h-[36px] rounded-full bg-gray-100"
               style={{ border: `2.5px solid ${STATUS_COLORS[currentUser.status]}` }}
@@ -298,7 +298,7 @@ export default function RightPanel() {
                     {participants.slice(0, 5).map((u) => (
                       <img
                         key={u.id}
-                        src={getAvatarUrl(u.avatarSeed || u.name, u.avatarStyle || 'notionists')}
+                        src={resolveAvatarUrl(u)}
                         alt={u.name}
                         title={u.name}
                         className="w-[20px] h-[20px] rounded-full border-[1.5px] border-white bg-gray-100"

@@ -33,6 +33,15 @@ export function getAvatarUrl(seed: string, style: string = 'notionists'): string
   return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}&radius=50`;
 }
 
+/**
+ * Resolve the display avatar URL for a user.
+ * Returns customAvatarUrl if set, otherwise falls back to DiceBear.
+ */
+export function resolveAvatarUrl(user: { avatarSeed?: string; avatarStyle?: string; customAvatarUrl?: string; name?: string }): string {
+  if (user.customAvatarUrl) return user.customAvatarUrl;
+  return getAvatarUrl(user.avatarSeed || user.name || 'default', user.avatarStyle || 'notionists');
+}
+
 export async function loadAvatar(seed: string, style: string = 'notionists'): Promise<HTMLImageElement> {
   return loadImage(getAvatarUrl(seed, style));
 }

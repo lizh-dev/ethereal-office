@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
-import { getAvatarUrl } from '@/components/floor/assets';
+import { resolveAvatarUrl } from '@/components/floor/assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -57,7 +57,7 @@ export default function DMPanel() {
       }}>
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <img
-            src={getAvatarUrl(targetUser.avatarSeed || 'default', targetUser.avatarStyle || 'notionists')}
+            src={resolveAvatarUrl(targetUser)}
             alt=""
             style={{
               width: 36,
@@ -130,15 +130,14 @@ export default function DMPanel() {
             const isMe = msg.from === currentUser.id;
             const sender = allUsers.find(u => u.id === msg.from);
             const displayName = sender?.name || 'ゲスト';
-            const displaySeed = sender?.avatarSeed || 'default';
-            const displayStyle = sender?.avatarStyle || 'notionists';
+            const senderUser = sender || { avatarSeed: 'default', avatarStyle: 'notionists' };
             const time = new Date(msg.timestamp);
             const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
 
             return (
               <div key={msg.id} style={{ display: 'flex', gap: 8, flexDirection: isMe ? 'row-reverse' : 'row' }}>
                 <img
-                  src={getAvatarUrl(displaySeed, displayStyle)}
+                  src={resolveAvatarUrl(senderUser)}
                   alt=""
                   style={{
                     width: 28,

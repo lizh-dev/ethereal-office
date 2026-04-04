@@ -3,12 +3,22 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useOfficeStore } from '@/store/officeStore';
-import { getAvatarUrl } from '@/components/floor/assets';
+import { resolveAvatarUrl } from '@/components/floor/assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import QRCodeModal from '@/components/QRCodeModal';
 import { useFocusTimer } from '@/hooks/useFocusTimer';
 import type { PresenceStatus } from '@/types';
 import { Pencil, Search, Zap, Check, Share2, Coffee, Target, LogOut, ChevronDown, Plus, Building2 } from 'lucide-react';
+
+/** Returns true if the hex color is light (text should be dark) */
+function isLightColor(hex: string): boolean {
+  const c = hex.replace('#', '');
+  if (c.length < 6) return true;
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  return (r * 299 + g * 258 + b * 114) / 1000 > 128;
+}
 
 const STATUS_COLORS: Record<string, string> = {
   online: '#4CAF50', busy: '#F44336', focusing: '#FF9800', offline: '#9CA3AF',
@@ -120,30 +130,45 @@ export default function TopBar() {
     e.target.value = '';
   };
 
+  const accentColor = branding.accentColor || '#0ea5e9';
+  const accentTargets = branding.accentTargets || { header: false, sidebar: false, buttons: false };
+  const headerAccent = accentTargets.header;
+  const headerTextColor = headerAccent ? (isLightColor(accentColor) ? '#1f2937' : '#ffffff') : undefined;
+  const headerBorderColor = headerAccent ? (isLightColor(accentColor) ? '#e5e7eb' : 'rgba(255,255,255,0.15)') : undefined;
+
   return (
-    <header className="h-[50px] bg-white border-b border-gray-200 flex items-center justify-between px-3 md:px-4">
+    <header
+      className={`h-[50px] flex items-center justify-between px-3 md:px-4 ${headerAccent ? '' : 'bg-white border-b border-gray-200'}`}
+      style={headerAccent ? { backgroundColor: accentColor, borderBottom: `1px solid ${headerBorderColor}` } : undefined}
+    >
       <div className="flex items-center gap-2 md:gap-4">
-        <Link href="/" className="text-base font-bold text-gray-800 flex items-center gap-1.5 md:gap-2 hover:text-sky-600 transition-colors" title="ホームに戻る">
+        <button
+          onClick={() => useOfficeStore.getState().setViewMode('floor')}
+          className={`text-base font-bold flex items-center gap-1.5 md:gap-2 transition-colors ${headerAccent ? '' : 'text-gray-800 hover:text-sky-600'}`}
+          style={headerAccent ? { color: headerTextColor } : undefined}
+          title="フロアに戻る"
+        >
           {branding.logoUrl ? (
             <img src={branding.logoUrl} alt="Logo" style={{ width: 24, height: 24, objectFit: 'contain', borderRadius: 4 }} />
           ) : (
-            <span className="text-sky-500">S</span>
+            <span style={headerAccent ? { color: headerTextColor, opacity: 0.8 } : undefined} className={headerAccent ? '' : 'text-sky-500'}>{(branding.floorTitle || 'S')[0]}</span>
           )}
           <span className="hidden md:inline">{branding.floorTitle || 'SmartOffice'}</span>
-        </Link>
+        </button>
 
         {/* Floor Switcher */}
         {ownerEmail && isFloorOwner && (
           <div ref={floorSwitcherRef} className="relative">
             <button
               onClick={() => setShowFloorSwitcher(!showFloorSwitcher)}
-              className="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded-lg transition-colors text-[12px] font-medium text-gray-600"
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors text-[12px] font-medium ${headerAccent ? '' : 'hover:bg-gray-100 text-gray-600'}`}
+              style={headerAccent ? { color: headerTextColor } : undefined}
             >
               <Building2 className="w-3.5 h-3.5" strokeWidth={1.8} />
               <ChevronDown className="w-3 h-3" strokeWidth={2} />
             </button>
             {showFloorSwitcher && (
-              <div className="absolute left-0 top-full mt-1 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-[100]"
+              <div className="absolute left-0 top-full mt-1 w-72 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-[100]"
                 style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}
               >
                 <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">フロア一覧</div>
@@ -155,9 +180,10 @@ export default function TopBar() {
                   >
                     <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
                     <div className="min-w-0">
-                      <div className={`text-[12px] truncate ${f.slug === floorSlug ? 'font-bold text-sky-600' : 'font-medium text-gray-600'}`}>
+                      <div className={`text-[12px] ${f.slug === floorSlug ? 'font-bold text-sky-600' : 'font-medium text-gray-600'}`}>
                         {f.name}
                       </div>
+                      <div className="text-[10px] text-gray-400 font-mono">/f/{f.slug}</div>
                     </div>
                     {f.slug === floorSlug && <Check className="ml-auto w-3.5 h-3.5 text-sky-500 flex-shrink-0" strokeWidth={2} />}
                   </a>
@@ -189,11 +215,16 @@ export default function TopBar() {
       {/* Search - responsive, compact on mobile */}
       <div className="flex-1 max-w-md mx-2 md:mx-6">
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><Search className="w-3.5 h-3.5" strokeWidth={1.8} /></span>
+          <span className={`absolute left-3 top-1/2 -translate-y-1/2 ${headerAccent ? '' : 'text-gray-400'}`} style={headerAccent ? { color: headerTextColor, opacity: 0.5 } : undefined}><Search className="w-3.5 h-3.5" strokeWidth={1.8} /></span>
           <input type="text" placeholder="メンバーを検索..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full h-8 md:h-9 pl-8 md:pl-9 pr-3 md:pr-4 bg-gray-50 border border-gray-200 rounded-full text-xs md:text-sm text-gray-600 placeholder:text-gray-400 focus:outline-none focus:border-blue-300 focus:bg-white transition-colors"
+            className={`w-full h-8 md:h-9 pl-8 md:pl-9 pr-3 md:pr-4 rounded-full text-xs md:text-sm focus:outline-none transition-colors ${
+              headerAccent
+                ? 'border placeholder:text-white/50'
+                : 'bg-gray-50 border border-gray-200 text-gray-600 placeholder:text-gray-400 focus:border-blue-300 focus:bg-white'
+            }`}
+            style={headerAccent ? { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.2)', color: headerTextColor } : undefined}
           />
         </div>
       </div>
@@ -211,8 +242,8 @@ export default function TopBar() {
           </Link>
         ) : (
           <span
-            className={`text-[11px] px-2 md:px-3 py-1.5 rounded-lg font-semibold text-white shadow-sm ${branding.accentColor && branding.accentColor !== '#0ea5e9' ? '' : 'bg-gradient-to-r from-emerald-500 to-teal-500'}`}
-            style={branding.accentColor && branding.accentColor !== '#0ea5e9' ? { background: branding.accentColor } : undefined}
+            className={`text-[11px] px-2 md:px-3 py-1.5 rounded-lg font-semibold shadow-sm ${accentTargets.buttons ? '' : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'}`}
+            style={accentTargets.buttons ? { background: accentColor, color: isLightColor(accentColor) ? '#1f2937' : '#ffffff' } : undefined}
           >
             <span className="md:hidden"><Check className="w-3.5 h-3.5 inline" strokeWidth={1.8} /></span>
             <span className="hidden md:inline"><Check className="w-3.5 h-3.5 inline" strokeWidth={1.8} /> Pro</span>
@@ -220,7 +251,24 @@ export default function TopBar() {
         )}
 
         {/* Share button - icon only on mobile */}
-        <button onClick={() => setShowQR(true)} title="フロアを共有" className="text-[11px] px-2 md:px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
+        <button
+          onClick={() => setShowQR(true)}
+          title="フロアを共有"
+          className={`text-[11px] px-2 md:px-3 py-1.5 rounded-lg font-medium transition-colors ${
+            accentTargets.buttons
+              ? ''
+              : headerAccent
+                ? ''
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+          }`}
+          style={
+            accentTargets.buttons
+              ? { background: accentColor, color: isLightColor(accentColor) ? '#1f2937' : '#ffffff' }
+              : headerAccent
+                ? { background: 'rgba(255,255,255,0.15)', color: headerTextColor }
+                : undefined
+          }
+        >
           <span className="md:hidden"><Share2 className="w-3.5 h-3.5 inline" strokeWidth={1.8} /></span>
           <span className="hidden md:inline"><Share2 className="w-3.5 h-3.5 inline" strokeWidth={1.8} /> 共有</span>
         </button>
@@ -228,11 +276,12 @@ export default function TopBar() {
         {/* User avatar - click to change avatar */}
         <button
           onClick={() => setShowAvatarSelector(true)}
-          className="pl-2 md:pl-3 border-l border-gray-200 hover:bg-gray-50 rounded-lg pr-1 py-1 transition-colors"
+          className={`pl-2 md:pl-3 border-l rounded-lg pr-1 py-1 transition-colors ${headerAccent ? '' : 'border-gray-200 hover:bg-gray-50'}`}
+          style={headerAccent ? { borderColor: 'rgba(255,255,255,0.2)' } : undefined}
         >
           <div className="relative">
             <img
-              src={getAvatarUrl(currentUser.avatarSeed || currentUser.name, currentUser.avatarStyle || 'notionists')}
+              src={resolveAvatarUrl(currentUser)}
               alt="" className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gray-100 border-2"
               style={{ borderColor: STATUS_COLORS[currentUser.status] }}
             />
@@ -244,16 +293,16 @@ export default function TopBar() {
         <div ref={statusMenuRef} className="relative">
           <button
             onClick={() => setShowStatusMenu(!showStatusMenu)}
-            className="flex items-center gap-1.5 hover:bg-gray-50 rounded-lg px-1.5 md:px-2 py-1 transition-colors"
+            className={`flex items-center gap-1.5 rounded-lg px-1.5 md:px-2 py-1 transition-colors ${headerAccent ? '' : 'hover:bg-gray-50'}`}
           >
             <div className="text-left">
-              <div className="text-[11px] md:text-[12px] font-semibold text-gray-800 max-w-[60px] md:max-w-none truncate">{currentUser.name}</div>
+              <div className={`text-[11px] md:text-[12px] font-semibold max-w-[60px] md:max-w-none truncate ${headerAccent ? '' : 'text-gray-800'}`} style={headerAccent ? { color: headerTextColor } : undefined}>{currentUser.name}</div>
               <div className="text-[10px] font-medium flex items-center gap-1" style={{ color: STATUS_COLORS[currentUser.status] }}>
                 <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: STATUS_COLORS[currentUser.status] }} />
                 <span className="hidden sm:inline">{statusMessage ? statusMessage : STATUS_LABELS[currentUser.status]}</span>
               </div>
             </div>
-            <span className="text-gray-400 text-xs ml-0.5">▾</span>
+            <span className={`text-xs ml-0.5 ${headerAccent ? '' : 'text-gray-400'}`} style={headerAccent ? { color: headerTextColor, opacity: 0.5 } : undefined}>▾</span>
           </button>
 
           {showStatusMenu && (

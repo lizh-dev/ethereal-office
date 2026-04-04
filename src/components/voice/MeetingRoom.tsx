@@ -29,6 +29,7 @@ export default function MeetingRoom() {
   const activeMeetings = useOfficeStore((s) => s.activeMeetings);
   const myMeetingId = useOfficeStore((s) => s.myMeetingId);
   const maxParticipants = useOfficeStore((s) => s.planPermissions.maxMeetingParticipants);
+  const isPro = useOfficeStore((s) => s.floorPlanType === 'pro');
   const wsSend = useWsSend();
 
   const [permanentRooms, setPermanentRooms] = useState<PermanentRoom[]>([]);
@@ -42,18 +43,20 @@ export default function MeetingRoom() {
 
   const floorSlug = typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '';
 
-  // Load permanent rooms and meeting logs from API
+  // Load permanent rooms (Pro only) and meeting logs from API
   useEffect(() => {
     if (!floorSlug) return;
-    fetch(`/api/floors/${floorSlug}/meeting-rooms`)
-      .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setPermanentRooms(data); })
-      .catch(() => {});
+    if (isPro) {
+      fetch(`/api/floors/${floorSlug}/meeting-rooms`)
+        .then(r => r.json())
+        .then(data => { if (Array.isArray(data)) setPermanentRooms(data); })
+        .catch(() => {});
+    }
     fetch(`/api/floors/${floorSlug}/meeting-logs`)
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setMeetingLogs(data); })
       .catch(() => {});
-  }, [floorSlug]);
+  }, [floorSlug, isPro]);
 
   const handleCreatePermanent = async () => {
     if (!newRoomName.trim()) return;
@@ -175,8 +178,8 @@ export default function MeetingRoom() {
         )}
       </section>
 
-      {/* === Permanent Rooms === */}
-      <section>
+      {/* === Permanent Rooms (Pro only) === */}
+      {isPro && <section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0 }}>
             常設ルーム
@@ -262,7 +265,7 @@ export default function MeetingRoom() {
             })}
           </div>
         )}
-      </section>
+      </section>}
 
       {/* === Meeting History === */}
       {meetingLogs.length > 0 && (

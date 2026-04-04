@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, forwardRef } from 'react';
+import { useState, useEffect, useRef, forwardRef } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
@@ -27,9 +27,13 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
   const [sendingCode, setSendingCode] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
+  const [customSlug, setCustomSlug] = useState('');
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
+  const [isPro, setIsPro] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [showScanner, setShowScanner] = useState(false);
+  const slugCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     try {
@@ -41,6 +45,18 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
     if (savedEmail) {
       setOwnerEmail(savedEmail);
       setEmailVerified(true);
+      // Check Pro status
+      fetch(`/api/floors/by-owner?email=${encodeURIComponent(savedEmail)}`)
+        .then(r => r.json())
+        .then(floors => {
+          if (Array.isArray(floors) && floors.length > 0) {
+            fetch(`/api/floors/${floors[0].slug}/permissions`)
+              .then(r => r.json())
+              .then(p => { if (p.plan === 'pro') setIsPro(true); })
+              .catch(() => {});
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 
@@ -85,6 +101,19 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
       if (data.verified) {
         setEmailVerified(true);
         localStorage.setItem('ethereal-owner-email', ownerEmail.trim());
+        // Check if this email has Pro
+        fetch(`/api/floors/by-owner?email=${encodeURIComponent(ownerEmail.trim())}`)
+          .then(r => r.json())
+          .then(floors => {
+            // If user has floors, check first floor's plan
+            if (Array.isArray(floors) && floors.length > 0) {
+              fetch(`/api/floors/${floors[0].slug}/permissions`)
+                .then(r => r.json())
+                .then(p => { if (p.plan === 'pro') setIsPro(true); })
+                .catch(() => {});
+            }
+          })
+          .catch(() => {});
       } else {
         setError('認証コードが正しくありません');
       }
@@ -115,6 +144,7 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
         body: JSON.stringify({
           name: floorName.trim(),
           ownerEmail: ownerEmail.trim(),
+          customSlug: (isPro && customSlug.trim()) ? customSlug.trim() : undefined,
           creatorName: creatorName.trim() || undefined,
           password: password.trim() || undefined,
           ownerPassword: ownerPassword.trim() || undefined,
@@ -127,7 +157,7 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
 
       if (!res.ok) {
         const data = await res.json();
-        if (data.error === 'floor_limit') {
+        if (data.error === 'floor_limit' || data.error === 'slug_taken' || data.error === 'invalid_slug' || data.error === 'pro_required') {
           setError(data.message);
           setCreating(false);
           return;
@@ -146,6 +176,26 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
       setError('フロアの作成に失敗しました');
       setCreating(false);
     }
+  };
+
+  const handleSlugChange = (value: string) => {
+    const cleaned = value.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    setCustomSlug(cleaned);
+    if (slugCheckTimer.current) clearTimeout(slugCheckTimer.current);
+    if (!cleaned || cleaned.length < 3) {
+      setSlugStatus(cleaned ? 'invalid' : 'idle');
+      return;
+    }
+    setSlugStatus('checking');
+    slugCheckTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/floors/check-slug?slug=${encodeURIComponent(cleaned)}`);
+        const data = await res.json();
+        setSlugStatus(data.available ? 'available' : data.reason ? 'invalid' : 'taken');
+      } catch {
+        setSlugStatus('idle');
+      }
+    }, 400);
   };
 
   const setRefs = (node: HTMLElement | null) => {
@@ -262,6 +312,31 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300"
               />
             </div>
+
+            {/* Custom slug — Pro only */}
+            {isPro && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  カスタムID（Pro限定）
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400 flex-shrink-0">/f/</span>
+                  <input
+                    type="text"
+                    value={customSlug}
+                    onChange={(e) => handleSlugChange(e.target.value)}
+                    placeholder="my-team（空欄ならランダム）"
+                    maxLength={30}
+                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300 font-mono"
+                  />
+                  {slugStatus === 'checking' && <span className="text-xs text-gray-400">確認中...</span>}
+                  {slugStatus === 'available' && <span className="text-xs text-emerald-500 font-medium">使用可能</span>}
+                  {slugStatus === 'taken' && <span className="text-xs text-red-500 font-medium">使用中</span>}
+                  {slugStatus === 'invalid' && <span className="text-xs text-amber-500 font-medium">3文字以上</span>}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">英数字・ハイフン・アンダースコア（3〜30文字）</p>
+              </div>
+            )}
 
             {/* Creator name */}
             <div>

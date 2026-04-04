@@ -34,13 +34,17 @@ func GetFloorSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// First try active/trialing, then fall back to most recent subscription
 	var sub model.Subscription
 	if err := db.DB.Where("floor_id = ? AND status IN ?", floor.ID, []string{"active", "trialing"}).First(&sub).Error; err != nil {
-		writeJSON(w, http.StatusOK, map[string]any{
-			"plan":   "free",
-			"status": "none",
-		})
-		return
+		// Try to find any recent subscription (canceled, past_due, etc.)
+		if err2 := db.DB.Where("floor_id = ?", floor.ID).Order("updated_at DESC").First(&sub).Error; err2 != nil {
+			writeJSON(w, http.StatusOK, map[string]any{
+				"plan":   "free",
+				"status": "none",
+			})
+			return
+		}
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -48,6 +52,7 @@ func GetFloorSubscription(w http.ResponseWriter, r *http.Request) {
 		"status":             sub.Status,
 		"currentPeriodEnd":   sub.CurrentPeriodEnd,
 		"currentPeriodStart": sub.CurrentPeriodStart,
+		"cancelAtPeriodEnd":  sub.CancelAtPeriodEnd,
 		"email":              sub.Email,
 	})
 }
@@ -352,6 +357,9 @@ func handleSubscriptionUpdated(event stripe.Event) {
 	}
 	if periodStart, ok := event.Data.Object["current_period_start"].(float64); ok {
 		updates["current_period_start"] = time.Unix(int64(periodStart), 0)
+	}
+	if cancelAtEnd, ok := event.Data.Object["cancel_at_period_end"].(bool); ok {
+		updates["cancel_at_period_end"] = cancelAtEnd
 	}
 
 	db.DB.Model(&sub).Updates(updates)

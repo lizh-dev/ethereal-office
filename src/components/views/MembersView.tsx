@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
-import { getAvatarUrl } from '@/components/floor/assets';
+import { resolveAvatarUrl } from '@/components/floor/assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import { Users, Phone, MessageCircle, Ban } from 'lucide-react';
 
@@ -75,7 +75,7 @@ export default function MembersView() {
               <div key={user.id} className="flex items-center gap-3 px-3 py-2.5 bg-white rounded-xl hover:bg-gray-50 transition-colors">
                 <div className="relative flex-shrink-0">
                   <img
-                    src={getAvatarUrl(user.avatarSeed || 'default', user.avatarStyle || 'notionists')}
+                    src={resolveAvatarUrl(user)}
                     alt=""
                     className="w-9 h-9 rounded-full border-2"
                     style={{ borderColor: STATUS_COLORS[user.status] || '#BDBDBD' }}
@@ -148,7 +148,7 @@ export default function MembersView() {
               {offlineUsers.map(user => (
                 <div key={user.id} className="flex items-center gap-3 px-3 py-2.5 bg-white/50 rounded-xl opacity-60">
                   <img
-                    src={getAvatarUrl(user.avatarSeed || 'default', user.avatarStyle || 'notionists')}
+                    src={resolveAvatarUrl(user)}
                     alt=""
                     className="w-9 h-9 rounded-full border-2 border-gray-200 flex-shrink-0"
                   />

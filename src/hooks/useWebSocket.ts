@@ -16,7 +16,7 @@ interface WsSend {
   reaction: (emoji: string) => void;
   sceneUpdate: () => void;
   kick: (targetUserId: string) => void;
-  profileUpdate: (name: string, avatarStyle: string, avatarSeed: string) => void;
+  profileUpdate: (name: string, avatarStyle: string, avatarSeed: string, customAvatarUrl?: string) => void;
   dm: (targetUserId: string, text: string) => void;
   whisper: (text: string) => void;
   callRequest: (targetUserId: string) => void;
@@ -49,6 +49,7 @@ function toUser(raw: any) {
     position: { x: raw.x ?? 200, y: raw.y ?? 200 },
     avatarStyle: raw.avatarStyle || 'notionists',
     avatarSeed: raw.avatarSeed || 'default',
+    customAvatarUrl: raw.customAvatarUrl || '',
   };
 }
 
@@ -186,6 +187,25 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
               }))
             );
           }
+          // If user has a custom avatar, broadcast it to other users via profile_update
+          {
+            const state = useOfficeStore.getState();
+            if (state.currentUser.customAvatarUrl) {
+              // Small delay to ensure WS is fully ready
+              setTimeout(() => {
+                const s = useOfficeStore.getState();
+                if (wsRef.current?.readyState === WebSocket.OPEN) {
+                  wsRef.current.send(JSON.stringify({
+                    type: 'profile_update',
+                    name: s.currentUser.name,
+                    avatarStyle: s.currentUser.avatarStyle || 'notionists',
+                    avatarSeed: s.currentUser.avatarSeed || 'default',
+                    customAvatarUrl: s.currentUser.customAvatarUrl || '',
+                  }));
+                }
+              }, 500);
+            }
+          }
           break;
         }
 
@@ -286,6 +306,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
                     initials: msg.name ? msg.name[0] : u.initials,
                     avatarStyle: msg.avatarStyle ?? u.avatarStyle,
                     avatarSeed: msg.avatarSeed ?? u.avatarSeed,
+                    customAvatarUrl: msg.customAvatarUrl !== undefined ? msg.customAvatarUrl : u.customAvatarUrl,
                   }
                 : u
             ),
@@ -490,8 +511,8 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
       [sendRaw],
     ),
     profileUpdate: useCallback(
-      (name: string, avatarStyle: string, avatarSeed: string) =>
-        sendRaw({ type: 'profile_update', name, avatarStyle, avatarSeed }),
+      (name: string, avatarStyle: string, avatarSeed: string, customAvatarUrl?: string) =>
+        sendRaw({ type: 'profile_update', name, avatarStyle, avatarSeed, customAvatarUrl: customAvatarUrl ?? '' }),
       [sendRaw],
     ),
     dm: useCallback(

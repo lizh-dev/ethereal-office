@@ -9,7 +9,7 @@ interface JoinDialogProps {
   floorName: string;
   floorSlug: string;
   hasPassword?: boolean;
-  onJoin: (name: string, avatarStyle: string, avatarSeed: string) => void;
+  onJoin: (name: string, avatarStyle: string, avatarSeed: string, customAvatarUrl?: string) => void;
 }
 
 export default function JoinDialog({ floorName, floorSlug, hasPassword, onJoin }: JoinDialogProps) {
@@ -55,12 +55,19 @@ export default function JoinDialog({ floorName, floorSlug, hasPassword, onJoin }
       }
     }
 
+    // Preserve existing customAvatarUrl from localStorage
+    let savedCustomAvatar = '';
+    try {
+      const existing = JSON.parse(localStorage.getItem('ethereal-office-user') || '{}');
+      savedCustomAvatar = existing.customAvatarUrl || '';
+    } catch { /* ignore */ }
     localStorage.setItem('ethereal-office-user', JSON.stringify({
       name: name.trim(),
       avatarStyle,
       avatarSeed,
+      customAvatarUrl: savedCustomAvatar,
     }));
-    onJoin(name.trim(), avatarStyle, avatarSeed);
+    onJoin(name.trim(), avatarStyle, avatarSeed, savedCustomAvatar);
   };
 
   const avatarUrl = `https://api.dicebear.com/9.x/${avatarStyle}/svg?seed=${encodeURIComponent(avatarSeed)}&radius=50`;

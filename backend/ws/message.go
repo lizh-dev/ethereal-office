@@ -71,9 +71,10 @@ type IncomingMessage struct {
 	Emoji        string  `json:"emoji,omitempty"`
 	TargetUserID string  `json:"targetUserId,omitempty"`
 	Name         string  `json:"name,omitempty"`
-	AvatarStyle  string  `json:"avatarStyle,omitempty"`
-	AvatarSeed   string  `json:"avatarSeed,omitempty"`
-	SDP          string  `json:"sdp,omitempty"`
+	AvatarStyle     string  `json:"avatarStyle,omitempty"`
+	AvatarSeed      string  `json:"avatarSeed,omitempty"`
+	CustomAvatarUrl string  `json:"customAvatarUrl,omitempty"`
+	SDP             string  `json:"sdp,omitempty"`
 	Candidate    string  `json:"candidate,omitempty"`
 
 	MeetingID    string  `json:"meetingId,omitempty"`
@@ -84,11 +85,12 @@ type IncomingMessage struct {
 }
 
 type UserInfo struct {
-	ID            string  `json:"id"`
-	Name          string  `json:"name"`
-	AvatarStyle   string  `json:"avatarStyle,omitempty"`
-	AvatarSeed    string  `json:"avatarSeed,omitempty"`
-	Status        string  `json:"status"`
+	ID              string  `json:"id"`
+	Name            string  `json:"name"`
+	AvatarStyle     string  `json:"avatarStyle,omitempty"`
+	AvatarSeed      string  `json:"avatarSeed,omitempty"`
+	CustomAvatarUrl string  `json:"customAvatarUrl,omitempty"`
+	Status          string  `json:"status"`
 	StatusMessage string  `json:"statusMessage,omitempty"`
 	X             float64 `json:"x"`
 	Y             float64 `json:"y"`
@@ -128,9 +130,10 @@ type OutgoingMessage struct {
 	IsCamOn       *bool           `json:"isCameraOn,omitempty"`
 	Emoji         string          `json:"emoji,omitempty"`
 	Name          string          `json:"name,omitempty"`
-	AvatarStyle   string          `json:"avatarStyle,omitempty"`
-	AvatarSeed    string          `json:"avatarSeed,omitempty"`
-	From          string          `json:"from,omitempty"`
+	AvatarStyle     string          `json:"avatarStyle,omitempty"`
+	AvatarSeed      string          `json:"avatarSeed,omitempty"`
+	CustomAvatarUrl string          `json:"customAvatarUrl,omitempty"`
+	From            string          `json:"from,omitempty"`
 	To            string          `json:"to,omitempty"`
 	Text          string          `json:"text,omitempty"`
 	Timestamp     string          `json:"timestamp,omitempty"`

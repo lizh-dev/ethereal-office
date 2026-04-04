@@ -65,6 +65,7 @@ export interface User {
   targetPosition?: Point;
   avatarStyle?: string;
   avatarSeed?: string;
+  customAvatarUrl?: string;
   isMuted?: boolean;
   isCameraOn?: boolean;
 }

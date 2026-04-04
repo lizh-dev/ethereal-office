@@ -17,6 +17,7 @@ export interface PlanPermissions {
   maxFloors: number;              // 0 = unlimited
   premiumThemes: boolean;
   customBranding: boolean;
+  customAvatar: boolean;
   sso: boolean;
   dedicatedEnv: boolean;
   sla: boolean;
@@ -40,6 +41,7 @@ export const DEFAULT_PERMISSIONS: PlanPermissions = {
   maxFloors: 1,
   premiumThemes: false,
   customBranding: false,
+  customAvatar: false,
   sso: false,
   dedicatedEnv: false,
   sla: false,
@@ -61,6 +63,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   prioritySupport: '優先サポート',
   premiumThemes: 'プレミアム家具テーマ',
   customBranding: 'カスタムブランディング',
+  customAvatar: 'カスタムアバター',
   sso: 'シングルサインオン',
   dedicatedEnv: '専用環境',
   sla: 'SLA保証',

@@ -643,12 +643,15 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 		if msg.AvatarSeed != "" {
 			client.info.AvatarSeed = msg.AvatarSeed
 		}
+		// customAvatarUrl can be set to empty string to clear it
+		client.info.CustomAvatarUrl = msg.CustomAvatarUrl
 		h.broadcastToRoom(client.room, OutgoingMessage{
-			Type:        MsgUserProfileUpdated,
-			UserID:      client.info.ID,
-			Name:        client.info.Name,
-			AvatarStyle: client.info.AvatarStyle,
-			AvatarSeed:  client.info.AvatarSeed,
+			Type:            MsgUserProfileUpdated,
+			UserID:          client.info.ID,
+			Name:            client.info.Name,
+			AvatarStyle:     client.info.AvatarStyle,
+			AvatarSeed:      client.info.AvatarSeed,
+			CustomAvatarUrl: client.info.CustomAvatarUrl,
 		}, client.info.ID)
 
 	case MsgDM:

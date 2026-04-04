@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
-import { getAvatarUrl } from './assets';
+import { resolveAvatarUrl } from './assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import { initSeatsFromElements } from '@/lib/seatDetection';
 import type { User } from '@/types';
@@ -459,7 +459,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                   animation: isMatch ? 'search-pulse 1.5s ease-in-out infinite' : 'none',
                 }}>
                   <img
-                    src={getAvatarUrl(user.avatarSeed || user.name, user.avatarStyle || 'notionists')}
+                    src={resolveAvatarUrl(user)}
                     alt={user.name}
                     style={{ width: '100%', height: '100%', display: 'block' }}
                     draggable={false}

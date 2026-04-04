@@ -39,8 +39,9 @@ export function useParticipantBoard({ meetingId, participantId, floorSlug, userN
   const ydocRef = useRef<Y.Doc | null>(null);
   const providerRef = useRef<HocuspocusProvider | null>(null);
   const isRemoteRef = useRef(false);
-  const [sceneElements, setSceneElements] = useState<any[]>([]);
-  const [annotationElements, setAnnotationElements] = useState<any[]>([]);
+  // Use refs only — no state — to avoid re-render loops with Excalidraw onChange
+  const sceneElementsRef = useRef<any[]>([]);
+  const annotationElementsRef = useRef<any[]>([]);
   const templateCopiedRef = useRef(false);
 
   // Connect to the participant's board document
@@ -87,7 +88,7 @@ export function useParticipantBoard({ meetingId, participantId, floorSlug, userN
 
       if (stored && Array.isArray(stored) && stored.length > 0) {
         isRemoteRef.current = true;
-        setSceneElements(stored);
+        sceneElementsRef.current = stored;
         const combined = [...stored, ...(Array.isArray(annotations) ? annotations.map((el: any) => ({ ...el, locked: true })) : [])];
         api.updateScene({ elements: combined });
         setTimeout(() => { isRemoteRef.current = false; }, 200);
@@ -137,7 +138,7 @@ export function useParticipantBoard({ meetingId, participantId, floorSlug, userN
       }
 
       if (annotations && Array.isArray(annotations)) {
-        setAnnotationElements(annotations);
+        annotationElementsRef.current = annotations;
       }
     });
 
@@ -147,7 +148,7 @@ export function useParticipantBoard({ meetingId, participantId, floorSlug, userN
       const elements = yScene.get('elements');
       if (elements && Array.isArray(elements)) {
         isRemoteRef.current = true;
-        setSceneElements(elements);
+        sceneElementsRef.current = elements;
         const annotations = yAnnotations.get('elements');
         const combined = [...elements, ...(Array.isArray(annotations) ? annotations.map((el: any) => ({ ...el, locked: true })) : [])];
         api.updateScene({ elements: combined });
@@ -161,7 +162,7 @@ export function useParticipantBoard({ meetingId, participantId, floorSlug, userN
       const annotations = yAnnotations.get('elements');
       if (annotations && Array.isArray(annotations)) {
         isRemoteRef.current = true;
-        setAnnotationElements(annotations);
+        annotationElementsRef.current = annotations;
         const scene = yScene.get('elements');
         const combined = [...(Array.isArray(scene) ? scene : []), ...annotations.map((el: any) => ({ ...el, locked: true }))];
         api.updateScene({ elements: combined });
@@ -204,29 +205,29 @@ export function useParticipantBoard({ meetingId, participantId, floorSlug, userN
     []
   );
 
+  const isRedPenRef = useRef(isRedPen);
+  const isHostRef = useRef(isHost);
+  useEffect(() => { isRedPenRef.current = isRedPen; }, [isRedPen]);
+  useEffect(() => { isHostRef.current = isHost; }, [isHost]);
+
   const handleChange = useCallback((elements: readonly any[]) => {
     if (isRemoteRef.current) return;
 
-    if (isRedPen && isHost) {
+    if (isRedPenRef.current && isHostRef.current) {
       // In red pen mode: separate annotations from scene elements
-      const existingAnnotationIds = new Set(annotationElements.map((a: any) => a.id));
-      const existingSceneIds = new Set(sceneElements.map((s: any) => s.id));
+      const existingAnnotationIds = new Set(annotationElementsRef.current.map((a: any) => a.id));
+      const existingSceneIds = new Set(sceneElementsRef.current.map((s: any) => s.id));
 
       const updatedAnnotations: any[] = [];
-      const sceneOnly: any[] = [];
 
       for (const el of elements) {
         if (el.customData?.annotation || existingAnnotationIds.has(el.id)) {
-          // Existing annotation (possibly modified)
           updatedAnnotations.push({
             ...el,
             strokeColor: '#ef4444',
             customData: { annotation: true, annotatorId: userId },
           });
-        } else if (existingSceneIds.has(el.id)) {
-          // Existing scene element
-          sceneOnly.push(el);
-        } else if (el.type !== 'selection') {
+        } else if (!existingSceneIds.has(el.id) && el.type !== 'selection') {
           // New element drawn by host -> make it an annotation
           updatedAnnotations.push({
             ...el,
@@ -236,14 +237,14 @@ export function useParticipantBoard({ meetingId, participantId, floorSlug, userN
         }
       }
 
-      setAnnotationElements(updatedAnnotations);
+      // Update ref only — no setState to avoid re-render loop
+      annotationElementsRef.current = updatedAnnotations;
       syncAnnotations(updatedAnnotations);
     } else {
       // Normal mode: sync all non-annotation elements to scene
       syncToYjs([...elements]);
     }
-  }, [syncToYjs, syncAnnotations, isRedPen, isHost, userId, sceneElements, annotationElements]);
+  }, [syncToYjs, syncAnnotations, userId]);
 
-  return { api, setApi, isConnected, userCount, handleChange, ydocRef, syncToYjs, sceneElements, annotationElements };
+  return { api, setApi, isConnected, userCount, handleChange, ydocRef, syncToYjs };
 }
-

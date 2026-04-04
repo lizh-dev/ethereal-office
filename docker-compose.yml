@@ -164,9 +164,13 @@ services:
       JVB_AUTH_USER: jvb
       JVB_AUTH_PASSWORD: jitsi-jvb-secret
       JVB_PORT: "10000"
+      JVB_ADVERTISE_IPS: "127.0.0.1"
+      DOCKER_HOST_ADDRESS: "127.0.0.1"
       JVB_STUN_SERVERS: stun:stun.l.google.com:19302
       PUBLIC_URL: "https://localhost:8443"
       TZ: Asia/Tokyo
+      # 本番(Linux): network_mode: host を使い ports/networks を削除。
+      # JVB_ADVERTISE_IPS にサーバの公開IPを設定。
     volumes:
       - jitsi-jvb-config:/config
     depends_on:

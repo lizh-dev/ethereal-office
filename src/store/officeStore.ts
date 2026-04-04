@@ -110,8 +110,8 @@ interface OfficeState {
   setFurnitureTheme: (theme: FurnitureTheme) => void;
 
   // Custom branding
-  branding: { logoUrl: string; accentColor: string; floorTitle: string };
-  setBranding: (b: { logoUrl: string; accentColor: string; floorTitle: string }) => void;
+  branding: { logoUrl: string; accentColor: string; floorTitle: string; accentTargets: { header: boolean; sidebar: boolean; buttons: boolean } };
+  setBranding: (b: { logoUrl: string; accentColor: string; floorTitle: string; accentTargets?: { header: boolean; sidebar: boolean; buttons: boolean } }) => void;
 
   // Kick notification overlay
   kickedNotification: boolean;
@@ -187,6 +187,7 @@ interface OfficeState {
   setShowGrid: (show: boolean) => void;
   setShowAvatarSelector: (show: boolean) => void;
   setCurrentUserAvatar: (style: string, seed: string) => void;
+  setCustomAvatar: (url: string) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setExcalidrawAPI: (api: any) => void;
   exportFloorPlan: () => string;
@@ -301,8 +302,15 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   setFurnitureTheme: (theme) => set({ furnitureTheme: theme }),
 
   // Custom branding
-  branding: { logoUrl: '', accentColor: '#0ea5e9', floorTitle: '' },
-  setBranding: (b) => set({ branding: b }),
+  branding: { logoUrl: '', accentColor: '#0ea5e9', floorTitle: '', accentTargets: { header: false, sidebar: false, buttons: false } },
+  setBranding: (b) => set((state) => ({
+    branding: {
+      logoUrl: b.logoUrl,
+      accentColor: b.accentColor,
+      floorTitle: b.floorTitle,
+      accentTargets: b.accentTargets ?? state.branding.accentTargets,
+    },
+  })),
 
   // Kick notification overlay
   kickedNotification: false,
@@ -621,6 +629,11 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   setCurrentUserAvatar: (style, seed) =>
     set((state) => ({
       currentUser: { ...state.currentUser, avatarStyle: style, avatarSeed: seed },
+    })),
+
+  setCustomAvatar: (url) =>
+    set((state) => ({
+      currentUser: { ...state.currentUser, customAvatarUrl: url },
     })),
 
   setExcalidrawAPI: (api) => set({ excalidrawAPI: api }),

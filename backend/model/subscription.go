@@ -35,6 +35,7 @@ type Subscription struct {
 	StripePriceID        string             `json:"-"`
 	CurrentPeriodStart   time.Time          `json:"currentPeriodStart"`
 	CurrentPeriodEnd     time.Time          `json:"currentPeriodEnd"`
+	CancelAtPeriodEnd    bool               `gorm:"default:false" json:"cancelAtPeriodEnd"`
 	CanceledAt           *time.Time         `json:"canceledAt,omitempty"`
 	CreatedAt            time.Time          `json:"createdAt"`
 	UpdatedAt            time.Time          `json:"updatedAt"`

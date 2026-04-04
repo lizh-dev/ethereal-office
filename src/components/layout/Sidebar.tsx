@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useOfficeStore } from '@/store/officeStore';
 import { ViewMode } from '@/types';
-import { Building2, Users, Video, MessageCircle, Settings, Pencil, Lock, CreditCard, Palette, KeyRound, Code } from 'lucide-react';
+import { Building2, Users, Video, MessageCircle, Settings, Pencil, Lock } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 const navItems: { mode: ViewMode; label: string; Icon: LucideIcon }[] = [
@@ -15,46 +15,20 @@ const navItems: { mode: ViewMode; label: string; Icon: LucideIcon }[] = [
   { mode: 'profile', label: '設定', Icon: Settings },
 ];
 
-const proMenuItems: { label: string; Icon: LucideIcon; action: 'branding' | 'sso' | 'api' | 'billing' }[] = [
-  { label: '外観', Icon: Palette, action: 'branding' },
-  { label: 'SSO', Icon: KeyRound, action: 'sso' },
-  { label: 'API', Icon: Code, action: 'api' },
-  { label: '請求', Icon: CreditCard, action: 'billing' },
-];
-
 export default function Sidebar() {
-  const { viewMode, setViewMode, editorMode, setEditorMode, unreadChatCount, markChatRead, isFloorOwner, floorPlanType } = useOfficeStore();
+  const { viewMode, setViewMode, editorMode, setEditorMode, unreadChatCount, markChatRead, isFloorOwner, floorPlanType, branding } = useOfficeStore();
   const [showPwModal, setShowPwModal] = useState(false);
   const [ownerPw, setOwnerPw] = useState('');
   const [pwError, setPwError] = useState('');
 
   const isPro = floorPlanType === 'pro';
   const floorSlug = typeof window !== 'undefined' ? (window.location.pathname.split('/f/')[1] || '') : '';
+  const accentColor = branding.accentColor || '#0ea5e9';
+  const sidebarAccent = branding.accentTargets?.sidebar ?? false;
 
   const handleNavClick = (mode: ViewMode) => {
     setViewMode(mode);
     if (mode === 'chat') markChatRead();
-  };
-
-  const handleProMenuClick = async (action: string) => {
-    if (action === 'billing') {
-      // Open Stripe billing portal
-      try {
-        const ownerPassword = sessionStorage.getItem(`ethereal-owner-pw-${floorSlug}`) || '';
-        const res = await fetch('/api/payments/portal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ floorSlug, ownerPassword }),
-        });
-        const data = await res.json();
-        if (data.url) {
-          window.open(data.url, '_blank');
-        }
-      } catch { /* ignore */ }
-    } else {
-      // Navigate to settings view (branding, sso, api are in ProfileView)
-      setViewMode('profile');
-    }
   };
 
   const handleEditClick = () => {
@@ -131,54 +105,38 @@ export default function Sidebar() {
 
         {/* Nav */}
         <nav className="flex-1 flex flex-col items-center gap-1">
-          {navItems.map((item) => (
-            <button
-              key={item.mode}
-              onClick={() => handleNavClick(item.mode)}
-              className={`relative w-11 h-11 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${
-                viewMode === item.mode
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
-              }`}
-              title={item.label}
-            >
-              <item.Icon className="w-[18px] h-[18px]" strokeWidth={1.8} />
-              <span className="text-[7px] font-semibold tracking-wide">{item.label}</span>
-              {item.mode === 'chat' && unreadChatCount > 0 && viewMode !== 'chat' && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center border border-white">
-                  {unreadChatCount > 9 ? '9+' : unreadChatCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
-
-        {/* Pro management section */}
-        {isPro && isFloorOwner && (
-          <div className="flex flex-col items-center gap-1 mb-2 pt-2 border-t border-gray-100">
-            {proMenuItems.map((item) => (
+          {navItems.map((item) => {
+            const isActive = viewMode === item.mode;
+            const useAccent = isActive && sidebarAccent;
+            return (
               <button
-                key={item.action}
-                onClick={() => handleProMenuClick(item.action)}
-                className="relative group w-11 h-11 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all text-gray-400 hover:bg-sky-50 hover:text-sky-600"
+                key={item.mode}
+                onClick={() => handleNavClick(item.mode)}
+                className={`relative w-11 h-11 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${
+                  isActive
+                    ? useAccent ? '' : 'bg-blue-50 text-blue-600'
+                    : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                }`}
+                style={useAccent ? { backgroundColor: accentColor + '1a', color: accentColor } : undefined}
                 title={item.label}
               >
-                <item.Icon className="w-[16px] h-[16px]" strokeWidth={1.8} />
+                <item.Icon className="w-[18px] h-[18px]" strokeWidth={1.8} />
                 <span className="text-[7px] font-semibold tracking-wide">{item.label}</span>
+                {item.mode === 'chat' && unreadChatCount > 0 && viewMode !== 'chat' && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center border border-white">
+                    {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                  </span>
+                )}
               </button>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </nav>
 
         {/* Plan badge */}
         {isPro ? (
-          <button
-            onClick={() => handleProMenuClick('billing')}
-            className="mb-2 px-2 py-0.5 rounded-full text-[8px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 transition-colors"
-            title="請求管理"
-          >
+          <span className="mb-2 px-2 py-0.5 rounded-full text-[8px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
             Pro
-          </button>
+          </span>
         ) : (
           <Link
             href={`/f/${floorSlug}/upgrade`}
@@ -215,25 +173,30 @@ export default function Sidebar() {
 
       {/* Mobile bottom tab bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-gray-200 flex items-center justify-around z-50 safe-area-bottom">
-        {navItems.map((item) => (
-          <button
-            key={item.mode}
-            onClick={() => handleNavClick(item.mode)}
-            className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
-              viewMode === item.mode
-                ? 'text-blue-600'
-                : 'text-gray-400'
-            }`}
-          >
-            <item.Icon className="w-[18px] h-[18px]" strokeWidth={1.8} />
-            <span className="text-[9px] font-semibold">{item.label}</span>
-            {item.mode === 'chat' && unreadChatCount > 0 && viewMode !== 'chat' && (
-              <span className="absolute top-1 right-1/4 w-4 h-4 bg-red-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center">
-                {unreadChatCount > 9 ? '9+' : unreadChatCount}
-              </span>
-            )}
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const isActive = viewMode === item.mode;
+          const useAccent = isActive && sidebarAccent;
+          return (
+            <button
+              key={item.mode}
+              onClick={() => handleNavClick(item.mode)}
+              className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
+                isActive
+                  ? useAccent ? '' : 'text-blue-600'
+                  : 'text-gray-400'
+              }`}
+              style={useAccent ? { color: accentColor } : undefined}
+            >
+              <item.Icon className="w-[18px] h-[18px]" strokeWidth={1.8} />
+              <span className="text-[9px] font-semibold">{item.label}</span>
+              {item.mode === 'chat' && unreadChatCount > 0 && viewMode !== 'chat' && (
+                <span className="absolute top-1 right-1/4 w-4 h-4 bg-red-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center">
+                  {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
         <button
           onClick={handleEditClick}
           className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${

@@ -132,6 +132,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
             logoUrl: data.logoUrl || '',
             accentColor: data.accentColor || '#0ea5e9',
             floorTitle: data.floorTitle || '',
+            accentTargets: data.accentTargets || { header: false, sidebar: false, buttons: false },
           });
         }
       })
@@ -170,7 +171,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
       if (saved) {
         const data = JSON.parse(saved);
         if (data.name) {
-          handleJoin(data.name, data.avatarStyle || 'notionists', data.avatarSeed || 'default');
+          handleJoin(data.name, data.avatarStyle || 'notionists', data.avatarSeed || 'default', data.customAvatarUrl || '');
         }
       }
     } catch { /* ignore */ }
@@ -195,7 +196,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
     return () => { bc?.close(); };
   }, [send]);
 
-  const handleJoin = (name: string, avatarStyle: string, avatarSeed: string) => {
+  const handleJoin = (name: string, avatarStyle: string, avatarSeed: string, customAvatarUrl?: string) => {
     // Set current user info in store
     useOfficeStore.setState((state) => ({
       currentUser: {
@@ -203,6 +204,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
         name,
         avatarStyle,
         avatarSeed,
+        customAvatarUrl: customAvatarUrl || '',
       },
     }));
 
