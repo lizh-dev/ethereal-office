@@ -8,6 +8,7 @@ type PlanPermissions struct {
 	FileShare              bool `json:"fileShare"`
 	MeetingBoard           bool `json:"meetingBoard"`
 	MeetingInlineBoard     bool `json:"meetingInlineBoard"`
+	PerParticipantBoard    bool `json:"perParticipantBoard"`
 	FloorTemplates         bool `json:"floorTemplates"`
 	AdminFeatures          bool `json:"adminFeatures"`
 	PrioritySupport        bool `json:"prioritySupport"`
@@ -32,6 +33,7 @@ var PlanPermissionsMap = map[PlanType]PlanPermissions{
 		FileShare:              false, // file.go でゲート済み
 		MeetingBoard:           true,
 		MeetingInlineBoard:     false, // Pro限定: ミーティング内ボード
+		PerParticipantBoard:    false, // Pro限定: 参加者ごとの個別ボード
 		FloorTemplates:         false, // EditorPanel で Pro 判定
 		AdminFeatures:          true,
 		PrioritySupport:        false,
@@ -54,6 +56,7 @@ var PlanPermissionsMap = map[PlanType]PlanPermissions{
 		FileShare:              true,
 		MeetingBoard:           true,
 		MeetingInlineBoard:     true,
+		PerParticipantBoard:    true,
 		FloorTemplates:         true,
 		AdminFeatures:          true,
 		PrioritySupport:        true,

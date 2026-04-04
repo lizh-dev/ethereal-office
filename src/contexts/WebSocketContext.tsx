@@ -19,7 +19,7 @@ export interface WsSend {
   callAccept: (targetUserId: string) => void;
   callDecline: (targetUserId: string) => void;
   callEnd: (targetUserId: string) => void;
-  meetingStart: (meetingId: string, meetingName: string, hasPassword: boolean, password?: string) => void;
+  meetingStart: (meetingId: string, meetingName: string, hasPassword: boolean, password?: string, individualBoard?: boolean) => void;
   meetingJoin: (meetingId: string) => void;
   meetingLeave: (meetingId: string) => void;
 }

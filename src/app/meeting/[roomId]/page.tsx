@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { PenTool, Video, X, Download, Upload, Trash2, Users } from 'lucide-react';
+import ParticipantBoard from '@/components/meeting/ParticipantBoard';
+import HostBoardPanel from '@/components/meeting/HostBoardPanel';
 import '@excalidraw/excalidraw/index.css';
 import * as Y from 'yjs';
 import { HocuspocusProvider } from '@hocuspocus/provider';
@@ -316,11 +318,17 @@ export default function MeetingPage() {
   const [showBoard, setShowBoard] = useState(false);
   const [boardMounted, setBoardMounted] = useState(false);
   const [canInlineBoard, setCanInlineBoard] = useState(false);
+  const [individualBoard, setIndividualBoard] = useState(false);
+  const [isHost, setIsHost] = useState(false);
+  const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
+  const [isRedPen, setIsRedPen] = useState(false);
 
   const autoJoin = !!nameFromUrl;
   const containerRef = useRef<HTMLDivElement>(null);
   const jitsiRef = useRef<any>(null);
   const leftNotifiedRef = useRef(false);
+
+  const ibFromUrl = searchParams.get('ib') === '1';
 
   // Check if floor has Pro plan (for inline board permission)
   useEffect(() => {
@@ -334,6 +342,24 @@ export default function MeetingPage() {
       })
       .catch(() => {});
   }, [floorSlug]);
+
+  // Check meeting info for individual board mode & host status
+  useEffect(() => {
+    if (!joined || !decodedRoomId || !floorSlug) return;
+    fetch(`/api/meetings/${encodeURIComponent(decodedRoomId)}/info?floor=${encodeURIComponent(floorSlug)}&userId=${encodeURIComponent(uidFromUrl || nameFromUrl)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.exists) {
+          setIsHost(!!data.isHost);
+          if (data.individualBoard || ibFromUrl) {
+            setIndividualBoard(true);
+          }
+        }
+      })
+      .catch(() => {
+        if (ibFromUrl) setIndividualBoard(true);
+      });
+  }, [joined, decodedRoomId, floorSlug, uidFromUrl, nameFromUrl, ibFromUrl]);
 
   const notifyLeave = () => {
     if (leftNotifiedRef.current) return;
@@ -542,13 +568,45 @@ export default function MeetingPage() {
         <div style={{
           width: '100%', height: '100%', background: 'white',
           position: 'absolute', inset: 0, zIndex: 50,
-          display: showBoard ? 'flex' : 'none', flexDirection: 'column',
+          display: showBoard ? 'flex' : 'none', flexDirection: 'row',
         }}>
           <style>{`
             .layer-ui__wrapper__top-right { display: none !important; }
             .main-menu-trigger { display: none !important; }
           `}</style>
-          <MeetingBoard roomId={decodedRoomId} floorSlug={floorSlug} userName={userName} visible={showBoard} />
+
+          {/* Individual board mode: host gets sidebar + participant board */}
+          {individualBoard && canInlineBoard ? (
+            <>
+              {isHost && (
+                <HostBoardPanel
+                  meetingId={decodedRoomId}
+                  floorSlug={floorSlug}
+                  userId={uidFromUrl || nameFromUrl}
+                  userName={userName}
+                  selectedParticipantId={selectedParticipantId}
+                  onSelectParticipant={(id) => { setSelectedParticipantId(id); setIsRedPen(false); }}
+                  isRedPen={isRedPen}
+                  onToggleRedPen={() => setIsRedPen(v => !v)}
+                />
+              )}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <ParticipantBoard
+                  meetingId={decodedRoomId}
+                  participantId={selectedParticipantId || uidFromUrl || nameFromUrl}
+                  floorSlug={floorSlug}
+                  userName={userName}
+                  userId={uidFromUrl || nameFromUrl}
+                  isHost={isHost}
+                  isRedPen={isRedPen && selectedParticipantId !== null && selectedParticipantId !== (uidFromUrl || nameFromUrl)}
+                  visible={showBoard}
+                />
+              </div>
+            </>
+          ) : (
+            /* Shared board mode (default) */
+            <MeetingBoard roomId={decodedRoomId} floorSlug={floorSlug} userName={userName} visible={showBoard} />
+          )}
         </div>
       )}
 

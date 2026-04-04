@@ -32,6 +32,7 @@ export interface ActiveMeetingState {
   hasPassword: boolean;
   participants: number;
   createdAt: number;
+  individualBoard?: boolean;
 }
 
 export interface Notification {

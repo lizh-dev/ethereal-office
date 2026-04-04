@@ -78,8 +78,9 @@ type IncomingMessage struct {
 
 	MeetingID    string  `json:"meetingId,omitempty"`
 	MeetingName  string  `json:"meetingName,omitempty"`
-	HasPassword  bool    `json:"hasPassword,omitempty"`
-	Password     string  `json:"password,omitempty"` // Only used in meeting_start (client→server), never broadcast
+	HasPassword     bool    `json:"hasPassword,omitempty"`
+	Password        string  `json:"password,omitempty"` // Only used in meeting_start (client→server), never broadcast
+	IndividualBoard bool    `json:"individualBoard,omitempty"`
 }
 
 type UserInfo struct {
@@ -148,13 +149,14 @@ type OutgoingMessage struct {
 
 // ActiveMeetingInfo is the wire representation of an active meeting.
 type ActiveMeetingInfo struct {
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	CreatedBy    string   `json:"createdBy"`
-	CreatorName  string   `json:"creatorName"`
-	HasPassword  bool     `json:"hasPassword"`
-	Participants []string `json:"participants"`
-	CreatedAt    int64    `json:"createdAt"`
+	ID              string   `json:"id"`
+	Name            string   `json:"name"`
+	CreatedBy       string   `json:"createdBy"`
+	CreatorName     string   `json:"creatorName"`
+	HasPassword     bool     `json:"hasPassword"`
+	IndividualBoard bool     `json:"individualBoard"`
+	Participants    []string `json:"participants"`
+	CreatedAt       int64    `json:"createdAt"`
 }
 
 func MarshalMessage(msg OutgoingMessage) []byte {

@@ -26,14 +26,15 @@ type disconnectedInfo struct {
 
 // activeMeeting tracks an in-progress meeting within a room.
 type activeMeeting struct {
-	ID           string
-	Name         string
-	CreatedBy    string // userId
-	CreatorName  string
-	HasPassword  bool
-	Password     string              // plain text for now; only checked server-side
-	Participants map[string]bool     // userId set
-	CreatedAt    time.Time
+	ID              string
+	Name            string
+	CreatedBy       string // userId
+	CreatorName     string
+	HasPassword     bool
+	Password        string              // plain text for now; only checked server-side
+	IndividualBoard bool
+	Participants    map[string]bool     // userId set
+	CreatedAt       time.Time
 }
 
 type Room struct {
@@ -402,6 +403,38 @@ func (h *Hub) VerifyMeetingPassword(slug, meetingID, password string) (bool, boo
 		return true, false, true
 	}
 	return true, true, meeting.Password == password
+}
+
+// GetMeetingInfo returns detailed information about an active meeting.
+func (h *Hub) GetMeetingInfo(slug, meetingID string) map[string]any {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	room, ok := h.rooms[slug]
+	if !ok {
+		return nil
+	}
+	meeting, ok := room.activeMeetings[meetingID]
+	if !ok {
+		return nil
+	}
+
+	participants := make([]map[string]string, 0)
+	for uid := range meeting.Participants {
+		// Look up user name from connected clients
+		name := uid
+		if client, ok := room.clients[uid]; ok {
+			name = client.info.Name
+		}
+		participants = append(participants, map[string]string{"id": uid, "name": name})
+	}
+
+	return map[string]any{
+		"exists":          true,
+		"createdBy":       meeting.CreatedBy,
+		"creatorName":     meeting.CreatorName,
+		"participants":    participants,
+		"individualBoard": meeting.IndividualBoard,
+	}
 }
 
 // MeetingExists checks if an active (quick) meeting exists in a room.
@@ -847,13 +880,14 @@ func (h *Hub) getMeetingList(slug string) []ActiveMeetingInfo {
 			pids = append(pids, uid)
 		}
 		list = append(list, ActiveMeetingInfo{
-			ID:           m.ID,
-			Name:         m.Name,
-			CreatedBy:    m.CreatedBy,
-			CreatorName:  m.CreatorName,
-			HasPassword:  m.HasPassword,
-			Participants: pids,
-			CreatedAt:    m.CreatedAt.UnixMilli(),
+			ID:              m.ID,
+			Name:            m.Name,
+			CreatedBy:       m.CreatedBy,
+			CreatorName:     m.CreatorName,
+			HasPassword:     m.HasPassword,
+			IndividualBoard: m.IndividualBoard,
+			Participants:    pids,
+			CreatedAt:       m.CreatedAt.UnixMilli(),
 		})
 	}
 	return list
@@ -898,14 +932,15 @@ func (h *Hub) handleMeetingStart(client *Client, msg IncomingMessage) {
 
 	// Create meeting
 	room.activeMeetings[msg.MeetingID] = &activeMeeting{
-		ID:           msg.MeetingID,
-		Name:         msg.MeetingName,
-		CreatedBy:    client.info.ID,
-		CreatorName:  client.info.Name,
-		HasPassword:  msg.HasPassword,
-		Password:     msg.Password,
-		Participants: map[string]bool{client.info.ID: true},
-		CreatedAt:    time.Now(),
+		ID:              msg.MeetingID,
+		Name:            msg.MeetingName,
+		CreatedBy:       client.info.ID,
+		CreatorName:     client.info.Name,
+		HasPassword:     msg.HasPassword,
+		Password:        msg.Password,
+		IndividualBoard: msg.IndividualBoard,
+		Participants:    map[string]bool{client.info.ID: true},
+		CreatedAt:       time.Now(),
 	}
 	h.mu.Unlock()
 

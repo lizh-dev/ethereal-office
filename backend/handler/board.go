@@ -13,6 +13,8 @@ import (
 func CheckBoardAccess(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
 	boardId := r.URL.Query().Get("boardId")
+	userId := r.URL.Query().Get("userId")
+	_ = userId // reserved for future per-participant access control
 	if slug == "" || boardId == "" {
 		writeError(w, http.StatusBadRequest, "slug and boardId are required")
 		return

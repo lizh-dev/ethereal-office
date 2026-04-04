@@ -15,10 +15,10 @@ const server = new Server({
       throw new Error('Invalid token format');
     }
 
-    const { floor, boardId } = parsed;
+    const { floor, boardId, userId } = parsed;
     if (!floor || !boardId) throw new Error('Missing floor or boardId');
 
-    const url = `${API_URL}/api/floors/${encodeURIComponent(floor)}/board-access?boardId=${encodeURIComponent(boardId)}`;
+    const url = `${API_URL}/api/floors/${encodeURIComponent(floor)}/board-access?boardId=${encodeURIComponent(boardId)}${userId ? `&userId=${encodeURIComponent(userId)}` : ''}`;
     const res = await fetch(url);
     if (!res.ok) {
       console.log(`[auth-denied] ${documentName} floor=${floor} boardId=${boardId} status=${res.status}`);

@@ -17,6 +17,7 @@ export default function ActionBar() {
   const viewMode = useOfficeStore((s) => s.viewMode);
   const canVoiceCall = useOfficeStore((s) => s.planPermissions.voiceCall);
   const canMeetingBoard = useOfficeStore((s) => s.planPermissions.meetingBoard);
+  const canPerParticipantBoard = useOfficeStore((s) => s.planPermissions.perParticipantBoard);
   const wsSend = useWsSend();
   const focusTimer = useFocusTimer();
 
@@ -25,6 +26,7 @@ export default function ActionBar() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [meetingName, setMeetingName] = useState('');
   const [meetingPassword, setMeetingPassword] = useState('');
+  const [individualBoard, setIndividualBoard] = useState(false);
 
   const floorSlug = typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : '';
 
@@ -51,17 +53,23 @@ export default function ActionBar() {
     const name = meetingName.trim() || 'ミーティング';
     const pw = meetingPassword.trim();
     const id = `${floorSlug}-${name.replace(/\s+/g, '-')}-${Date.now()}`;
+    const ib = individualBoard;
     setShowCreateDialog(false);
     setMeetingName('');
     setMeetingPassword('');
+    setIndividualBoard(false);
     useOfficeStore.getState().setMyMeetingId(id);
     useOfficeStore.getState().addActivity('meeting', `${currentUser.name} がミーティング「${name}」を開始`);
-    wsSend.meetingStart(id, name, !!pw, pw);
+    wsSend.meetingStart(id, name, !!pw, pw, ib);
     if (pw) {
       try { localStorage.setItem(`meeting-pw-${id}`, pw); } catch { /* ignore */ }
     }
-    const meetingUrl = `/meeting/${id}?name=${encodeURIComponent(currentUser.name)}&uid=${encodeURIComponent(currentUser.id)}`;
+    const meetingUrl = `/meeting/${id}?name=${encodeURIComponent(currentUser.name)}&uid=${encodeURIComponent(currentUser.id)}${ib ? '&ib=1' : ''}`;
     window.open(meetingUrl, '_blank');
+    if (ib) {
+      const templateUrl = `/board/${id}-template?name=${encodeURIComponent(currentUser.name)}&floor=${encodeURIComponent(floorSlug)}`;
+      window.open(templateUrl, '_blank');
+    }
   };
 
   const handleLeaveMeeting = () => {
@@ -115,6 +123,20 @@ export default function ActionBar() {
               />
               <span className="text-[10px] text-gray-400">空欄なら公開</span>
             </div>
+            {canPerParticipantBoard && (
+              <label className="flex items-start gap-2 w-full cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={individualBoard}
+                  onChange={e => setIndividualBoard(e.target.checked)}
+                  className="mt-0.5 rounded"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-700">個別ボードモード</span>
+                  <span className="text-[10px] text-gray-400">参加者ごとに個別のボードを配布</span>
+                </div>
+              </label>
+            )}
           </div>
         )}
 

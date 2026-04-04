@@ -23,7 +23,7 @@ interface WsSend {
   callAccept: (targetUserId: string) => void;
   callDecline: (targetUserId: string) => void;
   callEnd: (targetUserId: string) => void;
-  meetingStart: (meetingId: string, meetingName: string, hasPassword: boolean) => void;
+  meetingStart: (meetingId: string, meetingName: string, hasPassword: boolean, password?: string, individualBoard?: boolean) => void;
   meetingJoin: (meetingId: string) => void;
   meetingLeave: (meetingId: string) => void;
 }
@@ -369,6 +369,7 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
             hasPassword: msg.hasPassword || false,
             participants: msg.participants || 1,
             createdAt: Date.now(),
+            individualBoard: msg.individualBoard || false,
           });
           break;
 
@@ -518,8 +519,8 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
       [sendRaw],
     ),
     meetingStart: useCallback(
-      (meetingId: string, meetingName: string, hasPassword: boolean, password?: string) =>
-        sendRaw({ type: 'meeting_start', meetingId, meetingName, hasPassword, password: password || '' }),
+      (meetingId: string, meetingName: string, hasPassword: boolean, password?: string, individualBoard?: boolean) =>
+        sendRaw({ type: 'meeting_start', meetingId, meetingName, hasPassword, password: password || '', individualBoard: individualBoard || false }),
       [sendRaw],
     ),
     meetingJoin: useCallback(

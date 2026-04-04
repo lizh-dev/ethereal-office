@@ -7,6 +7,7 @@ export interface PlanPermissions {
   fileShare: boolean;
   meetingBoard: boolean;
   meetingInlineBoard: boolean;
+  perParticipantBoard: boolean;
   floorTemplates: boolean;
   adminFeatures: boolean;
   prioritySupport: boolean;
@@ -29,6 +30,7 @@ export const DEFAULT_PERMISSIONS: PlanPermissions = {
   fileShare: false,
   meetingBoard: true,
   meetingInlineBoard: false,
+  perParticipantBoard: false,
   floorTemplates: false,
   adminFeatures: true,
   prioritySupport: false,
@@ -53,6 +55,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   fileShare: 'ファイル共有',
   meetingBoard: '共有ホワイトボード',
   meetingInlineBoard: 'ミーティング内ボード',
+  perParticipantBoard: '個別ボード',
   floorTemplates: 'フロアテンプレート',
   adminFeatures: 'メンバー管理',
   prioritySupport: '優先サポート',

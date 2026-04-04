@@ -230,6 +230,28 @@ func HandleMeetingLogs() http.HandlerFunc {
 	}
 }
 
+// HandleMeetingInfo returns detailed info about an active meeting.
+func HandleMeetingInfo(hub interface{ GetMeetingInfo(string, string) map[string]any }) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		roomId := r.PathValue("roomId")
+		floor := r.URL.Query().Get("floor")
+		userId := r.URL.Query().Get("userId")
+		if roomId == "" || floor == "" {
+			writeError(w, http.StatusBadRequest, "roomId and floor are required")
+			return
+		}
+
+		info := hub.GetMeetingInfo(floor, roomId)
+		if info == nil {
+			writeJSON(w, http.StatusOK, map[string]any{"exists": false})
+			return
+		}
+
+		info["isHost"] = (info["createdBy"] == userId)
+		writeJSON(w, http.StatusOK, info)
+	}
+}
+
 // HandleMeetingRoomDelete handles DELETE for a specific permanent room.
 func HandleMeetingRoomDelete() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

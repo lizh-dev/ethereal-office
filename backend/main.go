@@ -41,6 +41,7 @@ func main() {
 
 	// REST API — Floors
 	mux.HandleFunc("GET /api/floors/by-owner", handler.GetFloorsByOwner)
+	mux.HandleFunc("GET /api/floors/check-slug", handler.CheckSlugAvailability)
 	mux.HandleFunc("POST /api/floors", handler.CreateFloor)
 	mux.HandleFunc("GET /api/floors/{slug}", handler.GetFloor)
 	mux.HandleFunc("PATCH /api/floors/{slug}", handler.UpdateFloor)
@@ -106,6 +107,7 @@ func main() {
 	mux.HandleFunc("/api/meeting-rooms/", handler.HandleMeetingRoomDelete())
 	mux.HandleFunc("GET /api/meetings/{roomId}/check", handler.CheckMeetingRoom(hub))
 	mux.HandleFunc("GET /api/floors/{slug}/meeting-logs", handler.HandleMeetingLogs())
+	mux.HandleFunc("GET /api/meetings/{roomId}/info", handler.HandleMeetingInfo(hub))
 	mux.HandleFunc("POST /api/meetings/leave", handler.HandleMeetingLeave(hub))
 	mux.HandleFunc("POST /api/meetings/verify-password", handler.HandleVerifyMeetingPassword(hub))
 
