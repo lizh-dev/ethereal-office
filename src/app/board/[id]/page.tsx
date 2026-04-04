@@ -130,30 +130,38 @@ export default function BoardPage() {
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !api || !ydocRef.current) return;
+    if (!file || !api || !ydocRef.current || !providerRef.current) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
         const data = JSON.parse(ev.target?.result as string);
         if (data.elements && Array.isArray(data.elements)) {
-          // Update Excalidraw locally
-          api.updateScene({ elements: data.elements });
-          if (data.appState?.viewBackgroundColor) {
-            api.updateScene({ appState: { viewBackgroundColor: data.appState.viewBackgroundColor } });
-          }
-          // Sync to Yjs so other users see the import
+          // 1. Destroy current binding
+          bindingRef.current?.destroy();
+          bindingRef.current = null;
+
+          // 2. Clear Y.Doc and update Excalidraw
           const ydoc = ydocRef.current!;
           const yElements = ydoc.getArray<Y.Map<any>>('elements');
-          ydoc.transact(() => {
-            yElements.delete(0, yElements.length);
-            for (const el of data.elements) {
-              const yEl = new Y.Map<any>();
-              for (const [key, value] of Object.entries(el)) {
-                yEl.set(key, value);
-              }
-              yElements.push([yEl]);
-            }
+          ydoc.transact(() => { yElements.delete(0, yElements.length); });
+
+          api.updateScene({
+            elements: data.elements,
+            ...(data.appState?.viewBackgroundColor
+              ? { appState: { viewBackgroundColor: data.appState.viewBackgroundColor } }
+              : {}),
           });
+
+          // 3. Recreate binding — it reads current Excalidraw elements and syncs to Y.Doc
+          const yAssets = ydoc.getMap('assets');
+          const provider = providerRef.current!;
+          const binding = new ExcalidrawBinding(
+            yElements,
+            yAssets,
+            api,
+            provider.awareness ?? undefined,
+          );
+          bindingRef.current = binding;
         }
       } catch { /* invalid file */ }
     };
