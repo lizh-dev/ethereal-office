@@ -13,6 +13,7 @@ import (
 
 type CreateFloorRequest struct {
 	Name            string          `json:"name"`
+	OwnerEmail      string          `json:"ownerEmail"`
 	CreatorName     string          `json:"creatorName,omitempty"`
 	Password        string          `json:"password,omitempty"`
 	OwnerPassword   string          `json:"ownerPassword,omitempty"`
@@ -23,6 +24,7 @@ type UpdateFloorRequest struct {
 	Name            *string         `json:"name,omitempty"`
 	ExcalidrawScene json.RawMessage `json:"excalidrawScene,omitempty"`
 	Zones           json.RawMessage `json:"zones,omitempty"`
+	Settings        json.RawMessage `json:"settings,omitempty"`
 }
 
 func generateSlug() string {
@@ -56,12 +58,33 @@ func CreateFloor(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
+	if req.OwnerEmail == "" {
+		writeError(w, http.StatusBadRequest, "ownerEmail is required")
+		return
+	}
+
+	// Free plan: 1 floor limit per email
+	var existingCount int64
+	db.DB.Model(&model.Floor{}).Where("owner_email = ?", req.OwnerEmail).Count(&existingCount)
+	if existingCount > 0 {
+		// Check if this email has a Pro subscription
+		var sub model.Subscription
+		hasPro := db.DB.Where("owner_email = ? AND status IN ?", req.OwnerEmail, []string{"active", "trialing"}).First(&sub).Error == nil
+		if !hasPro {
+			writeJSON(w, http.StatusForbidden, map[string]any{
+				"error":   "floor_limit",
+				"message": "Freeプランは1フロアまでです。Proにアップグレードするとフロアを無制限に作成できます。",
+			})
+			return
+		}
+	}
 
 	editToken := generateSlug() + generateSlug() // 16 hex chars
 	floor := model.Floor{
-		Slug:      generateSlug(),
-		Name:      req.Name,
-		EditToken: editToken,
+		Slug:       generateSlug(),
+		Name:       req.Name,
+		OwnerEmail: req.OwnerEmail,
+		EditToken:  editToken,
 	}
 	if req.CreatorName != "" {
 		floor.CreatorName = &req.CreatorName
@@ -110,9 +133,11 @@ func GetFloor(w http.ResponseWriter, r *http.Request) {
 		"id":              floor.ID,
 		"slug":            floor.Slug,
 		"name":            floor.Name,
+		"ownerEmail":      floor.OwnerEmail,
 		"creatorName":     floor.CreatorName,
 		"excalidrawScene": floor.ExcalidrawScene,
 		"zones":           floor.Zones,
+		"settings":        floor.Settings,
 		"hasPassword":      floor.Password != nil && *floor.Password != "",
 		"hasOwnerPassword": floor.OwnerPassword != nil && *floor.OwnerPassword != "",
 		"createdAt":       floor.CreatedAt,
@@ -164,6 +189,20 @@ func UpdateFloor(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Zones != nil {
 		updates["zones"] = req.Zones
+	}
+	if req.Settings != nil {
+		// Merge with existing settings
+		existing := map[string]any{}
+		if floor.Settings != nil {
+			json.Unmarshal(floor.Settings, &existing)
+		}
+		incoming := map[string]any{}
+		json.Unmarshal(req.Settings, &incoming)
+		for k, v := range incoming {
+			existing[k] = v
+		}
+		merged, _ := json.Marshal(existing)
+		updates["settings"] = merged
 	}
 
 	if len(updates) > 0 {
@@ -233,6 +272,37 @@ func VerifyPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": body.Password == *floor.Password})
+}
+
+// GET /api/floors/by-owner?email=xxx
+func GetFloorsByOwner(w http.ResponseWriter, r *http.Request) {
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		writeError(w, http.StatusBadRequest, "email is required")
+		return
+	}
+
+	var floors []model.Floor
+	db.DB.Where("owner_email = ?", email).Order("created_at DESC").Find(&floors)
+
+	type floorSummary struct {
+		ID        string `json:"id"`
+		Slug      string `json:"slug"`
+		Name      string `json:"name"`
+		CreatedAt string `json:"createdAt"`
+	}
+
+	result := make([]floorSummary, 0, len(floors))
+	for _, f := range floors {
+		result = append(result, floorSummary{
+			ID:        f.ID.String(),
+			Slug:      f.Slug,
+			Name:      f.Name,
+			CreatedAt: f.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		})
+	}
+
+	writeJSON(w, http.StatusOK, result)
 }
 
 // DELETE /api/floors/{slug}

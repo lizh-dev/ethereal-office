@@ -35,7 +35,12 @@ func main() {
 
 	mux := http.NewServeMux()
 
+	// Email verification
+	mux.HandleFunc("POST /api/email/send-code", handler.SendVerifyCode)
+	mux.HandleFunc("POST /api/email/verify-code", handler.VerifyCode)
+
 	// REST API — Floors
+	mux.HandleFunc("GET /api/floors/by-owner", handler.GetFloorsByOwner)
 	mux.HandleFunc("POST /api/floors", handler.CreateFloor)
 	mux.HandleFunc("GET /api/floors/{slug}", handler.GetFloor)
 	mux.HandleFunc("PATCH /api/floors/{slug}", handler.UpdateFloor)

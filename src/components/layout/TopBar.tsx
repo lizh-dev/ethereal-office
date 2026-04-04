@@ -8,7 +8,7 @@ import { useWsSend } from '@/contexts/WebSocketContext';
 import QRCodeModal from '@/components/QRCodeModal';
 import { useFocusTimer } from '@/hooks/useFocusTimer';
 import type { PresenceStatus } from '@/types';
-import { Pencil, Search, Zap, Check, Share2, Coffee, Target, LogOut } from 'lucide-react';
+import { Pencil, Search, Zap, Check, Share2, Coffee, Target, LogOut, ChevronDown, Plus, Building2 } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
   online: '#4CAF50', busy: '#F44336', focusing: '#FF9800', offline: '#9CA3AF',
@@ -24,14 +24,24 @@ const STATUS_OPTIONS: { value: PresenceStatus; label: string; color: string }[] 
   { value: 'offline', label: '離席', color: '#9CA3AF' },
 ];
 
+interface FloorEntry {
+  id: string;
+  slug: string;
+  name: string;
+  createdAt: string;
+}
+
 export default function TopBar() {
-  const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, setStatusMessage, statusMessage, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode, floorPlanType, branding } = useOfficeStore();
+  const { currentUser, editorMode, exportFloorPlan, setShowAvatarSelector, setCurrentUserStatus, setStatusMessage, statusMessage, searchQuery, setSearchQuery, chatMessages, notifications, setViewMode, floorPlanType, branding, ownerEmail, floorSlug, isFloorOwner } = useOfficeStore();
   const wsSend = useWsSend();
   const focusTimer = useFocusTimer();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [showFloorSwitcher, setShowFloorSwitcher] = useState(false);
+  const [ownerFloors, setOwnerFloors] = useState<FloorEntry[]>([]);
   const [statusMsgInput, setStatusMsgInput] = useState(statusMessage || '');
   const statusMenuRef = useRef<HTMLDivElement>(null);
+  const floorSwitcherRef = useRef<HTMLDivElement>(null);
 
   // Close status menu when clicking outside
   useEffect(() => {
@@ -39,12 +49,25 @@ export default function TopBar() {
       if (statusMenuRef.current && !statusMenuRef.current.contains(e.target as Node)) {
         setShowStatusMenu(false);
       }
+      if (floorSwitcherRef.current && !floorSwitcherRef.current.contains(e.target as Node)) {
+        setShowFloorSwitcher(false);
+      }
     };
-    if (showStatusMenu) {
+    if (showStatusMenu || showFloorSwitcher) {
       document.addEventListener('mousedown', handleClick);
       return () => document.removeEventListener('mousedown', handleClick);
     }
-  }, [showStatusMenu]);
+  }, [showStatusMenu, showFloorSwitcher]);
+
+  // Fetch owner's floors when switcher opens
+  useEffect(() => {
+    if (showFloorSwitcher && ownerEmail) {
+      fetch(`/api/floors/by-owner?email=${encodeURIComponent(ownerEmail)}`)
+        .then(r => r.json())
+        .then(data => { if (Array.isArray(data)) setOwnerFloors(data); })
+        .catch(() => {});
+    }
+  }, [showFloorSwitcher, ownerEmail]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,6 +131,54 @@ export default function TopBar() {
           )}
           <span className="hidden md:inline">{branding.floorTitle || 'SmartOffice'}</span>
         </Link>
+
+        {/* Floor Switcher */}
+        {ownerEmail && isFloorOwner && (
+          <div ref={floorSwitcherRef} className="relative">
+            <button
+              onClick={() => setShowFloorSwitcher(!showFloorSwitcher)}
+              className="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded-lg transition-colors text-[12px] font-medium text-gray-600"
+            >
+              <Building2 className="w-3.5 h-3.5" strokeWidth={1.8} />
+              <ChevronDown className="w-3 h-3" strokeWidth={2} />
+            </button>
+            {showFloorSwitcher && (
+              <div className="absolute left-0 top-full mt-1 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-[100]"
+                style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.12)' }}
+              >
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">フロア一覧</div>
+                {ownerFloors.map(f => (
+                  <a
+                    key={f.slug}
+                    href={`/f/${f.slug}`}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition-colors text-left ${f.slug === floorSlug ? 'bg-sky-50' : ''}`}
+                  >
+                    <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                    <div className="min-w-0">
+                      <div className={`text-[12px] truncate ${f.slug === floorSlug ? 'font-bold text-sky-600' : 'font-medium text-gray-600'}`}>
+                        {f.name}
+                      </div>
+                    </div>
+                    {f.slug === floorSlug && <Check className="ml-auto w-3.5 h-3.5 text-sky-500 flex-shrink-0" strokeWidth={2} />}
+                  </a>
+                ))}
+                {floorPlanType === 'pro' && (
+                  <div className="border-t border-gray-100 mt-1 pt-1">
+                    <Link
+                      href="/#create"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-sky-50 transition-colors text-left"
+                      onClick={() => setShowFloorSwitcher(false)}
+                    >
+                      <Plus className="w-4 h-4 text-sky-500" strokeWidth={2} />
+                      <span className="text-[12px] font-medium text-sky-600">新しいフロアを作成</span>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {editorMode === 'edit' && (
           <span className="text-[11px] px-2 md:px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full font-medium border border-amber-200">
             <Pencil className="inline w-3.5 h-3.5" strokeWidth={1.8} /> <span className="hidden sm:inline">編集モード</span><span className="sm:hidden">編集</span>

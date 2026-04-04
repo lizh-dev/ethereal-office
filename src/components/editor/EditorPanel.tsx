@@ -3,11 +3,15 @@
 import { useOfficeStore } from '@/store/officeStore';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import { initSeatsFromElements } from '@/lib/seatDetection';
+import { THEMES, type FurnitureTheme } from '@/lib/furnitureAssets';
 import { useRef, useState } from 'react';
 
 
 export default function EditorPanel({ onAddSpace, onApplyTemplate, floorSlug }: { onAddSpace?: () => void; onApplyTemplate?: () => void; floorSlug?: string }) {
   const canUseTemplates = useOfficeStore((s) => s.planPermissions.floorTemplates);
+  const canUsePremiumThemes = useOfficeStore((s) => s.planPermissions.premiumThemes);
+  const furnitureTheme = useOfficeStore((s) => s.furnitureTheme);
+  const setFurnitureTheme = useOfficeStore((s) => s.setFurnitureTheme);
   const wsSend = useWsSend();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
@@ -106,7 +110,7 @@ export default function EditorPanel({ onAddSpace, onApplyTemplate, floorSlug }: 
     initSeatsFromElements(elements);
     const updatedZones = useOfficeStore.getState().zones;
 
-    // 2. Save to DB
+    // 2. Save to DB (including theme in settings)
     if (floorSlug) {
       try {
         const appState = excalidrawAPI.getAppState();
@@ -118,7 +122,7 @@ export default function EditorPanel({ onAddSpace, onApplyTemplate, floorSlug }: 
         await fetch(`/api/floors/${floorSlug}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', 'X-Edit-Token': editToken, 'X-Owner-Password': ownerPw },
-          body: JSON.stringify({ excalidrawScene: scene, zones: updatedZones }),
+          body: JSON.stringify({ excalidrawScene: scene, zones: updatedZones, settings: { theme: furnitureTheme } }),
         });
       } catch { /* silent */ }
     }
@@ -209,6 +213,39 @@ export default function EditorPanel({ onAddSpace, onApplyTemplate, floorSlug }: 
             📥 インポート
           </button>
           <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileChange} className="hidden" />
+        </div>
+      </div>
+
+      {/* Theme Selector */}
+      <div className="p-4 border-b border-gray-200">
+        <h4 className="text-xs font-semibold text-gray-700 mb-2">🎨 家具テーマ</h4>
+        <div className="grid grid-cols-2 gap-1.5">
+          {THEMES.map(theme => {
+            const isLocked = theme.proOnly && !canUsePremiumThemes;
+            const isActive = furnitureTheme === theme.id;
+            return (
+              <button
+                key={theme.id}
+                onClick={() => {
+                  if (!isLocked) {
+                    setFurnitureTheme(theme.id);
+                  }
+                }}
+                disabled={isLocked}
+                className={`text-left px-2.5 py-2 rounded-lg text-[11px] transition-all ${
+                  isActive
+                    ? 'bg-indigo-50 border-2 border-indigo-400 text-indigo-700 font-semibold'
+                    : isLocked
+                    ? 'bg-gray-50 border border-gray-100 text-gray-300 cursor-not-allowed'
+                    : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100 hover:border-gray-300'
+                }`}
+              >
+                <div className="font-medium">{theme.name}</div>
+                <div className="text-[9px] mt-0.5 opacity-70">{theme.description}</div>
+                {isLocked && <div className="text-[8px] mt-0.5 text-amber-500 font-medium">Pro</div>}
+              </button>
+            );
+          })}
         </div>
       </div>
 

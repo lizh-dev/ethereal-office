@@ -100,6 +100,14 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
       })
       .then((data) => {
         setFloorData(data);
+        useOfficeStore.getState().setFloorIdentity(slug, data.ownerEmail || '');
+        // Restore theme from floor settings
+        try {
+          const settings = typeof data.settings === 'string' ? JSON.parse(data.settings) : data.settings;
+          if (settings?.theme) {
+            useOfficeStore.getState().setFurnitureTheme(settings.theme);
+          }
+        } catch { /* ignore */ }
         // Restore zones from DB, or clear stale zones from previous floor
         if (data.zones && Array.isArray(data.zones) && data.zones.length > 0) {
           useOfficeStore.getState().setZones(data.zones);

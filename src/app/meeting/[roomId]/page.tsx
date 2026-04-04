@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { PenTool, Video, X } from 'lucide-react';
+import { PenTool, Video, X, Download, Upload, Trash2, Users } from 'lucide-react';
 import '@excalidraw/excalidraw/index.css';
 import * as Y from 'yjs';
 import { HocuspocusProvider } from '@hocuspocus/provider';
@@ -19,20 +19,35 @@ declare global {
   }
 }
 
-function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
+function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T & { flush: () => void } {
   let timer: ReturnType<typeof setTimeout>;
-  return ((...args: any[]) => {
+  let lastArgs: any[] | null = null;
+  const debounced = ((...args: any[]) => {
+    lastArgs = args;
     clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), ms);
-  }) as unknown as T;
+    timer = setTimeout(() => { lastArgs = null; fn(...args); }, ms);
+  }) as unknown as T & { flush: () => void };
+  debounced.flush = () => {
+    if (lastArgs) {
+      clearTimeout(timer);
+      const args = lastArgs;
+      lastArgs = null;
+      fn(...args);
+    }
+  };
+  return debounced;
 }
 
 // ---------- Inline Board Component ----------
-function MeetingBoard({ roomId, floorSlug, userName }: { roomId: string; floorSlug: string; userName: string }) {
+function MeetingBoard({ roomId, floorSlug, userName, visible }: { roomId: string; floorSlug: string; userName: string; visible: boolean }) {
   const [api, setApi] = useState<any>(null);
   const ydocRef = useRef<Y.Doc | null>(null);
   const providerRef = useRef<HocuspocusProvider | null>(null);
   const isRemoteRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [userCount, setUserCount] = useState(1);
+  const [isConnected, setIsConnected] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   useEffect(() => {
     if (!api) return;
@@ -47,6 +62,8 @@ function MeetingBoard({ roomId, floorSlug, userName }: { roomId: string; floorSl
       name: `board-${roomId}`,
       document: ydoc,
       token: JSON.stringify({ floor: floorSlug, boardId: roomId }),
+      onConnect: () => setIsConnected(true),
+      onDisconnect: () => setIsConnected(false),
     });
     providerRef.current = provider;
 
@@ -54,6 +71,9 @@ function MeetingBoard({ roomId, floorSlug, userName }: { roomId: string; floorSl
       name: userName,
       color: '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0'),
     });
+    const updateCount = () => setUserCount(provider.awareness?.getStates().size || 1);
+    provider.awareness?.on('change', updateCount);
+    updateCount();
 
     provider.on('synced', ({ state }: { state: boolean }) => {
       if (!state) return;
@@ -76,6 +96,7 @@ function MeetingBoard({ roomId, floorSlug, userName }: { roomId: string; floorSl
     });
 
     return () => {
+      provider.awareness?.off('change', updateCount);
       provider.destroy();
       providerRef.current = null;
       ydoc.destroy();
@@ -92,22 +113,177 @@ function MeetingBoard({ roomId, floorSlug, userName }: { roomId: string; floorSl
     []
   );
 
+  // Flush pending sync when hiding the board
+  useEffect(() => {
+    if (!visible) syncToYjs.flush();
+  }, [visible, syncToYjs]);
+
   const handleChange = useCallback((elements: readonly any[]) => {
     if (isRemoteRef.current) return;
     syncToYjs([...elements]);
   }, [syncToYjs]);
 
+  const handleExport = useCallback(() => {
+    if (!api) return;
+    const elements = api.getSceneElements();
+    const appState = api.getAppState();
+    const data = JSON.stringify({
+      type: 'excalidraw',
+      version: 2,
+      source: 'smartoffice-board',
+      elements,
+      appState: {
+        viewBackgroundColor: appState.viewBackgroundColor || '#ffffff',
+        gridSize: appState.gridSize || null,
+      },
+      files: {},
+    }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `meeting-board-${roomId}-${new Date().toISOString().slice(0, 10)}.excalidraw`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [api, roomId]);
+
+  const handleImport = useCallback(() => { fileInputRef.current?.click(); }, []);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !api || !ydocRef.current) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        if (data.elements && Array.isArray(data.elements)) {
+          api.updateScene({
+            elements: data.elements,
+            ...(data.appState?.viewBackgroundColor
+              ? { appState: { viewBackgroundColor: data.appState.viewBackgroundColor } }
+              : {}),
+          });
+          const yScene = ydocRef.current!.getMap('scene');
+          yScene.set('elements', data.elements);
+        }
+      } catch { /* invalid file */ }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }, [api]);
+
+  const executeClear = useCallback(() => {
+    if (!api || !ydocRef.current) return;
+    api.resetScene();
+    const yScene = ydocRef.current.getMap('scene');
+    yScene.set('elements', []);
+    setShowClearConfirm(false);
+  }, [api]);
+
   return (
-    <Excalidraw
-      excalidrawAPI={(excalidrawApi: any) => setApi(excalidrawApi)}
-      onChange={handleChange}
-      isCollaborating={true}
-      langCode="ja-JP"
-      initialData={{ elements: [], appState: { viewBackgroundColor: '#ffffff' } }}
-      UIOptions={{
-        canvasActions: { loadScene: false, export: false, saveAsImage: false },
-      }}
-    />
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Toolbar */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '6px 12px', borderBottom: '1px solid #e2e8f0',
+        background: '#f8fafc', flexShrink: 0, zIndex: 10,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <PenTool style={{ width: 14, height: 14, color: '#0f172a' }} strokeWidth={1.8} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>ボード</span>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '2px 8px', borderRadius: 12,
+            background: isConnected ? '#f0fdf4' : '#fef2f2',
+            border: `1px solid ${isConnected ? '#bbf7d0' : '#fecaca'}`,
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: isConnected ? '#22c55e' : '#ef4444' }} />
+            <span style={{ fontSize: 11, color: isConnected ? '#16a34a' : '#dc2626' }}>
+              {isConnected ? '接続中' : '未接続'}
+            </span>
+          </div>
+          {userCount > 1 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 3,
+              padding: '2px 8px', borderRadius: 12,
+              background: '#eff6ff', border: '1px solid #bfdbfe',
+            }}>
+              <Users style={{ width: 12, height: 12, color: '#3b82f6' }} strokeWidth={1.8} />
+              <span style={{ fontSize: 11, color: '#2563eb' }}>{userCount}人</span>
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input ref={fileInputRef} type="file" accept=".excalidraw,.json" onChange={handleFileChange} style={{ display: 'none' }} />
+          <button onClick={handleImport} style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0',
+            background: 'white', color: '#475569', fontSize: 12, cursor: 'pointer',
+          }}>
+            <Upload style={{ width: 13, height: 13 }} strokeWidth={1.8} />
+            インポート
+          </button>
+          <button onClick={handleExport} style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0',
+            background: 'white', color: '#475569', fontSize: 12, cursor: 'pointer',
+          }}>
+            <Download style={{ width: 13, height: 13 }} strokeWidth={1.8} />
+            エクスポート
+          </button>
+          <button onClick={() => setShowClearConfirm(true)} style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0',
+            background: 'white', color: '#ef4444', fontSize: 12, cursor: 'pointer',
+          }}>
+            <Trash2 style={{ width: 13, height: 13 }} strokeWidth={1.8} />
+            クリア
+          </button>
+        </div>
+      </div>
+
+      {/* Clear confirmation */}
+      {showClearConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+        }} onClick={() => setShowClearConfirm(false)}>
+          <div style={{
+            background: 'white', borderRadius: 16, padding: 24, maxWidth: 360,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          }} onClick={e => e.stopPropagation()}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>ボードをクリア</p>
+            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>すべての描画内容が消去されます。この操作は元に戻せません。</p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowClearConfirm(false)} style={{
+                padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0',
+                background: 'white', color: '#475569', fontSize: 13, cursor: 'pointer',
+              }}>キャンセル</button>
+              <button onClick={executeClear} style={{
+                padding: '8px 16px', borderRadius: 8, border: 'none',
+                background: '#ef4444', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              }}>消去する</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Excalidraw Canvas */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <Excalidraw
+            excalidrawAPI={(excalidrawApi: any) => setApi(excalidrawApi)}
+            onChange={handleChange}
+            isCollaborating={isConnected}
+            langCode="ja-JP"
+            initialData={{ elements: [], appState: { viewBackgroundColor: '#ffffff' } }}
+            UIOptions={{
+              canvasActions: { loadScene: false, export: false, saveAsImage: false },
+            }}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -138,6 +314,7 @@ export default function MeetingPage() {
   const [roomValid, setRoomValid] = useState<boolean | null>(null);
   const [roomHasPassword, setRoomHasPassword] = useState(false);
   const [showBoard, setShowBoard] = useState(false);
+  const [boardMounted, setBoardMounted] = useState(false);
   const [canInlineBoard, setCanInlineBoard] = useState(false);
 
   const autoJoin = !!nameFromUrl;
@@ -360,18 +537,18 @@ export default function MeetingPage() {
       {/* Jitsi container — hidden when board is shown (audio continues) */}
       <div ref={containerRef} style={{ width: '100%', height: '100%', display: showBoard ? 'none' : 'block' }} />
 
-      {/* Excalidraw board — shown when toggled */}
-      {showBoard && (
-        <div style={{ width: '100%', height: '100%', background: 'white', position: 'absolute', inset: 0, zIndex: 50 }}>
+      {/* Excalidraw board — stays mounted once opened, hidden via CSS to preserve Yjs connection */}
+      {boardMounted && (
+        <div style={{
+          width: '100%', height: '100%', background: 'white',
+          position: 'absolute', inset: 0, zIndex: 50,
+          display: showBoard ? 'flex' : 'none', flexDirection: 'column',
+        }}>
           <style>{`
             .layer-ui__wrapper__top-right { display: none !important; }
             .main-menu-trigger { display: none !important; }
           `}</style>
-          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <div style={{ position: 'absolute', inset: 0 }}>
-              <MeetingBoard roomId={decodedRoomId} floorSlug={floorSlug} userName={userName} />
-            </div>
-          </div>
+          <MeetingBoard roomId={decodedRoomId} floorSlug={floorSlug} userName={userName} visible={showBoard} />
         </div>
       )}
 
@@ -383,7 +560,7 @@ export default function MeetingPage() {
         {/* Board toggle — Pro only */}
         {canInlineBoard && (
           <button
-            onClick={() => setShowBoard(v => !v)}
+            onClick={() => { setBoardMounted(true); setShowBoard(v => !v); }}
             style={{
               padding: '8px 16px', borderRadius: 10, border: 'none',
               background: showBoard ? '#0ea5e9' : 'rgba(255,255,255,0.15)',

@@ -21,6 +21,12 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
   const [creatorName, setCreatorName] = useState('');
   const [password, setPassword] = useState('');
   const [ownerPassword, setOwnerPassword] = useState('');
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const [verifyCode, setVerifyCode] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [showScanner, setShowScanner] = useState(false);
@@ -30,13 +36,72 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
       const history = JSON.parse(localStorage.getItem('ethereal-visit-history') || '[]');
       setVisitHistory(history);
     } catch { /* ignore */ }
+    // Restore previously verified email
+    const savedEmail = localStorage.getItem('ethereal-owner-email');
+    if (savedEmail) {
+      setOwnerEmail(savedEmail);
+      setEmailVerified(true);
+    }
   }, []);
 
   const template = 'empty'; // Always empty — user builds via SpaceWizard after joining
 
+  const handleSendCode = async () => {
+    if (!ownerEmail.trim() || !ownerEmail.includes('@')) {
+      setError('有効なメールアドレスを入力してください');
+      return;
+    }
+    setSendingCode(true);
+    setError('');
+    try {
+      const res = await fetch('/api/email/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: ownerEmail.trim() }),
+      });
+      if (!res.ok) throw new Error();
+      setCodeSent(true);
+    } catch {
+      setError('認証コードの送信に失敗しました');
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (verifyCode.length !== 6) {
+      setError('6桁の認証コードを入力してください');
+      return;
+    }
+    setVerifying(true);
+    setError('');
+    try {
+      const res = await fetch('/api/email/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: ownerEmail.trim(), code: verifyCode }),
+      });
+      const data = await res.json();
+      if (data.verified) {
+        setEmailVerified(true);
+        localStorage.setItem('ethereal-owner-email', ownerEmail.trim());
+      } else {
+        setError('認証コードが正しくありません');
+      }
+    } catch {
+      setError('認証に失敗しました');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const handleCreate = async () => {
     if (!floorName.trim()) {
       setError('フロア名を入力してください');
+      return;
+    }
+    if (!emailVerified) {
+      setError('メールアドレスの認証を完了してください');
       return;
     }
 
@@ -49,6 +114,7 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: floorName.trim(),
+          ownerEmail: ownerEmail.trim(),
           creatorName: creatorName.trim() || undefined,
           password: password.trim() || undefined,
           ownerPassword: ownerPassword.trim() || undefined,
@@ -59,7 +125,15 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to create floor');
+      if (!res.ok) {
+        const data = await res.json();
+        if (data.error === 'floor_limit') {
+          setError(data.message);
+          setCreating(false);
+          return;
+        }
+        throw new Error('Failed to create floor');
+      }
 
       const floor = await res.json();
       if (floor.editToken) {
@@ -117,6 +191,63 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
           <h3 className="text-xl font-semibold text-gray-900 mb-6">新しいフロアを作成</h3>
 
           <div className="space-y-5">
+            {/* Owner email with verification */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                メールアドレス <span className="text-red-400">*</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={ownerEmail}
+                  onChange={(e) => { setOwnerEmail(e.target.value); setEmailVerified(false); setCodeSent(false); }}
+                  placeholder="you@example.com"
+                  disabled={emailVerified}
+                  className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300 disabled:opacity-60"
+                />
+                {!emailVerified && !codeSent && (
+                  <button
+                    onClick={handleSendCode}
+                    disabled={sendingCode || !ownerEmail.includes('@')}
+                    className="px-4 py-3 bg-sky-500 hover:bg-sky-400 disabled:bg-gray-300 text-white text-sm font-medium rounded-xl transition-all whitespace-nowrap"
+                  >
+                    {sendingCode ? '送信中...' : '認証'}
+                  </button>
+                )}
+                {emailVerified && (
+                  <span className="flex items-center px-4 py-3 bg-emerald-50 text-emerald-600 text-sm font-medium rounded-xl border border-emerald-200">
+                    認証済み
+                  </span>
+                )}
+              </div>
+              {codeSent && !emailVerified && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    value={verifyCode}
+                    onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onKeyDown={(e) => e.key === 'Enter' && handleVerifyCode()}
+                    placeholder="6桁の認証コード"
+                    maxLength={6}
+                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300 tracking-widest text-center text-lg"
+                  />
+                  <button
+                    onClick={handleVerifyCode}
+                    disabled={verifying || verifyCode.length !== 6}
+                    className="px-4 py-3 bg-sky-500 hover:bg-sky-400 disabled:bg-gray-300 text-white text-sm font-medium rounded-xl transition-all whitespace-nowrap"
+                  >
+                    {verifying ? '確認中...' : '確認'}
+                  </button>
+                </div>
+              )}
+              {codeSent && !emailVerified && (
+                <p className="text-[11px] text-gray-400 mt-1">メールに届いた6桁のコードを入力してください。
+                  <button onClick={handleSendCode} className="text-sky-500 hover:underline ml-1">再送信</button>
+                </p>
+              )}
+              <p className="text-[10px] text-gray-400 mt-1">フロア管理・Proプラン購入に使用します</p>
+            </div>
+
             {/* Floor name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

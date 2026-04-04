@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { FloorPlan, User, ViewMode, EditorMode, Camera, Furniture, Room, FurnitureType, RoomType, Zone, UserAction, PresenceStatus, DMMessage } from '@/types';
 import type { PlanType, PlanPermissions } from '@/types/plan';
 import { DEFAULT_PERMISSIONS } from '@/types/plan';
+import type { FurnitureTheme } from '@/lib/furnitureAssets';
 
 interface ChatMessage {
   userId: string;
@@ -88,6 +89,11 @@ interface OfficeState {
   unreadChatCount: number;
   markChatRead: () => void;
 
+  // Floor identity
+  floorSlug: string;
+  ownerEmail: string;
+  setFloorIdentity: (slug: string, ownerEmail: string) => void;
+
   // Permissions
   isFloorOwner: boolean;
   setIsFloorOwner: (v: boolean) => void;
@@ -97,6 +103,10 @@ interface OfficeState {
   planPermissions: PlanPermissions;
   setFloorPlanInfo: (plan: PlanType, permissions: PlanPermissions) => void;
   canUseFeature: (feature: keyof PlanPermissions) => boolean;
+
+  // Furniture theme
+  furnitureTheme: FurnitureTheme;
+  setFurnitureTheme: (theme: FurnitureTheme) => void;
 
   // Custom branding
   branding: { logoUrl: string; accentColor: string; floorTitle: string };
@@ -267,6 +277,11 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   unreadChatCount: 0,
   markChatRead: () => set({ unreadChatCount: 0 }),
 
+  // Floor identity
+  floorSlug: '',
+  ownerEmail: '',
+  setFloorIdentity: (slug, ownerEmail) => set({ floorSlug: slug, ownerEmail }),
+
   // Permissions
   isFloorOwner: false,
   setIsFloorOwner: (v) => set({ isFloorOwner: v }),
@@ -279,6 +294,10 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
     const perms = get().planPermissions;
     return !!perms[feature];
   },
+
+  // Furniture theme
+  furnitureTheme: 'standard' as FurnitureTheme,
+  setFurnitureTheme: (theme) => set({ furnitureTheme: theme }),
 
   // Custom branding
   branding: { logoUrl: '', accentColor: '#0ea5e9', floorTitle: '' },

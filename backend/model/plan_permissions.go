@@ -15,6 +15,8 @@ type PlanPermissions struct {
 	MaxMeetingParticipants int  `json:"maxMeetingParticipants"` // 0 = unlimited
 	MaxConcurrentMeetings  int  `json:"maxConcurrentMeetings"`  // 0 = unlimited
 	MaxBoards              int  `json:"maxBoards"`              // 0 = unlimited
+	MaxFloors              int  `json:"maxFloors"`              // 0 = unlimited
+	PremiumThemes          bool `json:"premiumThemes"`
 	CustomBranding         bool `json:"customBranding"`
 	SSO                    bool `json:"sso"`
 	DedicatedEnv           bool `json:"dedicatedEnv"`
@@ -37,6 +39,8 @@ var PlanPermissionsMap = map[PlanType]PlanPermissions{
 		MaxMeetingParticipants: 4,   // hub.go で強制
 		MaxConcurrentMeetings:  1,   // hub.go で強制
 		MaxBoards:              1,   // board.go で強制
+		MaxFloors:              1,   // floor.go で強制
+		PremiumThemes:          false,
 		CustomBranding:         false, // main.go でゲート済み
 		SSO:                    false, // main.go でゲート済み
 		DedicatedEnv:           false,
@@ -57,6 +61,8 @@ var PlanPermissionsMap = map[PlanType]PlanPermissions{
 		MaxMeetingParticipants: 0, // unlimited
 		MaxConcurrentMeetings:  0, // unlimited
 		MaxBoards:              0, // unlimited
+		MaxFloors:              0, // unlimited
+		PremiumThemes:          true,
 		CustomBranding:         true,
 		SSO:                    true,
 		DedicatedEnv:           true,

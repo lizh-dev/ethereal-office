@@ -8,11 +8,23 @@ import (
 )
 
 // getFloorPlan looks up the active plan for a floor by slug.
+// Uses email-based subscription lookup: if the floor's owner email has an active
+// Pro subscription on any floor, this floor is also Pro.
 func getFloorPlan(slug string) model.PlanType {
 	var floor model.Floor
 	if err := db.DB.Where("slug = ?", slug).First(&floor).Error; err != nil {
 		return model.PlanFree
 	}
+
+	// 1. Check by owner email (new: email-based Pro)
+	if floor.OwnerEmail != "" {
+		var sub model.Subscription
+		if err := db.DB.Where("owner_email = ? AND status IN ?", floor.OwnerEmail, []string{"active", "trialing"}).First(&sub).Error; err == nil {
+			return sub.Plan
+		}
+	}
+
+	// 2. Fallback: legacy floor-level subscription
 	var sub model.Subscription
 	if err := db.DB.Where("floor_id = ? AND status IN ?", floor.ID, []string{"active", "trialing"}).First(&sub).Error; err != nil {
 		return model.PlanFree
@@ -72,6 +84,8 @@ func RequirePlanFeature(feature string, next http.HandlerFunc) http.HandlerFunc 
 			allowed = perms.SSO
 		case "apiAccess":
 			allowed = perms.APIAccess
+		case "premiumThemes":
+			allowed = perms.PremiumThemes
 		}
 
 		if !allowed {

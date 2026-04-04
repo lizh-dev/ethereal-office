@@ -26,7 +26,8 @@ type Subscription struct {
 	ID                   uuid.UUID          `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 	FloorID              uuid.UUID          `gorm:"type:uuid;not null;index" json:"floorId"`
 	Floor                Floor              `gorm:"foreignKey:FloorID" json:"floor,omitempty"`
-	Email                string             `gorm:"not null" json:"email"`
+	Email                string             `gorm:"not null;index" json:"email"`
+	OwnerEmail           string             `gorm:"not null;default:''" json:"ownerEmail"`
 	Plan                 PlanType           `gorm:"type:varchar(20);not null;default:'pro'" json:"plan"`
 	Status               SubscriptionStatus `gorm:"type:varchar(20);not null;default:'active'" json:"status"`
 	StripeCustomerID     string             `gorm:"index" json:"-"`

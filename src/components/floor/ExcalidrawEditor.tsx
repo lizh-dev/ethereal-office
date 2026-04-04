@@ -5,7 +5,7 @@ import '@excalidraw/excalidraw/index.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getFurnitureLibrary } from './furnitureLibrary';
-import { preloadFurnitureFiles, generateIsometricDemoFloor } from '@/lib/furnitureAssets';
+import { preloadFurnitureFiles, generateIsometricDemoFloor, type FurnitureTheme } from '@/lib/furnitureAssets';
 import { initSeatsFromElements } from '@/lib/seatDetection';
 
 const DEBOUNCE_MS = 2000;
@@ -101,10 +101,11 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
   // Always pre-load furniture image files (needed for SpaceWizard on any floor)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [furnitureFiles, setFurnitureFiles] = useState<Record<string, any> | null>(null);
+  const currentTheme = useOfficeStore((s) => s.furnitureTheme);
 
   useEffect(() => {
-    preloadFurnitureFiles().then(setFurnitureFiles).catch(console.error);
-  }, []);
+    preloadFurnitureFiles(currentTheme).then(setFurnitureFiles).catch(console.error);
+  }, [currentTheme]);
 
   // Detect if this floor uses image-based furniture
   const hasImageFurniture = useMemo(() => {
@@ -189,7 +190,7 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         api.addFiles(Object.values(furnitureFiles));
       } else {
         // Files not loaded yet - load and register
-        preloadFurnitureFiles().then(files => {
+        preloadFurnitureFiles(currentTheme).then(files => {
           api.addFiles(Object.values(files));
         }).catch(console.error);
       }

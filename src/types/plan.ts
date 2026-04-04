@@ -13,6 +13,8 @@ export interface PlanPermissions {
   maxMembers: number;
   maxMeetingParticipants: number; // 0 = unlimited
   maxConcurrentMeetings: number;  // 0 = unlimited
+  maxFloors: number;              // 0 = unlimited
+  premiumThemes: boolean;
   customBranding: boolean;
   sso: boolean;
   dedicatedEnv: boolean;
@@ -33,6 +35,8 @@ export const DEFAULT_PERMISSIONS: PlanPermissions = {
   maxMembers: 10,
   maxMeetingParticipants: 4,
   maxConcurrentMeetings: 1,
+  maxFloors: 1,
+  premiumThemes: false,
   customBranding: false,
   sso: false,
   dedicatedEnv: false,
@@ -40,7 +44,7 @@ export const DEFAULT_PERMISSIONS: PlanPermissions = {
   apiAccess: false,
 };
 
-export type FeatureKey = keyof Omit<PlanPermissions, 'maxMembers' | 'maxMeetingParticipants' | 'maxConcurrentMeetings' | 'maxBoards'>;
+export type FeatureKey = keyof Omit<PlanPermissions, 'maxMembers' | 'maxMeetingParticipants' | 'maxConcurrentMeetings' | 'maxBoards' | 'maxFloors'>;
 
 export const FEATURE_LABELS: Record<FeatureKey, string> = {
   voiceCall: '音声通話',
@@ -52,6 +56,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   floorTemplates: 'フロアテンプレート',
   adminFeatures: 'メンバー管理',
   prioritySupport: '優先サポート',
+  premiumThemes: 'プレミアム家具テーマ',
   customBranding: 'カスタムブランディング',
   sso: 'シングルサインオン',
   dedicatedEnv: '専用環境',
