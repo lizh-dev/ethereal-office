@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { convertToExcalidrawElements } from '@excalidraw/excalidraw';
 import { useOfficeStore } from '@/store/officeStore';
 import { FURNITURE_ASSETS } from '@/lib/furnitureAssets';
+import { Monitor, Handshake, Sofa, Coffee } from 'lucide-react';
 
 type DeskLayout = 'single' | 'facing';
 
@@ -19,10 +20,10 @@ interface SpaceConfig {
 }
 
 const SPACE_TYPES = [
-  { id: 'desk-area' as const, label: 'デスクエリア', desc: 'デスク+椅子+モニター', icon: '🖥' },
-  { id: 'meeting' as const, label: '会議室', desc: 'テーブル+椅子', icon: '🤝' },
-  { id: 'lounge' as const, label: 'ラウンジ', desc: 'ソファ+テーブル+植物', icon: '🛋' },
-  { id: 'cafe' as const, label: 'カフェスペース', desc: 'テーブル+椅子+コーヒー', icon: '☕' },
+  { id: 'desk-area' as const, label: 'デスクエリア', desc: 'デスク+椅子+モニター', icon: <Monitor className="w-[18px] h-[18px]" strokeWidth={1.8} /> },
+  { id: 'meeting' as const, label: '会議室', desc: 'テーブル+椅子', icon: <Handshake className="w-[18px] h-[18px]" strokeWidth={1.8} /> },
+  { id: 'lounge' as const, label: 'ラウンジ', desc: 'ソファ+テーブル+植物', icon: <Sofa className="w-[18px] h-[18px]" strokeWidth={1.8} /> },
+  { id: 'cafe' as const, label: 'カフェスペース', desc: 'テーブル+椅子+コーヒー', icon: <Coffee className="w-[18px] h-[18px]" strokeWidth={1.8} /> },
 ];
 
 function eid() {

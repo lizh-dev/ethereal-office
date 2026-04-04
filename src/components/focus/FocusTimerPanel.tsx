@@ -1,6 +1,7 @@
 'use client';
 
 import { useFocusTimer } from '@/hooks/useFocusTimer';
+import { Coffee, Target } from 'lucide-react';
 
 const PRESETS = [
   { label: '25分', minutes: 25 },
@@ -24,7 +25,7 @@ export default function FocusTimerPanel() {
           backdropFilter: 'blur(8px)',
         }}
       >
-        <span className="text-white text-sm font-bold">{isBreak ? '☕ 休憩' : '🎯 集中'}</span>
+        <span className="text-white text-sm font-bold flex items-center gap-1">{isBreak ? <><Coffee className="w-4 h-4 inline" strokeWidth={1.8} /> 休憩</> : <><Target className="w-4 h-4 inline" strokeWidth={1.8} /> 集中</>}</span>
         <span className="text-white text-lg font-mono font-bold tabular-nums">{timeStr}</span>
         <button
           onClick={stopFocus}
@@ -38,7 +39,7 @@ export default function FocusTimerPanel() {
 
   return (
     <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-2 bg-white/95 rounded-xl shadow-md border border-gray-200 backdrop-blur-sm">
-      <span className="text-xs text-gray-600 font-medium">🎯 集中モード</span>
+      <span className="text-xs text-gray-600 font-medium flex items-center gap-1"><Target className="w-3.5 h-3.5 inline" strokeWidth={1.8} /> 集中モード</span>
       {PRESETS.map((p) => (
         <button
           key={p.minutes}

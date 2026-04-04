@@ -7,6 +7,8 @@ import { getAvatarUrl } from './assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import { initSeatsFromElements } from '@/lib/seatDetection';
 import type { User } from '@/types';
+import { Phone, MessageCircle, Ban, MapPin, Laptop, Handshake, Coffee, Moon, Search, Mouse, ArmchairIcon, Hand, Keyboard, ZoomIn, Smile, Maximize } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 const Editor = dynamic(() => import('./ExcalidrawEditor'), {
   ssr: false,
@@ -19,8 +21,8 @@ const STATUS_COLORS: Record<string, string> = {
 
 const PROXIMITY_DIST = 120; // scene units
 const WHISPER_DIST = 150; // scene units for whisper range
-const ACTION_EMOJI: Record<string, string> = {
-  working: '💻', meeting: '🤝', break: '☕', away: '💤', idle: '',
+const ACTION_EMOJI: Record<string, ReactNode> = {
+  working: <Laptop className="w-3 h-3" strokeWidth={1.8} />, meeting: <Handshake className="w-3 h-3" strokeWidth={1.8} />, break: <Coffee className="w-3 h-3" strokeWidth={1.8} />, away: <Moon className="w-3 h-3" strokeWidth={1.8} />, idle: null,
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -323,7 +325,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             const api = excalidrawAPI;
             if (!api) return;
             api.scrollToContent(api.getSceneElements(), { fitToViewport: true, viewportZoomFactor: 0.9 });
-          }} style={{ ...zoomBtnStyle, fontSize: 12, fontWeight: 600 }} title="全体表示">⊞</button>
+          }} style={{ ...zoomBtnStyle, fontSize: 12, fontWeight: 600 }} title="全体表示"><Maximize style={{ width: 14, height: 14 }} strokeWidth={1.8} /></button>
           <button
             onClick={() => setShowHelp(v => !v)}
             style={{
@@ -349,17 +351,17 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
             操作ガイド
             <span onClick={() => setShowHelp(false)} style={{ cursor: 'pointer', color: '#9ca3af', fontSize: 16 }}>×</span>
           </div>
-          {[
-            ['🖱 ダブルクリック', 'その場所へ移動'],
-            ['🪑 席をダブルクリック', '座席に着席'],
-            ['✋ ドラッグ', 'フロアを移動'],
-            ['⌨ Esc', '席から離れる'],
-            ['🔍 Ctrl+ホイール', '拡大/縮小'],
-            ['💬 下部入力欄', 'チャット送信'],
-            ['😀 下部スタンプ', 'リアクション'],
-          ].map(([key, desc]) => (
-            <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid #f3f4f6' }}>
-              <span style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>{key}</span>
+          {([
+            [<><Mouse style={{ width: 12, height: 12, display: 'inline', verticalAlign: 'middle' }} strokeWidth={1.8} /> ダブルクリック</>, 'その場所へ移動'],
+            [<><ArmchairIcon style={{ width: 12, height: 12, display: 'inline', verticalAlign: 'middle' }} strokeWidth={1.8} /> 席をダブルクリック</>, '座席に着席'],
+            [<><Hand style={{ width: 12, height: 12, display: 'inline', verticalAlign: 'middle' }} strokeWidth={1.8} /> ドラッグ</>, 'フロアを移動'],
+            [<><Keyboard style={{ width: 12, height: 12, display: 'inline', verticalAlign: 'middle' }} strokeWidth={1.8} /> Esc</>, '席から離れる'],
+            [<><ZoomIn style={{ width: 12, height: 12, display: 'inline', verticalAlign: 'middle' }} strokeWidth={1.8} /> Ctrl+ホイール</>, '拡大/縮小'],
+            [<><MessageCircle style={{ width: 12, height: 12, display: 'inline', verticalAlign: 'middle' }} strokeWidth={1.8} /> 下部入力欄</>, 'チャット送信'],
+            [<><Smile style={{ width: 12, height: 12, display: 'inline', verticalAlign: 'middle' }} strokeWidth={1.8} /> 下部スタンプ</>, 'リアクション'],
+          ] as [React.ReactNode, string][]).map(([key, desc], i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid #f3f4f6' }}>
+              <span style={{ fontSize: 11, color: '#6366f1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>{key}</span>
               <span style={{ fontSize: 11, color: '#6b7280' }}>{desc}</span>
             </div>
           ))}
@@ -493,7 +495,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                     boxShadow: isMatch ? '0 2px 8px rgba(245,158,11,0.3)' : '0 1px 3px rgba(0,0,0,0.08)',
                     border: isMatch ? '1px solid #F59E0B' : 'none',
                   }}>
-                    {isMatch ? '🔍 ' : ''}{user.name.split(' ')[0]}{isCurrent ? ' (You)' : ''}
+                    {isMatch ? <><Search style={{ width: 10, height: 10, display: 'inline', verticalAlign: 'middle' }} strokeWidth={2} />{' '}</> : ''}{user.name.split(' ')[0]}{isCurrent ? ' (You)' : ''}
                   </div>
                 )}
                 {/* Action badge */}
@@ -532,7 +534,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                     animation: 'whisper-fade-in 0.3s ease-out, whisper-fade-out 5s ease-in forwards',
                     backdropFilter: 'blur(4px)',
                   }}>
-                    <span style={{ fontSize: 9, marginRight: 3, opacity: 0.7 }}>&#x1f4ac;</span>
+                    <span style={{ marginRight: 3, opacity: 0.7, display: 'inline-flex', verticalAlign: 'middle' }}><MessageCircle style={{ width: 9, height: 9 }} strokeWidth={1.8} /></span>
                     {m.text}
                   </div>
                 ))}
@@ -566,7 +568,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   boxShadow: '0 1px 4px rgba(139, 92, 246, 0.3)',
                   opacity: whisperInput.trim() ? 1 : 0.5,
-                }}>&#x1f4ac;</button>
+                }}><MessageCircle style={{ width: 12, height: 12 }} strokeWidth={1.8} /></button>
               </div>
             </div>
           )}
@@ -620,7 +622,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                 )}
                 {seatInfo && (
                   <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>
-                    📍 {seatInfo.zoneName}
+                    <MapPin style={{ width: 12, height: 12, display: 'inline', verticalAlign: 'middle' }} strokeWidth={1.8} /> {seatInfo.zoneName}
                   </div>
                 )}
               </div>
@@ -663,7 +665,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                 onMouseEnter={(e) => { e.currentTarget.style.background = '#ECFDF5'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
               >
-                📞 通話をリクエスト
+                <Phone className="w-4 h-4" strokeWidth={1.8} /> 通話をリクエスト
               </button>
               {/* DM */}
               <button
@@ -676,7 +678,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                 onMouseEnter={(e) => { e.currentTarget.style.background = '#EFF6FF'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
               >
-                💬 メッセージを送る
+                <MessageCircle className="w-4 h-4" strokeWidth={1.8} /> メッセージを送る
               </button>
               {/* Kick (owner only) */}
               {isFloorOwner && (
@@ -689,7 +691,7 @@ export default function FloorCanvas({ floorSlug, savedScene }: FloorCanvasProps 
                   onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                 >
-                  🚫 退出させる
+                  <Ban className="w-4 h-4" strokeWidth={1.8} /> 退出させる
                 </button>
               )}
             </div>

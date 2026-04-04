@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
+import { Users, Phone, MessageCircle, Ban } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
   online: '#4CAF50', busy: '#F44336', focusing: '#FF9800', offline: '#BDBDBD',
@@ -59,7 +60,7 @@ export default function MembersView() {
     <div className="flex-1 flex flex-col bg-gray-50 min-w-0">
       {/* Header */}
       <div className="h-12 bg-white border-b border-gray-200 flex items-center px-4">
-        <h2 className="text-sm font-semibold text-gray-700">👥 メンバー</h2>
+        <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><Users className="w-4 h-4" strokeWidth={1.8} /> メンバー</h2>
         <span className="ml-2 text-xs text-gray-400">{onlineUsers.length}人がオンライン</span>
       </div>
 
@@ -105,7 +106,7 @@ export default function MembersView() {
                       title={`${user.name} に通話リクエスト`}
                       disabled={callRequestStatus === 'pending'}
                     >
-                      📞
+                      <Phone className="w-[14px] h-[14px]" strokeWidth={1.8} />
                     </button>
                   )
                 )}
@@ -115,7 +116,7 @@ export default function MembersView() {
                     className="relative text-[14px] p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors flex-shrink-0"
                     title={`${user.name} にDMを送る`}
                   >
-                    💬
+                    <MessageCircle className="w-[14px] h-[14px]" strokeWidth={1.8} />
                     {(dmUnreadCount[user.id] || 0) > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                         {dmUnreadCount[user.id]}
@@ -172,7 +173,7 @@ export default function MembersView() {
       {kickTarget && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999]" onClick={() => setKickTarget(null)}>
           <div className="bg-white rounded-2xl shadow-xl p-6 max-w-xs w-full mx-4 text-center" onClick={e => e.stopPropagation()}>
-            <div className="text-3xl mb-3">🚫</div>
+            <div className="text-3xl mb-3 flex justify-center"><Ban className="w-8 h-8 text-red-500" strokeWidth={1.8} /></div>
             <p className="text-sm font-semibold text-gray-800 mb-1">{kickTarget.name} を退出させますか？</p>
             <p className="text-xs text-gray-500 mb-4">退出させるとフロアから即座に切断されます</p>
             <div className="flex gap-2">

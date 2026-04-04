@@ -5,6 +5,7 @@ import { useOfficeStore } from '@/store/officeStore';
 import { getAvatarUrl } from '@/components/floor/assets';
 import { useWsSend } from '@/contexts/WebSocketContext';
 import type { FeatureKey } from '@/types/plan';
+import { MessageCircle } from 'lucide-react';
 
 type ChatTab = 'public' | 'dm';
 
@@ -85,7 +86,7 @@ export default function ChatView() {
       {/* Header with tabs */}
       <div className="bg-white border-b border-gray-200">
         <div className="h-12 flex items-center px-4">
-          <h2 className="text-sm font-semibold text-gray-700">💬 チャット</h2>
+          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><MessageCircle className="w-4 h-4" strokeWidth={1.8} /> チャット</h2>
           <span className="ml-2 text-xs text-gray-400">{allUsers.filter(u => u.status !== 'offline').length}人がオンライン</span>
         </div>
         <div className="flex px-4 gap-1">

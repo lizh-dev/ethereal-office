@@ -8,6 +8,7 @@ import { useWsSend } from '@/contexts/WebSocketContext';
 import QRCodeModal from '@/components/QRCodeModal';
 import { useFocusTimer } from '@/hooks/useFocusTimer';
 import type { PresenceStatus } from '@/types';
+import { Pencil, Search, Zap, Check, Share2, Coffee, Target, LogOut } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
   online: '#4CAF50', busy: '#F44336', focusing: '#FF9800', offline: '#9CA3AF',
@@ -109,7 +110,7 @@ export default function TopBar() {
         </Link>
         {editorMode === 'edit' && (
           <span className="text-[11px] px-2 md:px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full font-medium border border-amber-200">
-            ✏️ <span className="hidden sm:inline">編集モード</span><span className="sm:hidden">編集</span>
+            <Pencil className="inline w-3.5 h-3.5" strokeWidth={1.8} /> <span className="hidden sm:inline">編集モード</span><span className="sm:hidden">編集</span>
           </span>
         )}
       </div>
@@ -117,7 +118,7 @@ export default function TopBar() {
       {/* Search - responsive, compact on mobile */}
       <div className="flex-1 max-w-md mx-2 md:mx-6">
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><Search className="w-3.5 h-3.5" strokeWidth={1.8} /></span>
           <input type="text" placeholder="メンバーを検索..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
@@ -134,23 +135,23 @@ export default function TopBar() {
             className="text-[11px] px-2 md:px-3 py-1.5 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 rounded-lg font-semibold text-white transition-all shadow-sm"
             title="Proプランにアップグレード"
           >
-            <span className="md:hidden">⚡</span>
-            <span className="hidden md:inline">⚡ Pro</span>
+            <span className="md:hidden"><Zap className="w-3.5 h-3.5 inline" strokeWidth={1.8} /></span>
+            <span className="hidden md:inline"><Zap className="w-3.5 h-3.5 inline" strokeWidth={1.8} /> Pro</span>
           </Link>
         ) : (
           <span
             className={`text-[11px] px-2 md:px-3 py-1.5 rounded-lg font-semibold text-white shadow-sm ${branding.accentColor && branding.accentColor !== '#0ea5e9' ? '' : 'bg-gradient-to-r from-emerald-500 to-teal-500'}`}
             style={branding.accentColor && branding.accentColor !== '#0ea5e9' ? { background: branding.accentColor } : undefined}
           >
-            <span className="md:hidden">✓</span>
-            <span className="hidden md:inline">✓ Pro</span>
+            <span className="md:hidden"><Check className="w-3.5 h-3.5 inline" strokeWidth={1.8} /></span>
+            <span className="hidden md:inline"><Check className="w-3.5 h-3.5 inline" strokeWidth={1.8} /> Pro</span>
           </span>
         )}
 
         {/* Share button - icon only on mobile */}
         <button onClick={() => setShowQR(true)} title="フロアを共有" className="text-[11px] px-2 md:px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors">
-          <span className="md:hidden">📱</span>
-          <span className="hidden md:inline">📱 共有</span>
+          <span className="md:hidden"><Share2 className="w-3.5 h-3.5 inline" strokeWidth={1.8} /></span>
+          <span className="hidden md:inline"><Share2 className="w-3.5 h-3.5 inline" strokeWidth={1.8} /> 共有</span>
         </button>
 
         {/* User avatar - click to change avatar */}
@@ -207,7 +208,7 @@ export default function TopBar() {
                     {opt.label}
                   </span>
                   {currentUser.status === opt.value && (
-                    <span className="ml-auto text-[11px] text-gray-400">✓</span>
+                    <Check className="ml-auto w-3.5 h-3.5 text-gray-400" strokeWidth={1.8} />
                   )}
                 </button>
               ))}
@@ -240,7 +241,7 @@ export default function TopBar() {
                     onClick={() => { focusTimer.stopFocus(); setShowStatusMenu(false); }}
                     className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg bg-amber-50 text-amber-600 text-[12px] font-semibold"
                   >
-                    <span>{focusTimer.isBreak ? '☕' : '🎯'}</span>
+                    <span>{focusTimer.isBreak ? <Coffee className="w-3.5 h-3.5 inline" strokeWidth={1.8} /> : <Target className="w-3.5 h-3.5 inline" strokeWidth={1.8} />}</span>
                     <span>{Math.floor(focusTimer.remainingSeconds / 60)}:{(focusTimer.remainingSeconds % 60).toString().padStart(2, '0')}</span>
                     <span className="ml-auto text-[10px] text-amber-400">停止</span>
                   </button>
@@ -260,7 +261,7 @@ export default function TopBar() {
                   onClick={() => { window.location.href = '/'; }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-red-50 transition-colors text-left"
                 >
-                  <span className="text-sm">🚪</span>
+                  <LogOut className="w-4 h-4" strokeWidth={1.8} />
                   <span className="text-[12px] font-medium text-red-500">退室する</span>
                 </button>
               </div>

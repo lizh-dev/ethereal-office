@@ -7,6 +7,7 @@ import { useWsSend } from '@/contexts/WebSocketContext';
 import BrandingSettings from '@/components/settings/BrandingSettings';
 import APIKeySettings from '@/components/settings/APIKeySettings';
 import SSOSettings from '@/components/settings/SSOSettings';
+import { Settings, Check } from 'lucide-react';
 
 const AVATAR_STYLES = ['notionists', 'avataaars', 'big-smile', 'adventurer', 'personas', 'lorelei'];
 const AVATAR_SEEDS = ['田中', '佐藤', '鈴木', '高橋', '伊藤', '渡辺', '山本', '中村', '小林', '加藤', '吉田', '山田'];
@@ -52,7 +53,7 @@ export default function ProfileView() {
     <div className="flex-1 flex flex-col bg-gray-50 min-w-0">
       {/* Header */}
       <div className="h-12 bg-white border-b border-gray-200 flex items-center px-4">
-        <h2 className="text-sm font-semibold text-gray-700">⚙️ プロフィール設定</h2>
+        <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><Settings className="w-4 h-4" strokeWidth={1.8} /> プロフィール設定</h2>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
@@ -126,7 +127,7 @@ export default function ProfileView() {
             onClick={handleSave}
             className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors text-sm"
           >
-            {saved ? '✓ 保存しました' : '保存'}
+            {saved ? <span className="flex items-center justify-center gap-1"><Check className="w-4 h-4 inline" strokeWidth={1.8} /> 保存しました</span> : '保存'}
           </button>
 
           {/* Branding settings - only visible to floor owner */}

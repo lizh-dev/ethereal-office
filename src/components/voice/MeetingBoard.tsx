@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useWsSend } from '@/contexts/WebSocketContext';
+import { ClipboardPen, Minimize2, Maximize2 } from 'lucide-react';
 
 function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
   let timer: ReturnType<typeof setTimeout>;
@@ -138,7 +139,7 @@ export default function MeetingBoard({ meetingId, onClose }: MeetingBoardProps) 
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 14 }}>📝</span>
+          <ClipboardPen style={{ width: 14, height: 14 }} strokeWidth={1.8} />
           <span style={{ fontSize: 12, fontWeight: 600, color: '#0f172a' }}>ホワイトボード</span>
           <span style={{ fontSize: 10, color: '#94a3b8' }}>共同編集</span>
         </div>
@@ -157,7 +158,7 @@ export default function MeetingBoard({ meetingId, onClose }: MeetingBoardProps) 
             }}
             title={size === 'large' ? '縮小' : '拡大'}
           >
-            {size === 'large' ? '⊟' : '⊞'}
+            {size === 'large' ? <Minimize2 style={{ width: 12, height: 12 }} strokeWidth={1.8} /> : <Maximize2 style={{ width: 12, height: 12 }} strokeWidth={1.8} />}
           </button>
           <button onClick={onClose} style={{
             padding: '2px 8px', borderRadius: 6, border: 'none',

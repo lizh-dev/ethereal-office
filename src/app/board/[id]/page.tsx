@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { PenTool } from 'lucide-react';
 
 const Excalidraw = dynamic(
   () => import('@excalidraw/excalidraw').then(mod => mod.Excalidraw),
@@ -114,7 +115,7 @@ export default function BoardPage() {
         background: '#f8fafc', flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 16 }}>📝</span>
+          <PenTool style={{ width: 16, height: 16, color: '#0f172a' }} strokeWidth={1.8} />
           <span style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>ホワイトボード</span>
           <span style={{ fontSize: 12, color: '#94a3b8' }}>共同編集</span>
         </div>
