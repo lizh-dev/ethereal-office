@@ -761,15 +761,6 @@ func (h *Hub) handleMessage(client *Client, msg IncomingMessage) {
 		default:
 		}
 
-	case MsgBoardUpdate:
-		// Relay board data to all users in the same room (except sender)
-		h.broadcastToRoom(client.room, OutgoingMessage{
-			Type:      MsgBoardUpdated,
-			UserID:    client.info.ID,
-			BoardData: msg.BoardData,
-			MeetingID: msg.MeetingID,
-		}, client.info.ID)
-
 	case MsgWhisper:
 		if msg.Text == "" {
 			return

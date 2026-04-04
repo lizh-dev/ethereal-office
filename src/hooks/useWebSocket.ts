@@ -23,7 +23,6 @@ interface WsSend {
   callAccept: (targetUserId: string) => void;
   callDecline: (targetUserId: string) => void;
   callEnd: (targetUserId: string) => void;
-  boardUpdate: (meetingId: string, boardData: string) => void;
   meetingStart: (meetingId: string, meetingName: string, hasPassword: boolean) => void;
   meetingJoin: (meetingId: string) => void;
   meetingLeave: (meetingId: string) => void;
@@ -361,11 +360,6 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
           // Call ended — Jitsi handles disconnect via its own UI
           break;
 
-        case 'board_updated':
-          // Relay to MeetingBoard via custom window event
-          window.dispatchEvent(new MessageEvent('ws-board-update', { data: JSON.stringify(msg) }));
-          break;
-
         case 'meeting_started':
           useOfficeStore.getState().addActiveMeeting({
             id: msg.meetingId,
@@ -521,10 +515,6 @@ export function useWebSocket(options?: UseWebSocketOptions): { send: WsSend; con
     ),
     callEnd: useCallback(
       (targetUserId: string) => sendRaw({ type: 'call_end', targetUserId }),
-      [sendRaw],
-    ),
-    boardUpdate: useCallback(
-      (meetingId: string, boardData: string) => sendRaw({ type: 'board_update', meetingId, boardData }),
       [sendRaw],
     ),
     meetingStart: useCallback(

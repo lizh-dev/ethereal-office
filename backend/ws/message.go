@@ -24,7 +24,6 @@ const (
 	MsgCallAccept    = "call_accept"
 	MsgCallDecline   = "call_decline"
 	MsgCallEnd      = "call_end"
-	MsgBoardUpdate  = "board_update"
 	MsgMeetingStart = "meeting_start"
 	MsgMeetingJoin  = "meeting_join"
 	MsgMeetingLeave = "meeting_leave"
@@ -51,7 +50,6 @@ const (
 	MsgCallAcceptReceived    = "call_accept_received"
 	MsgCallDeclineReceived   = "call_decline_received"
 	MsgCallEndReceived  = "call_end_received"
-	MsgBoardUpdated     = "board_updated"
 	MsgMeetingStarted   = "meeting_started"
 	MsgMeetingJoined    = "meeting_joined"
 	MsgMeetingLeft      = "meeting_left"
@@ -77,7 +75,7 @@ type IncomingMessage struct {
 	AvatarSeed   string  `json:"avatarSeed,omitempty"`
 	SDP          string  `json:"sdp,omitempty"`
 	Candidate    string  `json:"candidate,omitempty"`
-	BoardData    string  `json:"boardData,omitempty"`
+
 	MeetingID    string  `json:"meetingId,omitempty"`
 	MeetingName  string  `json:"meetingName,omitempty"`
 	HasPassword  bool    `json:"hasPassword,omitempty"`

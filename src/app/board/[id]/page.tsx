@@ -1,110 +1,124 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { PenTool } from 'lucide-react';
+import { PenTool, Download, Trash2, X, Users } from 'lucide-react';
+import '@excalidraw/excalidraw/index.css';
+import * as Y from 'yjs';
+import { HocuspocusProvider } from '@hocuspocus/provider';
+import { ExcalidrawBinding, yjsToExcalidraw } from 'y-excalidraw';
 
 const Excalidraw = dynamic(
   () => import('@excalidraw/excalidraw').then(mod => mod.Excalidraw),
   { ssr: false }
 );
 
-function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
-  let timer: ReturnType<typeof setTimeout>;
-  return ((...args: any[]) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), ms);
-  }) as unknown as T;
-}
-
 export default function BoardPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const boardId = params.id as string;
   const userName = searchParams.get('name') || 'Guest';
-  const floorSlug = searchParams.get('floor') || '';
 
-  const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
-  const isRemoteUpdateRef = useRef(false);
-  const lastSentRef = useRef<string>('');
-  const wsRef = useRef<WebSocket | null>(null);
+  const [api, setApi] = useState<any>(null);
+  const [userCount, setUserCount] = useState(1);
+  const [isConnected, setIsConnected] = useState(false);
 
-  // Connect to the floor's WebSocket for board sync
+  const ydocRef = useRef<Y.Doc | null>(null);
+  const providerRef = useRef<HocuspocusProvider | null>(null);
+  const bindingRef = useRef<ExcalidrawBinding | null>(null);
+
+  // Setup Yjs + Hocuspocus + ExcalidrawBinding
   useEffect(() => {
-    if (!floorSlug) return;
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://${window.location.hostname}:8080/ws`;
-    const ws = new WebSocket(
-      `${wsUrl}?floor=${encodeURIComponent(floorSlug)}&name=${encodeURIComponent(userName)}&avatar=notionists&seed=board-user&userId=board-${boardId.slice(0, 8)}`
-    );
-    wsRef.current = ws;
+    if (!api) return;
 
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'board_updated' && msg.meetingId === boardId && excalidrawAPI) {
-          const data = JSON.parse(msg.boardData);
-          isRemoteUpdateRef.current = true;
-          excalidrawAPI.updateScene({ elements: data.elements });
-          if (data.files && typeof data.files === 'object') {
-            const fileArray = Object.values(data.files);
-            if (fileArray.length > 0) {
-              excalidrawAPI.addFiles(fileArray);
-            }
-          }
-          setTimeout(() => { isRemoteUpdateRef.current = false; }, 100);
-        }
-      } catch { /* ignore */ }
+    const ydoc = new Y.Doc();
+    ydocRef.current = ydoc;
+
+    const yElements = ydoc.getArray<Y.Map<any>>('elements');
+    const yAssets = ydoc.getMap('assets');
+
+    const hocuspocusUrl = process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || `ws://${window.location.hostname}:3002`;
+
+    const provider = new HocuspocusProvider({
+      url: hocuspocusUrl,
+      name: `board-${boardId}`,
+      document: ydoc,
+      onConnect: () => setIsConnected(true),
+      onDisconnect: () => setIsConnected(false),
+    });
+    providerRef.current = provider;
+
+    // Set awareness (user info for cursor sharing)
+    provider.awareness?.setLocalStateField('user', {
+      name: userName,
+      color: '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0'),
+    });
+
+    // Track connected user count
+    const updateUserCount = () => {
+      const states = provider.awareness?.getStates();
+      setUserCount(states?.size || 1);
     };
+    provider.awareness?.on('change', updateUserCount);
+    updateUserCount();
+
+    // Wait for initial sync before binding
+    const onSync = (synced: boolean) => {
+      if (!synced) return;
+
+      // Load initial elements from Yjs to Excalidraw
+      const elements = yjsToExcalidraw(yElements);
+      if (elements.length > 0) {
+        api.updateScene({ elements });
+      }
+
+      // Create binding
+      const binding = new ExcalidrawBinding(
+        yElements,
+        yAssets,
+        api,
+        provider.awareness ?? undefined,
+      );
+      bindingRef.current = binding;
+    };
+
+    provider.on('synced', onSync);
 
     return () => {
-      ws.close();
-      wsRef.current = null;
+      bindingRef.current?.destroy();
+      bindingRef.current = null;
+      provider.awareness?.off('change', updateUserCount);
+      provider.off('synced', onSync);
+      provider.destroy();
+      providerRef.current = null;
+      ydoc.destroy();
+      ydocRef.current = null;
     };
-  }, [floorSlug, boardId, excalidrawAPI, userName]);
+  }, [api, boardId, userName]);
 
-  const debouncedSend = useMemo(
-    () => debounce((data: string) => {
-      if (data === lastSentRef.current) return;
-      lastSentRef.current = data;
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({
-          type: 'board_update',
-          meetingId: boardId,
-          boardData: data,
-        }));
-      }
-    }, 500),
-    [boardId]
-  );
-
-  const handleChange = useCallback((elements: readonly any[], _appState: any, files: any) => {
-    if (isRemoteUpdateRef.current) return;
-    const fileEntries: Record<string, any> = {};
-    if (files) {
-      for (const [key, file] of Object.entries(files)) {
-        const f = file as any;
-        if (f && f.dataURL) {
-          fileEntries[key] = { id: f.id, dataURL: f.dataURL, mimeType: f.mimeType, created: f.created };
-        }
-      }
-    }
-    const hasFiles = Object.keys(fileEntries).length > 0;
-    debouncedSend(JSON.stringify({ elements, ...(hasFiles ? { files: fileEntries } : {}) }));
-  }, [debouncedSend]);
-
-  const handleExport = () => {
-    if (!excalidrawAPI) return;
-    const elements = excalidrawAPI.getSceneElements();
+  const handleExport = useCallback(() => {
+    if (!api) return;
+    const elements = api.getSceneElements();
     const data = JSON.stringify({ elements }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `board-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `board-${boardId}-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [api, boardId]);
+
+  const handleClear = useCallback(() => {
+    if (!api || !ydocRef.current) return;
+    if (!confirm('ボードの内容をすべて消去しますか？')) return;
+    const yElements = ydocRef.current.getArray('elements');
+    ydocRef.current.transact(() => {
+      yElements.delete(0, yElements.length);
+    });
+    api.resetScene();
+  }, [api]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: 'white' }}>
@@ -117,19 +131,54 @@ export default function BoardPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <PenTool style={{ width: 16, height: 16, color: '#0f172a' }} strokeWidth={1.8} />
           <span style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>ホワイトボード</span>
-          <span style={{ fontSize: 12, color: '#94a3b8' }}>共同編集</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={handleExport} style={{
-            padding: '6px 14px', borderRadius: 8, border: '1px solid #e2e8f0',
-            background: 'white', color: '#475569', fontSize: 12, cursor: 'pointer',
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '2px 8px', borderRadius: 12,
+            background: isConnected ? '#f0fdf4' : '#fef2f2',
+            border: `1px solid ${isConnected ? '#bbf7d0' : '#fecaca'}`,
           }}>
-            保存
+            <div style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: isConnected ? '#22c55e' : '#ef4444',
+            }} />
+            <span style={{ fontSize: 11, color: isConnected ? '#16a34a' : '#dc2626' }}>
+              {isConnected ? '接続中' : '未接続'}
+            </span>
+          </div>
+          {userCount > 1 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 3,
+              padding: '2px 8px', borderRadius: 12,
+              background: '#eff6ff', border: '1px solid #bfdbfe',
+            }}>
+              <Users style={{ width: 12, height: 12, color: '#3b82f6' }} strokeWidth={1.8} />
+              <span style={{ fontSize: 11, color: '#2563eb' }}>{userCount}人</span>
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <button onClick={handleExport} style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '5px 12px', borderRadius: 8, border: '1px solid #e2e8f0',
+            background: 'white', color: '#475569', fontSize: 12, cursor: 'pointer',
+          }} title="JSONファイルとしてエクスポート">
+            <Download style={{ width: 13, height: 13 }} strokeWidth={1.8} />
+            エクスポート
+          </button>
+          <button onClick={handleClear} style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '5px 12px', borderRadius: 8, border: '1px solid #e2e8f0',
+            background: 'white', color: '#ef4444', fontSize: 12, cursor: 'pointer',
+          }} title="ボードをクリア">
+            <Trash2 style={{ width: 13, height: 13 }} strokeWidth={1.8} />
+            クリア
           </button>
           <button onClick={() => window.close()} style={{
-            padding: '6px 14px', borderRadius: 8, border: 'none',
-            background: '#ef4444', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '5px 12px', borderRadius: 8, border: 'none',
+            background: '#64748b', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer',
           }}>
+            <X style={{ width: 13, height: 13 }} strokeWidth={2} />
             閉じる
           </button>
         </div>
@@ -138,9 +187,11 @@ export default function BoardPage() {
       {/* Excalidraw Canvas */}
       <div style={{ flex: 1 }}>
         <Excalidraw
-          excalidrawAPI={(api: any) => setExcalidrawAPI(api)}
-          onChange={handleChange}
+          excalidrawAPI={(excalidrawApi: any) => setApi(excalidrawApi)}
+          isCollaborating={isConnected}
           langCode="ja-JP"
+          initialData={{ elements: [], appState: { viewBackgroundColor: '#ffffff' } }}
+          onPointerUpdate={bindingRef.current?.onPointerUpdate}
         />
       </div>
     </div>

@@ -1,0 +1,11 @@
+{
+  "name": "ethereal-hocuspocus",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@hocuspocus/server": "^3.4.4",
+    "yjs": "^13.6.19"
+  }
+}

@@ -42,6 +42,16 @@ services:
       db:
         condition: service_healthy
 
+  # Hocuspocus — 共同編集ボード（Yjs CRDT）
+  hocuspocus:
+    build:
+      context: ./hocuspocus
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    networks:
+      - default
+
   # Jitsi Meet — ビデオ会議サーバー
   jitsi-web:
     image: jitsi/web:stable-9823
