@@ -123,26 +123,21 @@ export default function HeroSection({ onCtaClick }: HeroSectionProps) {
   return (
     <section
       ref={ref}
-      className="scroll-reveal relative overflow-hidden px-4 pt-24 pb-12"
+      className="scroll-reveal relative overflow-hidden px-4 pt-24 pb-16"
     >
-      {/* Full-screen network animation as background */}
       <NetworkCanvas />
 
-      {/* Soft gradient blobs behind */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-sky-200/30 blur-[120px] animate-blob-1" />
         <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-blue-200/20 blur-[120px] animate-blob-2" />
       </div>
 
-      {/* Content on top */}
       <div className="relative z-10 max-w-4xl mx-auto text-center">
-          {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-sm border border-sky-200 text-sm text-sky-600 mb-8">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
             無料で使えるバーチャルオフィス
           </div>
 
-          {/* Main heading */}
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold leading-tight tracking-tight mb-6">
             <span className="text-gray-900">チームの距離を、</span>
             <br />
@@ -151,21 +146,19 @@ export default function HeroSection({ onCtaClick }: HeroSectionProps) {
             </span>
           </h1>
 
-          {/* Subtitle */}
           <p className="text-lg sm:text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
             アカウント登録は不要です。URLを共有するだけで、
             <br className="hidden sm:block" />
             チームのみなさまがすぐにつながれるバーチャルオフィスです。
           </p>
 
-          {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <button
               onClick={onCtaClick}
               className="group relative px-8 py-4 bg-sky-500 hover:bg-sky-400 text-white font-semibold text-lg rounded-2xl transition-all duration-300 hover:shadow-[0_0_40px_rgba(14,165,233,0.3)] hover:scale-105"
             >
               無料で始める
-              <span className="inline-block ml-2 transition-transform duration-300 group-hover:translate-x-1">→</span>
+              <span className="inline-block ml-2 transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
             </button>
             <a
               href="#features"
@@ -175,8 +168,8 @@ export default function HeroSection({ onCtaClick }: HeroSectionProps) {
             </a>
           </div>
 
-          {/* Stats / social proof */}
-          <div className="mt-12 flex items-center justify-center gap-8 sm:gap-12 mb-14">
+          {/* Key numbers */}
+          <div className="flex items-center justify-center gap-8 sm:gap-12">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">30秒</div>
               <div className="text-xs text-gray-400 mt-1">でオフィス開設</div>
@@ -184,7 +177,7 @@ export default function HeroSection({ onCtaClick }: HeroSectionProps) {
             <div className="w-px h-10 bg-gray-200" />
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">0円</div>
-              <div className="text-xs text-gray-400 mt-1">完全無料</div>
+              <div className="text-xs text-gray-400 mt-1">主要機能すべて無料</div>
             </div>
             <div className="w-px h-10 bg-gray-200" />
             <div className="text-center">
@@ -192,39 +185,8 @@ export default function HeroSection({ onCtaClick }: HeroSectionProps) {
               <div className="text-xs text-gray-400 mt-1">URL共有のみ</div>
             </div>
           </div>
-
-          {/* Demo video */}
-          <div className="relative max-w-4xl mx-auto">
-            <div className="absolute -inset-4 bg-gradient-to-br from-sky-200/40 via-blue-200/30 to-indigo-200/40 rounded-3xl blur-2xl" />
-            <div className="relative rounded-xl overflow-hidden shadow-2xl border border-gray-200/60">
-              <div className="h-9 bg-gray-100 border-b border-gray-200 flex items-center px-3 gap-2">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-[#FF5F57]" />
-                  <div className="w-3 h-3 rounded-full bg-[#FEBC2E]" />
-                  <div className="w-3 h-3 rounded-full bg-[#28C840]" />
-                </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="flex items-center gap-1.5 px-4 py-1 bg-white rounded-md border border-gray-200 text-[11px] text-gray-400 max-w-[280px] w-full">
-                    <span className="truncate">smartoffice.app</span>
-                  </div>
-                </div>
-                <div className="w-12" />
-              </div>
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full"
-                poster=""
-              >
-                <source src="/demo.webm" type="video/webm" />
-              </video>
-            </div>
-          </div>
       </div>
 
-      {/* Scroll indicator */}
       <div className="relative z-10 mt-12 w-full flex justify-center">
         <div className="flex flex-col items-center gap-2 text-gray-400 animate-bounce-slow">
           <span className="text-xs">Scroll</span>

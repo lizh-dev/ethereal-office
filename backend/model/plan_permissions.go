@@ -24,20 +24,20 @@ var PlanPermissionsMap = map[PlanType]PlanPermissions{
 	PlanFree: {
 		VoiceCall:              true,
 		VideoCall:              true,
-		ScreenShare:            false,
-		FileShare:              false,
+		ScreenShare:            true,  // Jitsi内蔵、ゲートなし
+		FileShare:              false, // file.go でゲート済み
 		MeetingBoard:           true,
-		FloorTemplates:         false,
-		AdminFeatures:          false,
+		FloorTemplates:         false, // EditorPanel で Pro 判定
+		AdminFeatures:          true,
 		PrioritySupport:        false,
-		MaxMembers:             10,
-		MaxMeetingParticipants: 4,
-		MaxConcurrentMeetings:  1,
-		CustomBranding:         false,
-		SSO:                    false,
+		MaxMembers:             10,  // hub.go で強制
+		MaxMeetingParticipants: 4,   // hub.go で強制
+		MaxConcurrentMeetings:  1,   // hub.go で強制
+		CustomBranding:         false, // main.go でゲート済み
+		SSO:                    false, // main.go でゲート済み
 		DedicatedEnv:           false,
 		SLA:                    false,
-		APIAccess:              false,
+		APIAccess:              false, // main.go でゲート済み
 	},
 	PlanPro: {
 		VoiceCall:              true,

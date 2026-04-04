@@ -180,16 +180,14 @@ export default function UpgradePage({ params }: { params: Promise<{ slug: string
               <ul style={{ listStyle: 'none', padding: 0, margin: '16px 0 0', display: 'grid', gap: 10 }}>
                 {[
                   '同時接続 無制限',
-                  '音声・ビデオ通話',
-                  '画面共有',
+                  '会議参加者 無制限',
+                  '同時ミーティング 無制限',
                   'ファイル共有',
-                  '共有ホワイトボード',
                   'フロアテンプレート',
-                  'メンバー管理',
                   'カスタムブランディング',
                   'SSO対応',
                   'APIアクセス',
-                  '優先サポート・SLA保証',
+                  '優先サポート',
                 ].map(f => (
                   <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#475569' }}>
                     <Check size={14} style={{ color: '#0ea5e9', flexShrink: 0 }} />

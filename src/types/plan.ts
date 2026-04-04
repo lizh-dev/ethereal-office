@@ -22,11 +22,11 @@ export interface PlanPermissions {
 export const DEFAULT_PERMISSIONS: PlanPermissions = {
   voiceCall: true,
   videoCall: true,
-  screenShare: false,
+  screenShare: true,
   fileShare: false,
   meetingBoard: true,
   floorTemplates: false,
-  adminFeatures: false,
+  adminFeatures: true,
   prioritySupport: false,
   maxMembers: 10,
   maxMeetingParticipants: 4,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Building2, Users, Video, MessageCircle, Settings } from 'lucide-react';
 
 // DiceBear avatar URL helper
 function avatar(seed: string, style: string = 'notionists') {
@@ -27,7 +28,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 // ---------- Browser Frame ----------
-function BrowserFrame({ children, url = 'smartoffice.app/f/my-team', className = '' }: {
+function BrowserFrame({ children, url = 'app.example.com/f/my-team', className = '' }: {
   children: React.ReactNode;
   url?: string;
   className?: string;
@@ -114,11 +115,14 @@ export function OfficeMockup({ className = '' }: { className?: string }) {
 
   return (
     <BrowserFrame className={className}>
-      <div className="relative bg-gradient-to-br from-sky-50/80 via-white to-blue-50/60" style={{ height: 420 }}>
+      <div className="relative bg-gradient-to-br from-sky-50/80 via-white to-blue-50/60" style={{ height: 520 }}>
         {/* Top bar */}
-        <div className="h-10 bg-white border-b border-gray-100 flex items-center px-4 gap-3">
-          <div className="text-sm font-bold text-gray-800">S</div>
-          <div className="flex items-center gap-1 px-3 py-1 bg-gray-50 rounded-lg border border-gray-100 flex-1 max-w-xs">
+        <div className="h-11 bg-white border-b border-gray-100 flex items-center px-5 gap-3">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center">
+            <span className="text-white text-[10px] font-bold">S</span>
+          </div>
+          <span className="text-xs font-semibold text-gray-800">開発チーム</span>
+          <div className="flex items-center gap-1 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100 flex-1 max-w-[200px] ml-4">
             <svg width="12" height="12" viewBox="0 0 20 20" fill="none" className="text-gray-300">
               <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" />
               <path d="M13 13l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -136,103 +140,108 @@ export function OfficeMockup({ className = '' }: { className?: string }) {
           </div>
         </div>
 
-        {/* Floor canvas area */}
-        <div className="relative p-6" style={{ height: 370 }}>
-          {/* Grid background */}
-          <div className="absolute inset-0 opacity-[0.03]"
-            style={{ backgroundImage: 'radial-gradient(circle, #000 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }}
-          />
-
-          {/* Development Team Zone */}
-          <div className="absolute left-6 top-4 bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3" style={{ width: 280 }}>
-            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">開発チーム</div>
-            <div className="grid grid-cols-3 gap-x-4 gap-y-3">
-              {/* Row 1 - with desks */}
-              {DEMO_USERS.filter(u => u.seat.startsWith('dev-')).slice(0, 3).map((user, i) => (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <UserAvatar user={user} size={30} animate={user.status === 'online'} />
-                  <DeskIcon />
-                </div>
-              ))}
-              {/* Row 2 */}
-              {DEMO_USERS.filter(u => u.seat.startsWith('dev-')).slice(3, 5).map((user, i) => (
-                <div key={i+3} className="flex flex-col items-center gap-1">
-                  <DeskIcon />
-                  <UserAvatar user={user} size={30} animate={user.status === 'online'} />
-                </div>
-              ))}
-              {/* Empty desk */}
-              <div className="flex flex-col items-center gap-1">
-                <DeskIcon />
-                <div className="w-[30px] h-[30px] rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center">
-                  <span className="text-gray-300 text-[8px]">空</span>
-                </div>
+        <div className="flex h-[calc(100%-11px)]">
+          {/* Sidebar */}
+          <div className="w-12 bg-gray-50/80 border-r border-gray-100 flex flex-col items-center pt-4 gap-3">
+            {[Building2, Users, Video, MessageCircle, Settings].map((Icon, i) => (
+              <div key={i} className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
+                i === 0 ? 'bg-sky-100 text-sky-600' : 'text-gray-400'
+              }`}>
+                <Icon className="w-4 h-4" strokeWidth={1.8} />
               </div>
-            </div>
+            ))}
           </div>
 
-          {/* Meeting Room Zone */}
-          <div className="absolute right-4 top-4 bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3" style={{ width: 200 }}>
-            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1">
-              <span className="text-amber-500">🤝</span> ミーティングルーム
-            </div>
-            <div className="flex items-center justify-center gap-6 py-2">
-              <div className="flex flex-col items-center gap-1">
-                {DEMO_USERS.filter(u => u.seat.startsWith('mtg-')).map((user, i) => (
-                  <UserAvatar key={i} user={user} size={28} />
+          {/* Floor canvas */}
+          <div className="relative flex-1 p-8">
+            {/* Grid background */}
+            <div className="absolute inset-0 opacity-[0.03]"
+              style={{ backgroundImage: 'radial-gradient(circle, #000 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}
+            />
+
+            {/* Development Team Zone */}
+            <div className="absolute left-8 top-6 bg-white/90 rounded-2xl border border-gray-200/80 shadow-sm px-6 py-5" style={{ width: 300 }}>
+              <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-4">開発チーム</div>
+              <div className="grid grid-cols-3 gap-x-6 gap-y-5">
+                {DEMO_USERS.filter(u => u.seat.startsWith('dev-')).slice(0, 3).map((user, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1.5">
+                    <UserAvatar user={user} size={34} animate={user.status === 'online'} />
+                    <DeskIcon />
+                  </div>
                 ))}
-              </div>
-              <div className="w-16 h-10 bg-amber-50 rounded-lg border border-amber-200 flex items-center justify-center">
-                <span className="text-[8px] text-amber-400">TABLE</span>
+                {DEMO_USERS.filter(u => u.seat.startsWith('dev-')).slice(3, 5).map((user, i) => (
+                  <div key={i+3} className="flex flex-col items-center gap-1.5">
+                    <DeskIcon />
+                    <UserAvatar user={user} size={34} animate={user.status === 'online'} />
+                  </div>
+                ))}
+                <div className="flex flex-col items-center gap-1.5">
+                  <DeskIcon />
+                  <div className="w-[34px] h-[34px] rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center">
+                    <span className="text-gray-300 text-[9px]">空</span>
+                  </div>
+                </div>
               </div>
             </div>
-            {/* Chat bubble */}
-            {chatBubble && (
-              <div className="absolute -bottom-8 left-4 bg-white rounded-lg border border-gray-200 shadow-md px-2 py-1 text-[9px] text-gray-600 animate-fade-in-up">
-                💬 この機能のレビューお願いします
-              </div>
-            )}
-          </div>
 
-          {/* Café Zone */}
-          <div className="absolute left-6 bottom-4 bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3" style={{ width: 160 }}>
-            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <span>☕</span> カフェスペース
+            {/* Meeting Room Zone */}
+            <div className="absolute right-6 top-6 bg-white/90 rounded-2xl border border-gray-200/80 shadow-sm px-6 py-5" style={{ width: 220 }}>
+              <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                ミーティングルーム
+              </div>
+              <div className="flex items-center justify-center gap-6 py-3">
+                <div className="flex flex-col items-center gap-2">
+                  {DEMO_USERS.filter(u => u.seat.startsWith('mtg-')).map((user, i) => (
+                    <UserAvatar key={i} user={user} size={30} />
+                  ))}
+                </div>
+                <div className="w-20 h-12 bg-amber-50 rounded-xl border border-amber-200/60 flex items-center justify-center">
+                  <span className="text-[9px] text-amber-400 font-medium">TABLE</span>
+                </div>
+              </div>
+              {chatBubble && (
+                <div className="absolute -bottom-9 left-5 bg-white rounded-lg border border-gray-200 shadow-lg px-3 py-1.5 text-[10px] text-gray-600 animate-fade-in-up">
+                  💬 この機能のレビューお願いします
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-3">
-              <UserAvatar user={DEMO_USERS[6]} size={26} />
-              <div className="flex flex-col gap-1">
-                <div className="w-8 h-8 bg-amber-50 rounded-full border border-amber-200" />
-                <div className="w-8 h-8 bg-amber-50 rounded-full border border-amber-200" />
+
+            {/* Café Zone */}
+            <div className="absolute left-8 bottom-16 bg-white/90 rounded-2xl border border-gray-200/80 shadow-sm px-6 py-5" style={{ width: 180 }}>
+              <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <span>☕</span> カフェスペース
+              </div>
+              <div className="flex items-center gap-4">
+                <UserAvatar user={DEMO_USERS[6]} size={30} />
+                <div className="flex gap-2">
+                  <div className="w-10 h-10 bg-amber-50 rounded-full border border-amber-200/60" />
+                  <div className="w-10 h-10 bg-amber-50 rounded-full border border-amber-200/60" />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Focus indicator for 鈴木一郎 */}
-          <div className="absolute right-8 bottom-4 bg-amber-50 rounded-lg border border-amber-200 px-3 py-2 flex items-center gap-2">
-            <span className="text-sm">🎯</span>
-            <div>
-              <div className="text-[10px] font-bold text-amber-700">鈴木一郎 - 取込中</div>
-              <div className="text-[9px] text-amber-500">あと 18:42</div>
+            {/* Status indicator */}
+            <div className="absolute right-8 bottom-16 bg-amber-50 rounded-xl border border-amber-200/60 px-4 py-3 flex items-center gap-3">
+              <span className="text-base">🎯</span>
+              <div>
+                <div className="text-[11px] font-bold text-amber-700">鈴木一郎 - 取込中</div>
+                <div className="text-[10px] text-amber-500">あと 18:42</div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Bottom action bar */}
-        <div className="absolute bottom-0 left-0 right-0 h-12 bg-white border-t border-gray-100 flex items-center justify-center gap-2 px-4">
-          <div className="flex items-center gap-1.5">
-            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs">●</span>
+        <div className="absolute bottom-0 left-12 right-0 h-12 bg-white/90 border-t border-gray-100 flex items-center justify-center gap-3 px-6">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
             </div>
-            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 text-sm">🎙</div>
-            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 text-sm">🎯</div>
-            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 text-sm">😊</div>
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-sm">📝</div>
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-sm">😊</div>
           </div>
-          <div className="flex-1 flex items-center mx-3">
-            <div className="flex-1 h-8 bg-gray-50 rounded-full border border-gray-200 flex items-center px-3">
-              <span className="text-[11px] text-gray-300">メッセージ...</span>
-            </div>
-            <div className="w-7 h-7 bg-gray-50 rounded-full flex items-center justify-center ml-1 text-gray-300 text-xs">▷</div>
+          <div className="flex-1 max-w-xs h-8 bg-gray-50 rounded-lg border border-gray-200 flex items-center px-3">
+            <span className="text-[11px] text-gray-300">メッセージ...</span>
           </div>
         </div>
       </div>
@@ -241,189 +250,201 @@ export function OfficeMockup({ className = '' }: { className?: string }) {
 }
 
 // ---------- Voice Proximity Mockup ----------
-export function VoiceMockup({ className = '' }: { className?: string }) {
-  const [pulse, setPulse] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => setPulse(p => (p + 1) % 3), 1500);
-    return () => clearInterval(timer);
-  }, []);
-
+export function MeetingMockup({ className = '' }: { className?: string }) {
   return (
-    <BrowserFrame className={className} url="smartoffice.app/f/my-team">
-      <div className="relative bg-gradient-to-br from-emerald-50/80 via-white to-green-50/60 flex items-center justify-center" style={{ height: 420 }}>
-        {/* Top bar */}
-        <div className="absolute top-0 left-0 right-0 h-10 bg-white border-b border-gray-100 flex items-center px-4">
-          <div className="text-sm font-bold text-gray-800">S</div>
-          <div className="text-xs text-gray-500 ml-3">近接ボイスチャット</div>
-          <div className="ml-auto flex items-center gap-1 px-2 py-0.5 bg-green-50 rounded-full border border-green-200">
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-[10px] text-green-600 font-medium">接続中</span>
+    <BrowserFrame className={className} url="app.example.com/meeting/standup">
+      <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" style={{ height: 420 }}>
+        {/* Meeting header */}
+        <div className="absolute top-0 left-0 right-0 h-10 bg-gray-900/80 border-b border-gray-700 flex items-center px-4">
+          <div className="text-xs text-gray-300 font-medium">デイリースタンドアップ</div>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-[10px] text-gray-500">3人参加中</span>
           </div>
         </div>
 
-        {/* Proximity circles */}
-        <div className="relative mt-6">
-          {/* Outer ring */}
-          <div className={`w-64 h-64 rounded-full border-2 border-dashed flex items-center justify-center transition-all duration-1000 ${pulse === 2 ? 'border-green-300 bg-green-50/30' : 'border-gray-200'}`}>
-            {/* Middle ring */}
-            <div className={`w-44 h-44 rounded-full border-2 border-dashed flex items-center justify-center transition-all duration-1000 ${pulse === 1 ? 'border-green-300 bg-green-50/50' : 'border-gray-200'}`}>
-              {/* Inner ring */}
-              <div className={`w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center transition-all duration-1000 ${pulse === 0 ? 'border-green-400 bg-green-50/70' : 'border-gray-200'}`}>
-                {/* Center user */}
-                <div className="relative">
-                  <UserAvatar user={DEMO_USERS[0]} size={40} showName={false} />
-                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] font-bold text-sky-600 whitespace-nowrap bg-white/80 px-1.5 py-0.5 rounded-full">You</div>
+        {/* Video grid */}
+        <div className="absolute inset-0 top-10 bottom-14 p-3 grid grid-cols-2 gap-2">
+          {/* Participant 1 - speaking */}
+          <div className="relative rounded-lg bg-gray-700 border-2 border-sky-400 overflow-hidden flex items-center justify-center">
+            <UserAvatar user={DEMO_USERS[0]} size={56} showName={false} />
+            <div className="absolute bottom-2 left-2 bg-black/60 rounded-md px-2 py-1">
+              <span className="text-[10px] text-white font-medium">{DEMO_USERS[0].name}</span>
+            </div>
+            <div className="absolute top-2 right-2 w-5 h-5 bg-sky-500/20 rounded-full flex items-center justify-center">
+              <div className="w-2.5 h-2.5 bg-sky-400 rounded-full animate-pulse" />
+            </div>
+          </div>
+
+          {/* Participant 2 */}
+          <div className="relative rounded-lg bg-gray-700 border border-gray-600 overflow-hidden flex items-center justify-center">
+            <UserAvatar user={DEMO_USERS[1]} size={56} showName={false} />
+            <div className="absolute bottom-2 left-2 bg-black/60 rounded-md px-2 py-1">
+              <span className="text-[10px] text-white font-medium">{DEMO_USERS[1].name}</span>
+            </div>
+          </div>
+
+          {/* Participant 3 - screen sharing */}
+          <div className="relative rounded-lg bg-gray-800 border border-gray-600 overflow-hidden col-span-2 flex items-center justify-center">
+            <div className="w-[90%] h-[80%] bg-white/5 rounded-md border border-gray-600/50 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-[11px] text-gray-400 mb-1">{DEMO_USERS[3].name} の画面</div>
+                <div className="w-48 h-12 bg-white/10 rounded border border-gray-600/30 mx-auto" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom toolbar */}
+        <div className="absolute bottom-0 left-0 right-0 h-14 bg-gray-900/90 border-t border-gray-700 flex items-center justify-center gap-2.5">
+          <div className="bg-gray-700 rounded-full w-9 h-9 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>
+          </div>
+          <div className="bg-gray-700 rounded-full w-9 h-9 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          </div>
+          <div className="bg-gray-700 rounded-full w-9 h-9 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <div className="bg-gray-700 rounded-full w-9 h-9 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <div className="bg-red-600 rounded-full w-9 h-9 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" transform="rotate(135 12 12)"/></svg>
+          </div>
+        </div>
+      </div>
+    </BrowserFrame>
+  );
+}
+
+// ---------- Chat Mockup ----------
+export function ChatMockup({ className = '' }: { className?: string }) {
+  return (
+    <BrowserFrame className={className} url="app.example.com/f/my-team">
+      <div className="relative bg-white" style={{ height: 420 }}>
+        {/* Top bar */}
+        <div className="h-10 bg-white border-b border-gray-100 flex items-center px-4">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center">
+            <span className="text-white text-[10px] font-bold">S</span>
+          </div>
+          <div className="text-xs text-gray-800 font-semibold ml-2">開発チーム</div>
+          <div className="ml-auto flex items-center gap-1 text-[10px] text-gray-400">
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+            6人オンライン
+          </div>
+        </div>
+
+        <div className="flex h-[calc(100%-40px)]">
+          {/* Sidebar tabs */}
+          <div className="w-11 bg-gray-50 border-r border-gray-100 flex flex-col items-center pt-3 gap-3">
+            {[Building2, Users, Video, MessageCircle].map((Icon, i) => (
+              <div key={i} className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                i === 3 ? 'bg-sky-100 text-sky-600' : 'text-gray-400 hover:bg-gray-100'
+              }`}>
+                <Icon className="w-4 h-4" strokeWidth={1.8} />
+              </div>
+            ))}
+          </div>
+
+          {/* Chat area */}
+          <div className="flex-1 flex flex-col">
+            {/* Chat tabs */}
+            <div className="flex border-b border-gray-100 px-3">
+              <button className="px-3 py-2 text-[11px] font-medium text-sky-600 border-b-2 border-sky-500">全体チャット</button>
+              <button className="px-3 py-2 text-[11px] font-medium text-gray-400 relative">
+                DM
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[7px] rounded-full flex items-center justify-center font-bold">2</span>
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-hidden px-3 py-2 space-y-3">
+              {/* Message from others */}
+              <div className="flex gap-2">
+                <UserAvatar user={DEMO_USERS[1]} size={24} showName={false} />
+                <div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[10px] font-semibold text-gray-800">{DEMO_USERS[1].name}</span>
+                    <span className="text-[9px] text-gray-400">10:23</span>
+                  </div>
+                  <div className="mt-0.5 bg-gray-100 rounded-lg rounded-tl-none px-2.5 py-1.5 text-[11px] text-gray-700 max-w-[220px]">
+                    デプロイの件、確認できました！
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <UserAvatar user={DEMO_USERS[3]} size={24} showName={false} />
+                <div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[10px] font-semibold text-gray-800">{DEMO_USERS[3].name}</span>
+                    <span className="text-[9px] text-gray-400">10:25</span>
+                  </div>
+                  <div className="mt-0.5 bg-gray-100 rounded-lg rounded-tl-none px-2.5 py-1.5 text-[11px] text-gray-700 max-w-[220px]">
+                    ありがとうございます。レビューお願いします
+                  </div>
+                </div>
+              </div>
+
+              {/* Own message */}
+              <div className="flex justify-end">
+                <div>
+                  <div className="flex items-baseline gap-2 justify-end">
+                    <span className="text-[9px] text-gray-400">10:26</span>
+                  </div>
+                  <div className="mt-0.5 bg-sky-500 rounded-lg rounded-tr-none px-2.5 py-1.5 text-[11px] text-white max-w-[220px]">
+                    了解！午後に見ますね
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <UserAvatar user={DEMO_USERS[6]} size={24} showName={false} />
+                <div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[10px] font-semibold text-gray-800">{DEMO_USERS[6].name}</span>
+                    <span className="text-[9px] text-gray-400">10:30</span>
+                  </div>
+                  <div className="mt-0.5 bg-gray-100 rounded-lg rounded-tl-none px-2.5 py-1.5 text-[11px] text-gray-700 max-w-[220px]">
+                    お疲れさまです！カフェスペースにいるので、相談ある方はどうぞ〜
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Users in proximity zones */}
-            {/* Close - inner zone */}
-            <div className="absolute top-8 right-12">
-              <UserAvatar user={DEMO_USERS[1]} size={30} />
-              <div className="absolute -top-3 -right-2 bg-green-500 text-white text-[7px] px-1.5 py-0.5 rounded-full font-bold shadow-sm">
-                🔊 100%
-              </div>
-            </div>
-
-            {/* Medium distance */}
-            <div className="absolute bottom-12 left-6">
-              <UserAvatar user={DEMO_USERS[3]} size={28} />
-              <div className="absolute -top-3 -right-2 bg-green-400 text-white text-[7px] px-1.5 py-0.5 rounded-full font-bold shadow-sm">
-                🔉 60%
-              </div>
-            </div>
-
-            {/* Far - outer zone */}
-            <div className="absolute top-4 left-8 opacity-60">
-              <UserAvatar user={DEMO_USERS[4]} size={24} />
-              <div className="absolute -top-3 -right-2 bg-gray-400 text-white text-[7px] px-1.5 py-0.5 rounded-full font-bold shadow-sm">
-                🔈 20%
+            {/* Input */}
+            <div className="border-t border-gray-100 px-3 py-2">
+              <div className="flex items-center gap-2 bg-gray-50 rounded-lg border border-gray-200 px-3 py-2">
+                <span className="text-[11px] text-gray-400 flex-1">メッセージを入力...</span>
+                <div className="w-6 h-6 bg-sky-500 rounded-md flex items-center justify-center">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Voice indicator */}
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white rounded-xl border border-green-200 shadow-md px-4 py-2.5">
-          <div className="flex items-center gap-1">
-            {[14, 18, 10, 16, 12].map((h, i) => (
-              <div
-                key={i}
-                className="w-1 bg-green-500 rounded-full transition-all duration-300"
-                style={{ height: h, animationDelay: `${i * 0.1}s` }}
-              />
-            ))}
+          {/* DM panel (floating) */}
+          <div className="w-48 border-l border-gray-100 bg-white flex flex-col">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
+              <div className="flex items-center gap-1.5">
+                <UserAvatar user={DEMO_USERS[2]} size={20} showName={false} />
+                <span className="text-[10px] font-semibold text-gray-800">{DEMO_USERS[2].name}</span>
+              </div>
+              <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full">取込中</span>
+            </div>
+            <div className="flex-1 px-2 py-2 space-y-2">
+              <div className="bg-gray-100 rounded-lg rounded-tl-none px-2 py-1 text-[10px] text-gray-700 max-w-[140px]">
+                午後のミーティング、15時に変更できますか？
+              </div>
+              <div className="flex justify-end">
+                <div className="bg-sky-500 rounded-lg rounded-tr-none px-2 py-1 text-[10px] text-white max-w-[140px]">
+                  大丈夫です！
+                </div>
+              </div>
+            </div>
           </div>
-          <span className="text-xs font-medium text-green-700">🎙 2人の声が聞こえます</span>
         </div>
       </div>
     </BrowserFrame>
-  );
-}
-
-// ---------- Focus Timer Mockup ----------
-export function FocusMockup({ className = '' }: { className?: string }) {
-  const [time, setTime] = useState(18 * 60 + 42);
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(t => (t > 0 ? t - 1 : 25 * 60)), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const minutes = Math.floor(time / 60);
-  const seconds = time % 60;
-  const progress = (time / (25 * 60)) * 100;
-
-  return (
-    <BrowserFrame className={className} url="smartoffice.app/f/my-team">
-      <div className="relative bg-gradient-to-br from-amber-50/80 via-white to-orange-50/60 flex flex-col items-center justify-center gap-5 pt-12 pb-6" style={{ height: 420 }}>
-        {/* Top bar */}
-        <div className="absolute top-0 left-0 right-0 h-10 bg-white border-b border-gray-100 flex items-center px-4">
-          <div className="text-sm font-bold text-gray-800">S</div>
-          <div className="text-xs text-gray-500 ml-3">集中タイマー</div>
-          <div className="ml-auto flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded-full border border-amber-200">
-            <span className="text-[10px] text-amber-600 font-medium">🎯 集中モード</span>
-          </div>
-        </div>
-
-        {/* Timer ring */}
-        <div className="relative w-40 h-40">
-          <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-            <circle cx="50" cy="50" r="44" fill="none" stroke="#F3F4F6" strokeWidth="6" />
-            <circle
-              cx="50" cy="50" r="44" fill="none"
-              stroke="url(#timer-gradient)" strokeWidth="6"
-              strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 44}`}
-              strokeDashoffset={`${2 * Math.PI * 44 * (1 - progress / 100)}`}
-              className="transition-all duration-1000"
-            />
-            <defs>
-              <linearGradient id="timer-gradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#F59E0B" />
-                <stop offset="100%" stopColor="#EF4444" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-3xl font-bold text-gray-900 tabular-nums">
-              {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-            </div>
-            <div className="text-[11px] text-amber-600 font-medium mt-1">取込中</div>
-          </div>
-        </div>
-
-        {/* Timer presets */}
-        <div className="flex gap-2">
-          {[15, 25, 50].map(m => (
-            <div
-              key={m}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                m === 25
-                  ? 'bg-amber-500 text-white shadow-md shadow-amber-200'
-                  : 'bg-white text-gray-400 border border-gray-200'
-              }`}
-            >
-              {m}分
-            </div>
-          ))}
-        </div>
-
-        {/* Team status during focus */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-3 w-72">
-          <div className="text-[10px] text-gray-400 font-medium mb-2">チームのステータス</div>
-          <div className="space-y-2">
-            {DEMO_USERS.slice(0, 4).map((user, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <UserAvatar user={user} size={20} showName={false} showStatus={true} />
-                <span className="text-[11px] text-gray-700 flex-1">{user.name}</span>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
-                  user.status === 'focusing' ? 'bg-amber-100 text-amber-700' :
-                  user.status === 'busy' ? 'bg-red-100 text-red-700' :
-                  'bg-green-100 text-green-700'
-                }`}>
-                  {user.status === 'focusing' ? '🎯 取込中' :
-                   user.status === 'busy' ? '🔴 ビジー' : '🟢 オンライン'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <p className="text-[10px] text-amber-500 font-medium">取込中は着信を自動で保留します 🔕</p>
-      </div>
-    </BrowserFrame>
-  );
-}
-
-// ---------- Hero Product Preview ----------
-export function HeroProductPreview({ className = '' }: { className?: string }) {
-  return (
-    <div className={`relative ${className}`}>
-      {/* Glow effect behind */}
-      <div className="absolute -inset-4 bg-gradient-to-br from-sky-200/40 via-blue-200/30 to-indigo-200/40 rounded-3xl blur-2xl" />
-      <OfficeMockup className="relative" />
-    </div>
   );
 }

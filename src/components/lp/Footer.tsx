@@ -18,14 +18,11 @@ export default function Footer() {
 
           {/* Links */}
           <div className="flex items-center gap-6 text-sm text-gray-500">
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-sky-500 transition-colors duration-300">
-              GitHub
+            <a href="/terms" className="hover:text-sky-500 transition-colors duration-300">
+              利用規約
             </a>
-            <a href="#" className="hover:text-sky-500 transition-colors duration-300">
-              お問い合わせ
-            </a>
-            <a href="#" className="hover:text-sky-500 transition-colors duration-300">
-              プライバシー
+            <a href="/privacy" className="hover:text-sky-500 transition-colors duration-300">
+              プライバシーポリシー
             </a>
           </div>
         </div>

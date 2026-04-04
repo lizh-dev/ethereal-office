@@ -1,52 +1,50 @@
 'use client';
 
 import { useScrollReveal } from '@/hooks/useScrollReveal';
+import { Video, MessageCircle, Timer, PenTool, LayoutDashboard, Zap } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-const features = [
+const features: { Icon: LucideIcon; title: string; description: string; color: string; bgColor: string }[] = [
   {
-    icon: '🎙️',
-    title: '近接ボイス',
-    description: '近くにいる方の声が自然に聞こえ、離れると小さくなります。本物のオフィスのような音声体験です。',
-    color: 'text-emerald-500',
-    bgColor: 'bg-emerald-50',
-    tag: 'NEW',
-  },
-  {
-    icon: '💺',
-    title: '座るだけで自動通話',
-    description: '同じエリアに着席した瞬間に、自動で音声がつながります。会議の設定やクリックの手間はありません。',
-    color: 'text-sky-500',
+    Icon: Video,
+    title: 'ビデオ会議・画面共有',
+    description: 'ワンクリックでミーティングを開始。ビデオ通話・画面共有・チャットが使えます。1:1通話もメンバーリストからすぐに発信できます。',
+    color: 'text-sky-600',
     bgColor: 'bg-sky-50',
-    tag: 'NEW',
   },
   {
-    icon: '🖥️',
-    title: '画面共有',
-    description: '通話中にワンクリックで画面を共有できます。離れた場所でも、一緒に画面を見ながらお仕事が進められます。',
-    color: 'text-violet-500',
-    bgColor: 'bg-violet-50',
-    tag: 'NEW',
+    Icon: MessageCircle,
+    title: 'チャット・DM',
+    description: 'フロア全体のチャットと、個別のダイレクトメッセージ。テキストでのコミュニケーションもしっかり対応しています。',
+    color: 'text-emerald-600',
+    bgColor: 'bg-emerald-50',
   },
   {
-    icon: '🎯',
+    Icon: Timer,
     title: '集中タイマー',
     description: 'タイマーを使うと「取込中」のステータスが自動で表示されます。声をかけてよいタイミングがチームに伝わります。',
-    color: 'text-amber-500',
+    color: 'text-amber-600',
     bgColor: 'bg-amber-50',
-    tag: 'NEW',
   },
   {
-    icon: '🏢',
+    Icon: PenTool,
+    title: '共有ホワイトボード',
+    description: 'ミーティング中にリアルタイムで共同編集できるホワイトボード。図形・テキスト・フリーハンドで自由に書き込めます。',
+    color: 'text-violet-600',
+    bgColor: 'bg-violet-50',
+  },
+  {
+    Icon: LayoutDashboard,
     title: 'カスタムオフィス',
     description: 'デスク・会議室・ラウンジ・カフェを自由に配置できます。ガイドに沿って進めるだけで、30秒で完成します。',
-    color: 'text-indigo-500',
+    color: 'text-indigo-600',
     bgColor: 'bg-indigo-50',
   },
   {
-    icon: '⚡',
+    Icon: Zap,
     title: 'ログイン不要・30秒',
     description: 'アカウント登録は一切不要です。URLを共有するだけで、チームの全員がすぐに参加できます。',
-    color: 'text-rose-500',
+    color: 'text-rose-600',
     bgColor: 'bg-rose-50',
   },
 ];
@@ -65,7 +63,7 @@ export default function FeaturesSection() {
             <span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text text-transparent">機能</span>
           </h2>
           <p className="text-gray-500 max-w-xl mx-auto">
-            アカウント登録なしで、すぐにお使いいただけます。
+            すべて無料。アカウント登録なしで、すぐにお使いいただけます。
           </p>
         </div>
 
@@ -77,14 +75,8 @@ export default function FeaturesSection() {
               className="group relative p-7 rounded-2xl bg-white border border-gray-100 hover:border-sky-200 hover:shadow-lg hover:shadow-sky-50 transition-all duration-500"
               style={{ transitionDelay: `${i * 80}ms` }}
             >
-              {feature.tag && (
-                <span className="absolute top-4 right-4 px-2 py-0.5 bg-sky-500 text-white text-[9px] font-bold rounded-full tracking-wider">
-                  {feature.tag}
-                </span>
-              )}
-              {/* Icon */}
               <div className={`inline-flex items-center justify-center w-11 h-11 rounded-xl ${feature.bgColor} mb-4`}>
-                <span className="text-xl">{feature.icon}</span>
+                <feature.Icon className={`w-5 h-5 ${feature.color}`} strokeWidth={1.8} />
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
               <p className="text-sm text-gray-500 leading-relaxed">{feature.description}</p>
