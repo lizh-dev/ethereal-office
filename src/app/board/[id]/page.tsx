@@ -101,12 +101,23 @@ export default function BoardPage() {
   const handleExport = useCallback(() => {
     if (!api) return;
     const elements = api.getSceneElements();
-    const data = JSON.stringify({ elements }, null, 2);
+    const appState = api.getAppState();
+    const data = JSON.stringify({
+      type: 'excalidraw',
+      version: 2,
+      source: 'smartoffice-board',
+      elements,
+      appState: {
+        viewBackgroundColor: appState.viewBackgroundColor || '#ffffff',
+        gridSize: appState.gridSize || null,
+      },
+      files: {},
+    }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `board-${boardId}-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `board-${boardId}-${new Date().toISOString().slice(0, 10)}.excalidraw`;
     a.click();
     URL.revokeObjectURL(url);
   }, [api, boardId]);
@@ -236,6 +247,14 @@ export default function BoardPage() {
           langCode="ja-JP"
           initialData={{ elements: [], appState: { viewBackgroundColor: '#ffffff' } }}
           onPointerUpdate={bindingRef.current?.onPointerUpdate}
+          UIOptions={{
+            canvasActions: {
+              loadScene: false,
+              export: false,
+              saveAsImage: false,
+            },
+          }}
+          renderTopRightUI={() => null}
         />
         </div>
       </div>
