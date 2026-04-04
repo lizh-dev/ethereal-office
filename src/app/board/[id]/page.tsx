@@ -130,16 +130,30 @@ export default function BoardPage() {
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !api) return;
+    if (!file || !api || !ydocRef.current) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
         const data = JSON.parse(ev.target?.result as string);
         if (data.elements && Array.isArray(data.elements)) {
+          // Update Excalidraw locally
           api.updateScene({ elements: data.elements });
           if (data.appState?.viewBackgroundColor) {
             api.updateScene({ appState: { viewBackgroundColor: data.appState.viewBackgroundColor } });
           }
+          // Sync to Yjs so other users see the import
+          const ydoc = ydocRef.current!;
+          const yElements = ydoc.getArray<Y.Map<any>>('elements');
+          ydoc.transact(() => {
+            yElements.delete(0, yElements.length);
+            for (const el of data.elements) {
+              const yEl = new Y.Map<any>();
+              for (const [key, value] of Object.entries(el)) {
+                yEl.set(key, value);
+              }
+              yElements.push([yEl]);
+            }
+          });
         }
       } catch { /* invalid file */ }
     };
