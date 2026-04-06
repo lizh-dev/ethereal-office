@@ -36,22 +36,22 @@ function UserRow({ user, action, zoneName, onClickUser }: {
   return (
     <div
       onClick={() => onClickUser(user)}
-      className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+      className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
     >
       <div className="relative flex-shrink-0">
         <img
           src={resolveAvatarUrl(user)}
           alt={user.name}
-          className="w-[28px] h-[28px] rounded-full bg-gray-100"
+          className="w-[28px] h-[28px] rounded-full bg-zinc-100 dark:bg-zinc-800"
           style={{ border: `2px solid ${STATUS_COLORS[user.status]}` }}
         />
         <div
-          className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-[1.5px] border-white"
+          className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-[1.5px] border-white dark:border-zinc-950"
           style={{ background: STATUS_COLORS[user.status] }}
         />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[11px] font-semibold text-gray-800 truncate leading-tight">{user.name}</div>
+        <div className="text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 truncate leading-tight">{user.name}</div>
         <div className="flex items-center gap-1">
           {emoji && <span className="text-[10px]">{emoji}</span>}
           <span className="text-[9px] truncate leading-tight" style={{ color: STATUS_COLORS[user.status] }}>
@@ -184,56 +184,56 @@ export default function RightPanel() {
   const currentUserAction = currentSeatId ? currentAction : 'idle';
 
   return (
-    <aside className="w-[230px] bg-white border-l border-gray-200 flex flex-col h-full overflow-y-auto">
+    <aside className="w-[230px] bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 flex flex-col h-full overflow-y-auto">
       {/* My Status */}
       <div className="p-3 pb-2">
-        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">マイステータス</h3>
-        <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100">
+        <h3 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">マイステータス</h3>
+        <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
           <div className="relative flex-shrink-0">
             <img
               src={resolveAvatarUrl(currentUser)}
               alt={currentUser.name}
-              className="w-[36px] h-[36px] rounded-full bg-gray-100"
+              className="w-[36px] h-[36px] rounded-full bg-zinc-100 dark:bg-zinc-800"
               style={{ border: `2.5px solid ${STATUS_COLORS[currentUser.status]}` }}
             />
             <div
-              className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white"
+              className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-zinc-950"
               style={{ background: STATUS_COLORS[currentUser.status] }}
             />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[12px] font-bold text-gray-800 truncate">{currentUser.name}</div>
+            <div className="text-[12px] font-bold text-zinc-800 dark:text-zinc-200 truncate">{currentUser.name}</div>
             <div className="flex items-center gap-1">
               {ACTION_EMOJI[currentUserAction] && (
                 <span className="text-[10px]">{ACTION_EMOJI[currentUserAction]}</span>
               )}
-              <span className="text-[10px] text-gray-600">
+              <span className="text-[10px] text-zinc-600 dark:text-zinc-400">
                 {currentUserAction !== 'idle' ? ACTION_LABELS[currentUserAction] : 'フリー'}
               </span>
             </div>
             {currentZoneName ? (
               <div className="flex items-center gap-1 mt-0.5">
-                <span className="text-[9px] text-indigo-500 font-medium">{currentZoneName}</span>
+                <span className="text-[9px] text-accent font-medium">{currentZoneName}</span>
                 <button
                   onClick={() => { standUp(); wsSend.stand(); }}
-                  className="text-[8px] px-1.5 py-0.5 rounded bg-white border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 transition-colors ml-auto"
+                  className="text-[8px] px-1.5 py-0.5 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-red-500 hover:border-red-200 transition-colors ml-auto"
                 >
                   立ち上がる
                 </button>
               </div>
             ) : (
-              <div className="text-[9px] text-gray-400 mt-0.5">フリー</div>
+              <div className="text-[9px] text-zinc-400 dark:text-zinc-500 mt-0.5">フリー</div>
             )}
           </div>
         </div>
       </div>
 
-      <div className="mx-3 border-t border-gray-100" />
+      <div className="mx-3 border-t border-zinc-200 dark:border-zinc-800" />
 
       {/* Online Members */}
       <div className="p-3 pb-2">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+          <h3 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
             オンラインメンバー ({onlineUsers.length})
           </h3>
         </div>
@@ -247,10 +247,10 @@ export default function RightPanel() {
                     background: zone === 'フリー' ? '#9CA3AF' : '#6366F1',
                   }}
                 />
-                <span className="text-[9px] font-semibold text-gray-500 uppercase tracking-wide">
+                <span className="text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
                   {zone}
                 </span>
-                <span className="text-[8px] text-gray-300 ml-auto">{members.length}</span>
+                <span className="text-[8px] text-zinc-300 dark:text-zinc-600 ml-auto">{members.length}</span>
               </div>
               <div className="space-y-0">
                 {members.map(({ user, action }) => (
@@ -268,15 +268,15 @@ export default function RightPanel() {
         </div>
       </div>
 
-      <div className="mx-3 border-t border-gray-100" />
+      <div className="mx-3 border-t border-zinc-200 dark:border-zinc-800" />
 
       {/* Active Meetings */}
       <div className="p-3 pt-2">
-        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+        <h3 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
           アクティブミーティング {activeMeetings.length > 0 && `(${activeMeetings.length})`}
         </h3>
         {activeMeetings.length === 0 ? (
-          <div className="text-[10px] text-gray-400 text-center py-3">
+          <div className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center py-3">
             現在アクティブなミーティングはありません
           </div>
         ) : (
@@ -284,14 +284,14 @@ export default function RightPanel() {
             {activeMeetings.map(({ zone, participants }) => (
               <div
                 key={zone.id}
-                className="p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-100"
+                className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors border border-zinc-200 dark:border-zinc-800"
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px]">📹</span>
-                    <span className="text-[10px] font-semibold text-gray-800">{zone.name}</span>
+                    <span className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-200">{zone.name}</span>
                   </div>
-                  <span className="text-[9px] text-gray-400">{participants.length}人</span>
+                  <span className="text-[9px] text-zinc-400 dark:text-zinc-500">{participants.length}人</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex -space-x-1.5">
@@ -301,18 +301,18 @@ export default function RightPanel() {
                         src={resolveAvatarUrl(u)}
                         alt={u.name}
                         title={u.name}
-                        className="w-[20px] h-[20px] rounded-full border-[1.5px] border-white bg-gray-100"
+                        className="w-[20px] h-[20px] rounded-full border-[1.5px] border-white dark:border-zinc-950 bg-zinc-100 dark:bg-zinc-800"
                       />
                     ))}
                     {participants.length > 5 && (
-                      <div className="w-[20px] h-[20px] rounded-full border-[1.5px] border-white bg-gray-200 flex items-center justify-center text-[8px] text-gray-600 font-bold">
+                      <div className="w-[20px] h-[20px] rounded-full border-[1.5px] border-white dark:border-zinc-950 bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-[8px] text-zinc-600 dark:text-zinc-300 font-bold">
                         +{participants.length - 5}
                       </div>
                     )}
                   </div>
                   <button
                     onClick={() => handleJoinMeeting(zone)}
-                    className="text-[9px] px-2 py-1 rounded-md bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition-colors"
+                    className="text-[9px] px-2 py-1 rounded-md bg-amber-500 text-white font-medium hover:bg-amber-600 transition-colors"
                   >
                     参加
                   </button>

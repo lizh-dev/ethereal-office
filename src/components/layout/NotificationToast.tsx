@@ -76,13 +76,12 @@ export default function NotificationToast() {
           }}
         >
           <div
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg border border-gray-100 backdrop-blur-sm max-w-[400px]"
-            style={{ background: 'rgba(255, 255, 255, 0.95)' }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700/50 bg-white/95 dark:bg-zinc-900/90 backdrop-blur-xl max-w-[400px]"
           >
-            <span className="text-[12px] text-gray-700 font-medium truncate">{toast.text}</span>
+            <span className="text-[12px] text-zinc-700 dark:text-zinc-200 font-medium truncate">{toast.text}</span>
             <button
               onClick={() => removeNotification(toast.id)}
-              className="text-gray-300 hover:text-gray-500 text-[10px] flex-shrink-0 ml-1 transition-colors"
+              className="text-zinc-300 dark:text-zinc-600 hover:text-zinc-500 dark:hover:text-zinc-400 text-[10px] flex-shrink-0 ml-1 transition-colors"
             >
               &times;
             </button>

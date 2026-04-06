@@ -90,11 +90,11 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-[60px] bg-white border-r border-gray-200 flex-col items-center h-full py-3">
+      <aside className="hidden md:flex w-[60px] bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex-col items-center h-full py-3">
         {/* Home link */}
         <Link
           href="/"
-          className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 hover:text-sky-500 hover:border-sky-200 hover:bg-sky-50 mb-4 transition-all"
+          className="w-10 h-10 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500 hover:text-accent hover:border-amber-200 dark:hover:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-500/10 mb-4 transition-all"
           title="ホームに戻る"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -114,8 +114,8 @@ export default function Sidebar() {
                 onClick={() => handleNavClick(item.mode)}
                 className={`relative w-11 h-11 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${
                   isActive
-                    ? useAccent ? '' : 'bg-blue-50 text-blue-600'
-                    : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                    ? useAccent ? '' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    : 'text-zinc-400 dark:text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-zinc-600 dark:hover:text-zinc-300'
                 }`}
                 style={useAccent ? { backgroundColor: accentColor + '1a', color: accentColor } : undefined}
                 title={item.label}
@@ -140,7 +140,7 @@ export default function Sidebar() {
         ) : (
           <Link
             href={`/f/${floorSlug}/upgrade`}
-            className="mb-2 px-2 py-0.5 rounded-full text-[8px] font-bold bg-gray-50 text-gray-400 border border-gray-200 hover:bg-sky-50 hover:text-sky-500 hover:border-sky-200 transition-colors"
+            className="mb-2 px-2 py-0.5 rounded-full text-[8px] font-bold bg-zinc-50 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-zinc-800 hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:text-accent hover:border-amber-200 dark:hover:border-amber-700 transition-colors"
             title="Proプランにアップグレード"
           >
             Free
@@ -154,7 +154,7 @@ export default function Sidebar() {
             className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
               editorMode === 'edit'
                 ? 'bg-amber-100 text-amber-600'
-                : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                : 'text-zinc-400 dark:text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-zinc-600 dark:hover:text-zinc-300'
             }`}
             title={editorMode === 'edit' ? '編集終了' : 'フロアを編集（管理者パスワード必要）'}
           >
@@ -162,9 +162,9 @@ export default function Sidebar() {
           </button>
           {!isFloorOwner && editorMode !== 'edit' && (
             <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block z-50">
-              <div className="bg-gray-800 text-white text-[10px] px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-lg">
+              <div className="bg-zinc-800 dark:bg-zinc-700 text-white text-[10px] px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-lg">
                 管理者パスワードで編集可能
-                <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-800" />
+                <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-zinc-800 dark:border-r-zinc-700" />
               </div>
             </div>
           )}
@@ -172,7 +172,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Mobile bottom tab bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-gray-200 flex items-center justify-around z-50 safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-around z-50 safe-area-bottom">
         {navItems.map((item) => {
           const isActive = viewMode === item.mode;
           const useAccent = isActive && sidebarAccent;
@@ -182,8 +182,8 @@ export default function Sidebar() {
               onClick={() => handleNavClick(item.mode)}
               className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
                 isActive
-                  ? useAccent ? '' : 'text-blue-600'
-                  : 'text-gray-400'
+                  ? useAccent ? '' : 'text-amber-600 dark:text-amber-400'
+                  : 'text-zinc-400 dark:text-zinc-500'
               }`}
               style={useAccent ? { color: accentColor } : undefined}
             >
@@ -202,7 +202,7 @@ export default function Sidebar() {
           className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
             editorMode === 'edit'
               ? 'text-amber-600'
-              : 'text-gray-400'
+              : 'text-zinc-400 dark:text-zinc-500'
           }`}
         >
           {editorMode === 'edit' || isFloorOwner
@@ -215,23 +215,23 @@ export default function Sidebar() {
       {/* Owner password modal */}
       {showPwModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999]" onClick={() => setShowPwModal(false)}>
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-gray-800 mb-1 flex items-center gap-2"><Lock className="w-5 h-5" strokeWidth={1.8} /> 管理者認証</h2>
-            <p className="text-sm text-gray-500 mb-4">フロアを編集するには管理者パスワードを入力してください</p>
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4 dark:border dark:border-zinc-700" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-1 flex items-center gap-2"><Lock className="w-5 h-5" strokeWidth={1.8} /> 管理者認証</h2>
+            <p className="text-sm text-zinc-500 mb-4">フロアを編集するには管理者パスワードを入力してください</p>
             <input
               type="password"
               value={ownerPw}
               onChange={e => { setOwnerPw(e.target.value); setPwError(''); }}
               onKeyDown={e => { if (e.key === 'Enter') handlePwSubmit(); }}
               placeholder="管理者パスワード"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent text-gray-800 placeholder-gray-400 mb-3"
+              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent text-zinc-800 dark:text-zinc-100 dark:bg-zinc-800 placeholder-zinc-400 mb-3"
               autoFocus
             />
             {pwError && <p className="text-red-500 text-xs mb-3">{pwError}</p>}
             <div className="flex gap-2">
               <button
                 onClick={() => setShowPwModal(false)}
-                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl text-sm transition-colors"
+                className="flex-1 py-2.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-medium rounded-xl text-sm transition-colors"
               >
                 キャンセル
               </button>

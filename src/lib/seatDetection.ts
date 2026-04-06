@@ -20,9 +20,9 @@ export function initSeatsFromElements(elements: readonly unknown[]) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const els = elements as any[];
 
-  // Detect rooms = large white rectangles
+  // Detect rooms = large white rectangles (exclude locked background elements)
   const rooms = els.filter((el) =>
-    el.type === 'rectangle' && !el.isDeleted &&
+    el.type === 'rectangle' && !el.isDeleted && !el.locked &&
     el.backgroundColor === '#ffffff' && el.width > 150 && el.height > 100
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ).sort((a: any, b: any) => {
@@ -132,10 +132,92 @@ export function initSeatsFromElements(elements: readonly unknown[]) {
     };
   });
 
-  // Unassigned chairs
+  // ── Group-based detection for unassigned chairs ──
+  // Chairs with groupIds that aren't inside any room → group into zones by groupId
   const unassigned = allChairs.filter((c) => !assignedChairs.has(c));
-  if (unassigned.length > 0) {
-    const sorted = sortChairs(unassigned);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const groupMap = new Map<string, any[]>();
+  const ungrouped: typeof unassigned = [];
+
+  for (const c of unassigned) {
+    const gid = c.groupIds?.[0];
+    if (gid) {
+      if (!groupMap.has(gid)) groupMap.set(gid, []);
+      groupMap.get(gid)!.push(c);
+    } else {
+      ungrouped.push(c);
+    }
+  }
+
+  // For each group, create a zone and infer type from co-grouped elements
+  for (const [gid, groupChairs] of groupMap) {
+    // Find all elements in this group (not just chairs) to infer zone type
+    const groupElements = els.filter((el) => !el.isDeleted && el.groupIds?.includes(gid));
+    const hasDesk = groupElements.some((el) => el.type === 'image' && DESK_FILE_IDS.has(el.fileId));
+    const hasSofa = groupElements.some((el) => el.type === 'image' && SOFA_FILE_IDS.has(el.fileId));
+    const hasTable = groupElements.some((el) => el.type === 'image' && TABLE_FILE_IDS.has(el.fileId));
+    const hasCoffee = groupElements.some((el) => el.type === 'image' && COFFEE_FILE_IDS.has(el.fileId));
+
+    let zoneType: 'desk' | 'meeting' | 'lounge' | 'cafe' | 'open' = 'open';
+    if (hasSofa) zoneType = 'lounge';
+    else if (hasCoffee && hasTable) zoneType = 'cafe';
+    else if (hasTable && !hasDesk) zoneType = 'meeting';
+    else if (hasDesk) zoneType = 'desk';
+
+    // Compute bounding box from all group elements
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const el of groupElements) {
+      minX = Math.min(minX, el.x || 0);
+      minY = Math.min(minY, el.y || 0);
+      maxX = Math.max(maxX, (el.x || 0) + (el.width || 0));
+      maxY = Math.max(maxY, (el.y || 0) + (el.height || 0));
+    }
+
+    const sorted = sortChairs(groupChairs);
+    const letter = ISLAND_LETTERS[zones.length % 26];
+    const zoneId = `zone-g-${gid}`;
+
+    // Check for existing zone name or rename
+    const renames = typeof sessionStorage !== 'undefined' ? JSON.parse(sessionStorage.getItem('ethereal-zone-renames') || '{}') : {};
+    const existingZone = existingZones.find(z => z.id === zoneId);
+
+    // Try to find a text element nearby for the zone name
+    const nearbyText = els.find((el) =>
+      el.type === 'text' && !el.isDeleted && el.groupIds?.includes(gid)
+    );
+    const detectedName = nearbyText?.text || `${letter}島`;
+    const finalName = renames[zoneId] || existingZone?.name || detectedName;
+
+    zones.push({
+      id: zoneId,
+      type: zoneType,
+      name: finalName,
+      x: minX, y: minY, w: maxX - minX, h: maxY - minY,
+      seats: sorted.map((c, i) => {
+        const cx = c.x + (c.width || 30) / 2;
+        const cy = c.y + (c.height || 30) / 2;
+        const key = `${Math.round(cx / 5) * 5},${Math.round(cy / 5) * 5}`;
+        const existing = existingSeatsMap.get(key);
+        const defaultLabel = `${letter}-${i + 1}`;
+        return {
+          id: existing?.id || defaultLabel,
+          roomId: zoneId,
+          x: cx,
+          y: cy,
+          w: c.width,
+          h: c.height,
+          label: existing?.label || defaultLabel,
+          occupied: existing?.occupied || false,
+          occupiedBy: existing?.occupiedBy,
+        };
+      }),
+    });
+  }
+
+  // Remaining ungrouped, unroomed chairs → zone-other
+  if (ungrouped.length > 0) {
+    const sorted = sortChairs(ungrouped);
     const letter = ISLAND_LETTERS[zones.length % 26];
     zones.push({
       id: 'zone-other',

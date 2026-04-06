@@ -54,15 +54,15 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   }, [a]);
 
   return (
-    <div className="border-b border-gray-100 last:border-b-0">
+    <div className="border-b border-zinc-200 dark:border-zinc-700 last:border-b-0">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between py-5 text-left group"
       >
-        <span className="text-base font-medium text-gray-800 group-hover:text-sky-600 transition-colors duration-300 pr-4">
+        <span className="text-base font-medium text-text-primary group-hover:text-accent transition-colors duration-300 pr-4">
           {q}
         </span>
-        <span className={`flex-shrink-0 w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center text-sky-500 transition-all duration-400 ease-out ${open ? 'rotate-45 bg-sky-100' : ''}`}>
+        <span className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-accent transition-all duration-400 ease-out ${open ? 'rotate-45 bg-amber-50 dark:bg-amber-500/10' : 'bg-amber-50 dark:bg-amber-500/10'}`}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
@@ -73,7 +73,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
         style={{ maxHeight: open ? height + 20 : 0 }}
         className="overflow-hidden transition-all duration-400 ease-out"
       >
-        <p className={`text-sm text-gray-500 leading-relaxed pb-5 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}>{a}</p>
+        <p className={`text-sm text-text-secondary leading-relaxed pb-5 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}>{a}</p>
       </div>
     </div>
   );
@@ -83,24 +83,26 @@ export default function FAQSection() {
   const ref = useScrollReveal<HTMLElement>();
 
   return (
-    <section ref={ref} className="scroll-reveal relative py-16 sm:py-24 px-4 bg-gray-50/50">
+    <section ref={ref} className="scroll-reveal relative py-16 sm:py-24 px-4 bg-background">
       <div className="max-w-3xl mx-auto">
         {/* Section header */}
         <div className="text-center mb-12">
-          <p className="text-sky-500 font-semibold text-sm tracking-wider uppercase mb-3">FAQ</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <p className="text-accent font-semibold text-sm tracking-wider uppercase mb-3">FAQ</p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-text-primary mb-4">
             よくある質問
           </h2>
-          <p className="text-gray-500 max-w-xl mx-auto">
+          <p className="text-text-secondary max-w-xl mx-auto">
             SmartOfficeについて、よくいただく質問をまとめました。
           </p>
         </div>
 
-        {/* FAQ list */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
-          {faqs.map((faq, i) => (
-            <FAQItem key={i} q={faq.q} a={faq.a} />
-          ))}
+        {/* FAQ list — BezelCard pattern */}
+        <div className="rounded-2xl p-[1px] bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50">
+          <div className="rounded-[14px] bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-700/30 p-6 sm:p-8">
+            {faqs.map((faq, i) => (
+              <FAQItem key={i} q={faq.q} a={faq.a} />
+            ))}
+          </div>
         </div>
       </div>
     </section>

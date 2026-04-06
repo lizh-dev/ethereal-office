@@ -28,6 +28,8 @@ import { WebSocketProvider } from '@/contexts/WebSocketContext';
 
 const SpaceWizard = dynamic(() => import('@/components/editor/SpaceWizard'), { ssr: false });
 const TemplatePicker = dynamic(() => import('@/components/editor/TemplatePicker'), { ssr: false });
+const BackgroundPicker = dynamic(() => import('@/components/editor/BackgroundPicker'), { ssr: false });
+const FloorPlanDesigner = dynamic(() => import('@/components/editor/FloorPlanDesigner'), { ssr: false });
 import SetupGuide from '@/components/editor/SetupGuide';
 
 interface FloorData {
@@ -44,6 +46,8 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
   const { editorMode, showAvatarSelector, currentUser, currentSeatId, viewMode, kickedNotification, activeDMUserId } = useOfficeStore();
   const [showSpaceWizard, setShowSpaceWizard] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
+  const [showFloorPlanDesigner, setShowFloorPlanDesigner] = useState(false);
   const [showSetupGuide, setShowSetupGuide] = useState(false);
   const [showEditHint, setShowEditHint] = useState(false);
   const [showActivityFeed, setShowActivityFeed] = useState(false);
@@ -256,26 +260,26 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-500">読み込み中...</div>
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+        <div className="text-zinc-500 dark:text-zinc-400">読み込み中...</div>
       </div>
     );
   }
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-white to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-zinc-900 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-800 p-8 text-center">
           <div className="text-5xl mb-4">🏢</div>
-          <h1 className="text-xl font-bold text-gray-800 mb-2">フロアが見つかりません</h1>
-          <p className="text-gray-500 text-sm mb-6">このURLのフロアは存在しないか、削除されました。</p>
+          <h1 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-2">フロアが見つかりません</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-6">このURLのフロアは存在しないか、削除されました。</p>
           <a
             href="/"
-            className="block w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors text-sm"
+            className="block w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-xl transition-colors text-sm"
           >
             新しいフロアを作成する
           </a>
-          <a href="/" className="block mt-3 text-sm text-gray-400 hover:text-gray-600">
+          <a href="/" className="block mt-3 text-sm text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300">
             トップに戻る
           </a>
         </div>
@@ -292,7 +296,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
 
   return (
     <WebSocketProvider value={{ send, connected }}>
-      <div className="floor-page flex h-screen overflow-hidden bg-white">
+      <div className="floor-page flex h-screen overflow-hidden bg-white dark:bg-zinc-950">
         <Sidebar />
         {/* Edit button hint tooltip */}
         {showEditHint && (
@@ -330,7 +334,7 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
             {viewMode === 'floor' && (
               <>
                 <FloorCanvas floorSlug={slug} savedScene={floorData?.excalidrawScene} />
-                {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} onApplyTemplate={() => setShowTemplatePicker(true)} floorSlug={slug} />}
+                {editorMode === 'edit' && <EditorPanel onAddSpace={() => setShowSpaceWizard(true)} onApplyTemplate={() => setShowTemplatePicker(true)} onChangeBackground={() => setShowBackgroundPicker(true)} onCreateFloorPlan={() => setShowFloorPlanDesigner(true)} floorSlug={slug} />}
                 {/* Activity Feed Panel */}
                 {showActivityFeed && editorMode !== 'edit' && (
                   <div style={{
@@ -373,6 +377,8 @@ export default function FloorPage({ params }: { params: Promise<{ slug: string }
         {showAvatarSelector && <AvatarSelector />}
         {showSpaceWizard && <SpaceWizard onClose={() => setShowSpaceWizard(false)} />}
         {showTemplatePicker && <TemplatePicker onClose={() => setShowTemplatePicker(false)} />}
+        {showBackgroundPicker && <BackgroundPicker onClose={() => setShowBackgroundPicker(false)} onOpenFloorPlanDesigner={() => setShowFloorPlanDesigner(true)} />}
+        {showFloorPlanDesigner && <FloorPlanDesigner onClose={() => setShowFloorPlanDesigner(false)} />}
         <NotificationToast />
         {activeDMUserId && <DMPanel />}
         <VoiceManager />

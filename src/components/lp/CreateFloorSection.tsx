@@ -211,17 +211,18 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
     <section
       id="create"
       ref={setRefs}
-      className="scroll-reveal relative py-16 sm:py-24 px-4"
+      className="scroll-reveal relative py-16 sm:py-24 px-4 bg-zinc-50 dark:bg-zinc-950"
     >
       <div className="max-w-xl mx-auto">
         {/* Section header */}
         <div className="text-center mb-10">
-          <p className="text-sky-500 font-semibold text-sm tracking-wider uppercase mb-3">Get Started</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            今すぐ
-            <span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text text-transparent">始めよう</span>
+          <p className="text-accent font-semibold text-sm tracking-wider uppercase mb-3">Get Started</p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
+            今すぐ、チームの
+            <span className="text-accent">オフィス</span>
+            を作ろう
           </h2>
-          <p className="text-gray-500">
+          <p className="text-zinc-500">
             わずか30秒でバーチャルオフィスを作成できます
           </p>
         </div>
@@ -230,205 +231,209 @@ const CreateFloorSection = forwardRef<HTMLElement>(function CreateFloorSection(_
         <div className="text-center mb-6">
           <button
             onClick={() => setShowScanner(true)}
-            className="px-5 py-2.5 bg-sky-50 border border-sky-200 rounded-xl text-sm font-medium text-sky-600 hover:bg-sky-100 transition-all duration-300"
+            className="px-5 py-2.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all duration-300"
           >
             📁 QRコード画像で入室
           </button>
         </div>
 
-        {/* Creation form */}
-        <div className="relative rounded-2xl border border-gray-200 bg-white p-8 shadow-xl shadow-sky-50/50">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">新しいフロアを作成</h3>
+        {/* Creation form — BezelCard dark pattern */}
+        <div className="rounded-2xl p-[1px] bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50">
+          <div className="rounded-[14px] bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-700/30 p-8">
+            <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-6">新しいフロアを作成</h3>
 
-          <div className="space-y-5">
-            {/* Owner email with verification */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                メールアドレス <span className="text-red-400">*</span>
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  value={ownerEmail}
-                  onChange={(e) => { setOwnerEmail(e.target.value); setEmailVerified(false); setCodeSent(false); }}
-                  placeholder="you@example.com"
-                  disabled={emailVerified}
-                  className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300 disabled:opacity-60"
-                />
-                {!emailVerified && !codeSent && (
-                  <button
-                    onClick={handleSendCode}
-                    disabled={sendingCode || !ownerEmail.includes('@')}
-                    className="px-4 py-3 bg-sky-500 hover:bg-sky-400 disabled:bg-gray-300 text-white text-sm font-medium rounded-xl transition-all whitespace-nowrap"
-                  >
-                    {sendingCode ? '送信中...' : '認証'}
-                  </button>
-                )}
-                {emailVerified && (
-                  <span className="flex items-center px-4 py-3 bg-emerald-50 text-emerald-600 text-sm font-medium rounded-xl border border-emerald-200">
-                    認証済み
-                  </span>
-                )}
-              </div>
-              {codeSent && !emailVerified && (
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="text"
-                    value={verifyCode}
-                    onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    onKeyDown={(e) => e.key === 'Enter' && handleVerifyCode()}
-                    placeholder="6桁の認証コード"
-                    maxLength={6}
-                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300 tracking-widest text-center text-lg"
-                  />
-                  <button
-                    onClick={handleVerifyCode}
-                    disabled={verifying || verifyCode.length !== 6}
-                    className="px-4 py-3 bg-sky-500 hover:bg-sky-400 disabled:bg-gray-300 text-white text-sm font-medium rounded-xl transition-all whitespace-nowrap"
-                  >
-                    {verifying ? '確認中...' : '確認'}
-                  </button>
-                </div>
-              )}
-              {codeSent && !emailVerified && (
-                <p className="text-[11px] text-gray-400 mt-1">メールに届いた6桁のコードを入力してください。
-                  <button onClick={handleSendCode} className="text-sky-500 hover:underline ml-1">再送信</button>
-                </p>
-              )}
-              <p className="text-[10px] text-gray-400 mt-1">フロア管理・Proプラン購入に使用します</p>
-            </div>
-
-            {/* Floor name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                フロア名 <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={floorName}
-                onChange={(e) => setFloorName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                placeholder="例: 開発チームのオフィス"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300"
-              />
-            </div>
-
-            {/* Custom slug — Pro only */}
-            {isPro && (
+            <div className="space-y-5">
+              {/* Owner email with verification */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  カスタムID（Pro限定）
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  メールアドレス <span className="text-red-400">*</span>
                 </label>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-400 flex-shrink-0">/f/</span>
+                <div className="flex gap-2">
                   <input
-                    type="text"
-                    value={customSlug}
-                    onChange={(e) => handleSlugChange(e.target.value)}
-                    placeholder="my-team（空欄ならランダム）"
-                    maxLength={30}
-                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300 font-mono"
+                    type="email"
+                    value={ownerEmail}
+                    onChange={(e) => { setOwnerEmail(e.target.value); setEmailVerified(false); setCodeSent(false); }}
+                    placeholder="you@example.com"
+                    disabled={emailVerified}
+                    className="flex-1 px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50 transition-all duration-300 disabled:opacity-60"
                   />
-                  {slugStatus === 'checking' && <span className="text-xs text-gray-400">確認中...</span>}
-                  {slugStatus === 'available' && <span className="text-xs text-emerald-500 font-medium">使用可能</span>}
-                  {slugStatus === 'taken' && <span className="text-xs text-red-500 font-medium">使用中</span>}
-                  {slugStatus === 'invalid' && <span className="text-xs text-amber-500 font-medium">3文字以上</span>}
+                  {!emailVerified && !codeSent && (
+                    <button
+                      onClick={handleSendCode}
+                      disabled={sendingCode || !ownerEmail.includes('@')}
+                      className="px-4 py-3 bg-accent hover:bg-accent-hover disabled:bg-zinc-200 dark:disabled:bg-zinc-700 disabled:text-zinc-400 dark:disabled:text-zinc-500 text-zinc-950 text-sm font-medium rounded-xl transition-all whitespace-nowrap"
+                    >
+                      {sendingCode ? '送信中...' : '認証'}
+                    </button>
+                  )}
+                  {emailVerified && (
+                    <span className="flex items-center px-4 py-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-sm font-medium rounded-xl border border-emerald-200 dark:border-emerald-700/30">
+                      認証済み
+                    </span>
+                  )}
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1">英数字・ハイフン・アンダースコア（3〜30文字）</p>
+                {codeSent && !emailVerified && (
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="text"
+                      value={verifyCode}
+                      onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      onKeyDown={(e) => e.key === 'Enter' && handleVerifyCode()}
+                      placeholder="6桁の認証コード"
+                      maxLength={6}
+                      className="flex-1 px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50 transition-all duration-300 tracking-widest text-center text-lg"
+                    />
+                    <button
+                      onClick={handleVerifyCode}
+                      disabled={verifying || verifyCode.length !== 6}
+                      className="px-4 py-3 bg-accent hover:bg-accent-hover disabled:bg-zinc-200 dark:disabled:bg-zinc-700 disabled:text-zinc-400 dark:disabled:text-zinc-500 text-zinc-950 text-sm font-medium rounded-xl transition-all whitespace-nowrap"
+                    >
+                      {verifying ? '確認中...' : '確認'}
+                    </button>
+                  </div>
+                )}
+                {codeSent && !emailVerified && (
+                  <p className="text-[11px] text-zinc-500 mt-1">メールに届いた6桁のコードを入力してください。
+                    <button onClick={handleSendCode} className="text-accent hover:underline ml-1">再送信</button>
+                  </p>
+                )}
+                <p className="text-[10px] text-zinc-500 mt-1">フロア管理・Proプラン購入に使用します</p>
               </div>
-            )}
 
-            {/* Creator name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                あなたの名前（任意）
-              </label>
-              <input
-                type="text"
-                value={creatorName}
-                onChange={(e) => setCreatorName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                placeholder="例: 田中太郎"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300"
-              />
+              {/* Floor name */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  フロア名 <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={floorName}
+                  onChange={(e) => setFloorName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                  placeholder="例: 開発チームのオフィス"
+                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50 transition-all duration-300"
+                />
+              </div>
+
+              {/* Custom slug — Pro only */}
+              {isPro && (
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    カスタムID（Pro限定）
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-zinc-500 flex-shrink-0">/f/</span>
+                    <input
+                      type="text"
+                      value={customSlug}
+                      onChange={(e) => handleSlugChange(e.target.value)}
+                      placeholder="my-team（空欄ならランダム）"
+                      maxLength={30}
+                      className="flex-1 px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50 transition-all duration-300 font-mono"
+                    />
+                    {slugStatus === 'checking' && <span className="text-xs text-zinc-500">確認中...</span>}
+                    {slugStatus === 'available' && <span className="text-xs text-emerald-400 font-medium">使用可能</span>}
+                    {slugStatus === 'taken' && <span className="text-xs text-red-400 font-medium">使用中</span>}
+                    {slugStatus === 'invalid' && <span className="text-xs text-amber-400 font-medium">3文字以上</span>}
+                  </div>
+                  <p className="text-[10px] text-zinc-500 mt-1">英数字・ハイフン・アンダースコア（3〜30文字）</p>
+                </div>
+              )}
+
+              {/* Creator name */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  あなたの名前（任意）
+                </label>
+                <input
+                  type="text"
+                  value={creatorName}
+                  onChange={(e) => setCreatorName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                  placeholder="例: 田中太郎"
+                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50 transition-all duration-300"
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  パスワード（任意）
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                  placeholder="設定すると、入室時にパスワードの入力が必要になります"
+                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50 transition-all duration-300"
+                />
+              </div>
+
+              {/* Owner password */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  管理者パスワード（任意）
+                </label>
+                <input
+                  type="password"
+                  value={ownerPassword}
+                  onChange={(e) => setOwnerPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                  placeholder="フロアの編集やメンバーの退室操作に必要です"
+                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50 transition-all duration-300"
+                />
+                <p className="text-[10px] text-zinc-500 mt-1">どの端末からでもこのパスワードで管理者としてログインできます</p>
+              </div>
+
+              {/* Error */}
+              {error && (
+                <p className="text-red-400 text-sm">{error}</p>
+              )}
+
+              {/* Submit button */}
+              <button
+                onClick={handleCreate}
+                disabled={creating}
+                className="w-full py-3.5 bg-accent hover:bg-accent-hover disabled:bg-amber-600/50 disabled:text-zinc-950/50 text-zinc-950 font-semibold rounded-xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(245,158,11,0.2)] hover:scale-[1.02]"
+              >
+                {creating ? '作成中...' : 'フロアを作成'}
+              </button>
             </div>
 
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                パスワード（任意）
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                placeholder="設定すると、入室時にパスワードの入力が必要になります"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300"
-              />
-            </div>
-
-            {/* Owner password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                管理者パスワード（任意）
-              </label>
-              <input
-                type="password"
-                value={ownerPassword}
-                onChange={(e) => setOwnerPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                placeholder="フロアの編集やメンバーの退室操作に必要です"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-transparent transition-all duration-300"
-              />
-              <p className="text-[10px] text-gray-400 mt-1">どの端末からでもこのパスワードで管理者としてログインできます</p>
-            </div>
-
-            {/* Error */}
-            {error && (
-              <p className="text-red-500 text-sm">{error}</p>
-            )}
-
-            {/* Submit button */}
-            <button
-              onClick={handleCreate}
-              disabled={creating}
-              className="w-full py-3.5 bg-sky-500 hover:bg-sky-400 disabled:bg-sky-300 disabled:text-white/70 text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(14,165,233,0.25)] hover:scale-[1.02]"
-            >
-              {creating ? '作成中...' : 'フロアを作成'}
-            </button>
+            <p className="text-center text-zinc-500 text-sm mt-4">
+              作成後、URLを共有するだけでどなたでも参加いただけます
+            </p>
           </div>
-
-          <p className="text-center text-gray-400 text-sm mt-4">
-            作成後、URLを共有するだけでどなたでも参加いただけます
-          </p>
         </div>
 
         {/* Visit history */}
         {visitHistory.length > 0 && (
-          <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-500 mb-3">最近のフロア</h3>
-            <div className="space-y-2">
-              {visitHistory.slice(0, 5).map((entry) => {
-                const date = new Date(entry.visitedAt);
-                const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
-                return (
-                  <button
-                    key={entry.slug}
-                    onClick={() => router.push(`/f/${entry.slug}`)}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-sky-50 rounded-xl transition-all duration-300 text-left group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">🏢</span>
-                      <div>
-                        <div className="text-sm font-medium text-gray-700 group-hover:text-sky-600 transition-colors duration-300">{entry.name}</div>
-                        <div className="text-[10px] text-gray-400">{timeStr}</div>
+          <div className="mt-8 rounded-2xl p-[1px] bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50">
+            <div className="rounded-[14px] bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-700/30 p-6">
+              <h3 className="text-sm font-semibold text-zinc-500 mb-3">最近のフロア</h3>
+              <div className="space-y-2">
+                {visitHistory.slice(0, 5).map((entry) => {
+                  const date = new Date(entry.visitedAt);
+                  const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+                  return (
+                    <button
+                      key={entry.slug}
+                      onClick={() => router.push(`/f/${entry.slug}`)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700/50 rounded-xl transition-all duration-300 text-left group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">🏢</span>
+                        <div>
+                          <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300 group-hover:text-accent transition-colors duration-300">{entry.name}</div>
+                          <div className="text-[10px] text-zinc-500">{timeStr}</div>
+                        </div>
                       </div>
-                    </div>
-                    <span className="text-gray-300 group-hover:text-sky-500 text-sm transition-colors duration-300">→</span>
-                  </button>
-                );
-              })}
+                      <span className="text-zinc-600 group-hover:text-accent text-sm transition-colors duration-300">→</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

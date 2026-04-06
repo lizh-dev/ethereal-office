@@ -7,7 +7,7 @@ import { THEMES, type FurnitureTheme } from '@/lib/furnitureAssets';
 import { useRef, useState } from 'react';
 
 
-export default function EditorPanel({ onAddSpace, onApplyTemplate, floorSlug }: { onAddSpace?: () => void; onApplyTemplate?: () => void; floorSlug?: string }) {
+export default function EditorPanel({ onAddSpace, onApplyTemplate, onChangeBackground, onCreateFloorPlan, floorSlug }: { onAddSpace?: () => void; onApplyTemplate?: () => void; onChangeBackground?: () => void; onCreateFloorPlan?: () => void; floorSlug?: string }) {
   const canUseTemplates = useOfficeStore((s) => s.planPermissions.floorTemplates);
   const canUsePremiumThemes = useOfficeStore((s) => s.planPermissions.premiumThemes);
   const furnitureTheme = useOfficeStore((s) => s.furnitureTheme);
@@ -174,7 +174,7 @@ export default function EditorPanel({ onAddSpace, onApplyTemplate, floorSlug }: 
             onClick={onAddSpace}
             className="mt-2 w-full py-2.5 bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5"
           >
-            <span className="text-base">+</span> スペースを追加
+            <span className="text-base">+</span> 家具セットを配置
           </button>
         )}
         {onApplyTemplate && canUseTemplates && (
@@ -183,6 +183,22 @@ export default function EditorPanel({ onAddSpace, onApplyTemplate, floorSlug }: 
             className="mt-2 w-full py-2.5 bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5"
           >
             &#x1F4CB; テンプレートを適用
+          </button>
+        )}
+        {onChangeBackground && (
+          <button
+            onClick={onChangeBackground}
+            className="mt-2 w-full py-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-xs font-semibold rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-1.5"
+          >
+            &#x1F5BC; 背景を変更
+          </button>
+        )}
+        {onCreateFloorPlan && (
+          <button
+            onClick={onCreateFloorPlan}
+            className="mt-2 w-full py-2.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors flex items-center justify-center gap-1.5 border border-amber-200 dark:border-amber-800"
+          >
+            &#x1F3D7; フロアプランを作成
           </button>
         )}
         <div className="flex gap-2 mt-2">

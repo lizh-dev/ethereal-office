@@ -85,10 +85,10 @@ export default function ActionBar() {
       <div className="fixed bottom-[62px] md:bottom-3 left-1/2 -translate-x-1/2 z-[70]" onClick={e => e.stopPropagation()}>
         {/* Stamp palette — floats above */}
         {showStamps && (
-          <div className="flex gap-0.5 justify-center mb-2 px-2 py-1.5 bg-white rounded-2xl shadow-lg border border-gray-100">
+          <div className="flex gap-0.5 justify-center mb-2 px-2 py-1.5 bg-white/90 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700/50">
             {STAMPS.map(emoji => (
               <button key={emoji} onClick={() => handleReaction(emoji)}
-                className="w-9 h-9 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 hover:scale-110 transition-all"
+                className="w-9 h-9 rounded-lg flex items-center justify-center text-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:scale-110 transition-all"
               >{emoji}</button>
             ))}
           </div>
@@ -96,7 +96,7 @@ export default function ActionBar() {
 
         {/* Meeting create popover — floats above */}
         {showCreateDialog && (
-          <div className="flex flex-col gap-2 items-center mb-2 px-3 py-2.5 bg-white rounded-2xl shadow-lg border border-gray-100">
+          <div className="flex flex-col gap-2 items-center mb-2 px-3 py-2.5 bg-white/90 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700/50">
             <div className="flex items-center gap-2 w-full">
               <input
                 type="text"
@@ -105,13 +105,13 @@ export default function ActionBar() {
                 onKeyDown={e => e.key === 'Enter' && handleStartMeeting()}
                 placeholder="ミーティング名（任意）"
                 autoFocus
-                className="w-[160px] px-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-sky-300"
+                className="w-[160px] px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs outline-none focus:border-amber-500/50 dark:bg-zinc-800 dark:text-zinc-100"
               />
               <button onClick={handleStartMeeting}
-                className="px-3 py-1.5 rounded-lg bg-sky-500 text-white text-xs font-semibold hover:bg-sky-400 transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-semibold hover:opacity-90 transition-colors"
               >開始</button>
               <button onClick={() => { setShowCreateDialog(false); setMeetingPassword(''); }}
-                className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+                className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 text-xs">✕</button>
             </div>
             <div className="flex items-center gap-2 w-full">
               <input
@@ -120,9 +120,9 @@ export default function ActionBar() {
                 onChange={e => setMeetingPassword(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleStartMeeting()}
                 placeholder="パスワード（任意）"
-                className="w-[160px] px-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-sky-300"
+                className="w-[160px] px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs outline-none focus:border-amber-500/50 dark:bg-zinc-800 dark:text-zinc-100"
               />
-              <span className="text-[10px] text-gray-400">空欄なら公開</span>
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-500">空欄なら公開</span>
             </div>
             {canPerParticipantBoard && (
               <label className="flex items-start gap-2 w-full cursor-pointer">
@@ -133,8 +133,8 @@ export default function ActionBar() {
                   className="mt-0.5 rounded"
                 />
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-700">個別ボードモード</span>
-                  <span className="text-[10px] text-gray-400">参加者ごとに個別のボードを配布</span>
+                  <span className="text-xs text-zinc-700 dark:text-zinc-300">個別ボードモード</span>
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500">参加者ごとに個別のボードを配布</span>
                 </div>
               </label>
             )}
@@ -142,14 +142,13 @@ export default function ActionBar() {
         )}
 
         {/* Main bar */}
-        <div className="flex items-center gap-1 px-1.5 py-1 bg-white rounded-2xl shadow-lg border border-gray-200/80"
-          style={{ backdropFilter: 'blur(12px)' }}>
+        <div className="flex items-center gap-1 px-1.5 py-1 bg-white/90 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700/50">
 
           {/* New meeting button — always available */}
           {canVoiceCall && (
             <button
               onClick={(e) => { e.stopPropagation(); setShowCreateDialog(v => !v); }}
-              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
               title="ミーティングを開始"
             >
               <Video className="w-4 h-4" strokeWidth={1.8} />
@@ -173,7 +172,7 @@ export default function ActionBar() {
                 const boardUrl = `/board/${floorSlug}-board?name=${encodeURIComponent(currentUser.name)}&floor=${encodeURIComponent(floorSlug)}&avatar=${encodeURIComponent(currentUser.avatarSeed || '')}&style=${encodeURIComponent(currentUser.avatarStyle || 'notionists')}`;
                 window.open(boardUrl, '_blank');
               }}
-              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
               title="ホワイトボード（別タブ）"
             >
               <PenTool className="w-4 h-4" strokeWidth={1.8} />
@@ -183,7 +182,7 @@ export default function ActionBar() {
           {/* Stamp button */}
           <button onClick={() => setShowStamps(v => !v)}
             className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-              showStamps ? 'text-indigo-500 bg-indigo-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+              showStamps ? 'text-accent bg-amber-50 dark:bg-amber-900/30' : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800'
             }`}
             title="スタンプ">
             <Smile className="w-4 h-4" strokeWidth={1.8} />

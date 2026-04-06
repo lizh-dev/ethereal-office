@@ -7,6 +7,8 @@ import { useOfficeStore } from '@/store/officeStore';
 import { getFurnitureLibrary } from './furnitureLibrary';
 import { preloadFurnitureFiles, generateIsometricDemoFloor, type FurnitureTheme } from '@/lib/furnitureAssets';
 import { initSeatsFromElements } from '@/lib/seatDetection';
+import { useTheme } from '@/hooks/useTheme';
+import { FLOOR_BACKGROUNDS, loadBackgroundFile, BG_ELEMENT_ID } from '@/lib/backgroundAssets';
 
 const DEBOUNCE_MS = 2000;
 
@@ -92,6 +94,7 @@ interface ExcalidrawEditorProps {
 
 export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedScene }: ExcalidrawEditorProps) {
   const setExcalidrawAPI = useOfficeStore((s) => s.setExcalidrawAPI);
+  const { isDark } = useTheme();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const apiRef = useRef<any>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -142,7 +145,7 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
             );
             return {
               elements: allConverted,
-              appState: { viewBackgroundColor: '#f0f9ff', gridSize: 20 },
+              appState: { viewBackgroundColor: isDark ? '#1a1a2e' : '#f0f9ff', gridSize: 20 },
               scrollToContent: true,
               files: furnitureFiles || {},
             };
@@ -153,7 +156,7 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
 
         // Normal saved scene — pass through as-is (already converted from DB)
         const cleanElements = scene.elements.filter((el: { type: string }) => el.type !== '__isometric_marker__');
-        const baseAppState = scene.appState ?? { viewBackgroundColor: '#f5f5f5', gridSize: 20 };
+        const baseAppState = scene.appState ?? { viewBackgroundColor: isDark ? '#18181b' : '#f5f5f5', gridSize: 20 };
         // Clear selection to prevent all-selected state in view mode
         baseAppState.selectedElementIds = {};
         baseAppState.selectedGroupIds = {};
@@ -173,8 +176,8 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
       }
     }
     // No saved scene at all — shouldn't happen, but fallback to empty
-    return { elements: [], appState: { viewBackgroundColor: '#f5f5f5', gridSize: 20 }, scrollToContent: true };
-  }, [savedScene, furnitureFiles]);
+    return { elements: [], appState: { viewBackgroundColor: isDark ? '#18181b' : '#f5f5f5', gridSize: 20 }, scrollToContent: true };
+  }, [savedScene, furnitureFiles, isDark]);
 
   const handleAPI = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -193,6 +196,20 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         preloadFurnitureFiles(currentTheme).then(files => {
           api.addFiles(Object.values(files));
         }).catch(console.error);
+      }
+
+      // Register background image file if scene contains a background element
+      const sceneElements = api.getSceneElements();
+      const bgElement = sceneElements.find((el: { id: string; type: string; fileId?: string }) =>
+        el.id === BG_ELEMENT_ID || (el.type === 'image' && el.fileId?.startsWith('bg-'))
+      );
+      if (bgElement) {
+        const bgDef = FLOOR_BACKGROUNDS.find(b => b.id === bgElement.fileId);
+        if (bgDef) {
+          loadBackgroundFile(bgDef).then(file => {
+            api.addFiles([file]);
+          }).catch(console.error);
+        }
       }
 
       // Initialize seats and auto-save isometric template on first load
@@ -276,7 +293,7 @@ export default function ExcalidrawEditor({ viewMode = false, floorSlug, savedSce
         excalidrawAPI={handleAPI}
         initialData={initialData}
         gridModeEnabled={!viewMode}
-        theme="light"
+        theme={isDark ? "dark" : "light"}
         langCode="ja-JP"
         viewModeEnabled={viewMode}
         onChange={handleChange}

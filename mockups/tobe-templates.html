@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TO-BE: テンプレート100種 — 切口と量産戦略</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+    /* Mini floor plan rendering */
+    .floor-preview {
+      position: relative;
+      background: #f8fafc;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .floor-preview.dark-floor { background: #1e1e2e; }
+    .floor-preview.warm-floor { background: #faf5ef; }
+    .floor-preview.green-floor { background: #f0fdf4; }
+    .floor-preview.cyber-floor { background: #0f0f1a; }
+    .floor-preview.pixel-floor { image-rendering: pixelated; background: #2d2d3f; }
+
+    .room {
+      position: absolute;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+      background: white;
+    }
+    .room-label {
+      position: absolute;
+      font-size: 5px;
+      color: #94a3b8;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .desk {
+      position: absolute;
+      width: 14px;
+      height: 8px;
+      background: #e8e3dd;
+      border-radius: 1px;
+      border: 0.5px solid #d5d0ca;
+    }
+    .chair {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background: #9ca3af;
+      border-radius: 50%;
+      border: 0.5px solid #78716c;
+    }
+    .table-round {
+      position: absolute;
+      background: #ddd8d2;
+      border-radius: 50%;
+      border: 0.5px solid #ccc7c0;
+    }
+    .table-rect {
+      position: absolute;
+      background: #ddd8d2;
+      border-radius: 2px;
+      border: 0.5px solid #ccc7c0;
+    }
+    .sofa {
+      position: absolute;
+      background: #c4bab0;
+      border-radius: 2px;
+      border: 0.5px solid #a8a29e;
+    }
+    .plant {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: #86ceab;
+      border-radius: 50%;
+      border: 0.5px solid #5ead88;
+    }
+    .monitor {
+      position: absolute;
+      width: 6px;
+      height: 2px;
+      background: #818cf8;
+      border-radius: 0.5px;
+    }
+    .partition {
+      position: absolute;
+      height: 2px;
+      background: #94a3b8;
+      border-radius: 1px;
+    }
+    .whiteboard {
+      position: absolute;
+      background: #e0f2fe;
+      border: 0.5px solid #bae6fd;
+      border-radius: 1px;
+    }
+    .rug {
+      position: absolute;
+      background: #fef3c7;
+      border-radius: 3px;
+      opacity: 0.5;
+    }
+    .coffee {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background: #92400e;
+      border-radius: 1px;
+    }
+
+    /* Theme overrides */
+    .theme-japanese .room { background: #faf7f2; border-color: #d4c5a9; }
+    .theme-japanese .desk { background: #c8b88a; border-color: #a89868; }
+    .theme-japanese .plant { background: #6b8e5a; }
+    .theme-japanese .rug { background: #c8b88a; opacity: 0.3; }
+
+    .theme-cyber .room { background: rgba(30,30,50,0.8); border-color: #7c3aed; }
+    .theme-cyber .desk { background: #1e1b4b; border-color: #7c3aed; }
+    .theme-cyber .chair { background: #a78bfa; border-color: #7c3aed; }
+    .theme-cyber .monitor { background: #22d3ee; }
+    .theme-cyber .plant { background: #4ade80; }
+
+    .theme-nature .room { background: #fefce8; border-color: #bef264; }
+    .theme-nature .desk { background: #a16207; border-color: #854d0e; }
+    .theme-nature .chair { background: #65a30d; border-color: #4d7c0f; }
+    .theme-nature .plant { background: #22c55e; }
+
+    .theme-cafe .room { background: #fffbeb; border-color: #f59e0b; }
+    .theme-cafe .desk { background: #92400e; border-color: #78350f; }
+    .theme-cafe .table-round { background: #b45309; }
+    .theme-cafe .sofa { background: #dc2626; border-color: #b91c1c; }
+    .theme-cafe .coffee { background: #451a03; }
+
+    .theme-pixel .room { background: rgba(60,60,90,0.6); border-color: #6366f1; border-width: 2px; border-radius: 0; }
+    .theme-pixel .desk { background: #4f46e5; border-radius: 0; border-color: #3730a3; }
+    .theme-pixel .chair { background: #f472b6; border-radius: 0; border-color: #ec4899; }
+    .theme-pixel .table-round { border-radius: 0; background: #8b5cf6; }
+    .theme-pixel .monitor { background: #34d399; border-radius: 0; }
+
+    .theme-modern .room { background: rgba(255,255,255,0.9); border-color: #d1d5db; }
+    .theme-modern .desk { background: #f3f4f6; border-color: #d1d5db; }
+    .theme-modern .chair { background: #1f2937; border-color: #111827; }
+    .theme-modern .table-round { background: #e5e7eb; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+    .category-tab.active { background: #f59e0b; color: #0a0a0a; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+
+<!-- ========== HEADER ========== -->
+<div class="sticky top-0 z-50 bg-zinc-950/90 backdrop-blur-xl border-b border-zinc-800 px-6 py-4">
+  <h1 class="text-xl font-bold">TO-BE: テンプレートギャラリー構想</h1>
+  <p class="text-sm text-zinc-500 mt-1">100種テンプレートの「切口」と量産戦略のビジュアル認識合わせ</p>
+</div>
+
+<!-- ========== SECTION 1: 切口の整理 ========== -->
+<section class="px-6 py-12 border-b border-zinc-800">
+  <h2 class="text-2xl font-bold mb-2">1. テンプレートの3軸</h2>
+  <p class="text-zinc-400 mb-8">100種を量産するための3つの切口。これらの掛け合わせでバリエーションを生む。</p>
+
+  <div class="grid md:grid-cols-3 gap-6">
+    <!-- 軸1: レイアウト型 -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center mb-4">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-amber-400"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <h3 class="text-lg font-bold mb-3">軸1: レイアウト型</h3>
+      <p class="text-sm text-zinc-400 mb-4">間取り・配置パターン</p>
+      <div class="space-y-2 text-sm">
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span>オープンプラン (大部屋)</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span>個室中心 (仕切り多め)</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span>ハイブリッド (部屋+オープン)</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span>会議室特化</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span>教室型 (向き揃え)</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span>島型 (チーム単位クラスタ)</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span>コの字型 / L字型</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span>フリーアドレス (ランダム)</div>
+      </div>
+    </div>
+
+    <!-- 軸2: 用途・業種 -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-emerald-400"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <h3 class="text-lg font-bold mb-3">軸2: 用途・業種</h3>
+      <p class="text-sm text-zinc-400 mb-4">誰がどう使うか</p>
+      <div class="space-y-2 text-sm">
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>スタートアップ (3-10人)</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>企業オフィス (部門別)</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>教育・塾 (教室+個別)</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>エンジニア (ペアプロ/スクラム)</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>デザインスタジオ</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>コワーキング</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>カスタマーサポート</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>イベント・セミナー</div>
+      </div>
+    </div>
+
+    <!-- 軸3: ビジュアルスタイル -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <div class="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center mb-4">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-violet-400"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      </div>
+      <h3 class="text-lg font-bold mb-3">軸3: ビジュアルスタイル</h3>
+      <p class="text-sm text-zinc-400 mb-4">見た目のテーマ</p>
+      <div class="space-y-2 text-sm">
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-zinc-400"></span>スタンダード (Free)</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-violet-400"></span>モダン・ミニマル</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-violet-400"></span>和室・畳</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-violet-400"></span>サイバーパンク・ネオン</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-violet-400"></span>ナチュラル・木製</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-violet-400"></span>カフェ風</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-violet-400"></span>ドット絵・ピクセル (New!)</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-violet-400"></span>ダーク (New!)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 量産の数式 -->
+  <div class="mt-8 bg-zinc-800/50 border border-zinc-700 rounded-2xl p-6 text-center">
+    <p class="text-lg font-bold text-amber-400 mb-2">量産方程式</p>
+    <p class="text-2xl font-bold">
+      <span class="text-amber-400">8 レイアウト</span>
+      <span class="text-zinc-500 mx-2">x</span>
+      <span class="text-emerald-400">8 用途</span>
+      <span class="text-zinc-500 mx-2">x</span>
+      <span class="text-violet-400">8 スタイル</span>
+      <span class="text-zinc-500 mx-2">=</span>
+      <span class="text-zinc-100">512通り</span>
+      <span class="text-zinc-500 mx-2">→ 厳選</span>
+      <span class="text-amber-400">100種</span>
+    </p>
+    <p class="text-sm text-zinc-500 mt-2">全組合せではなく、実用的な組合せを厳選。同じレイアウトでもスタイル違いで別テンプレートに。</p>
+  </div>
+</section>
+
+<!-- ========== SECTION 2: スタイルバリエーション比較 ========== -->
+<section class="px-6 py-12 border-b border-zinc-800">
+  <h2 class="text-2xl font-bold mb-2">2. 同じ間取り x スタイル違い</h2>
+  <p class="text-zinc-400 mb-8">「スタンダード 4人チーム」のレイアウトを各テーマで描画した場合の比較。家具アセットの差し替えだけで別テンプレートになる。</p>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <!-- Standard -->
+    <div class="group">
+      <div class="floor-preview h-40 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50">
+        <div class="room" style="left:8px;top:8px;width:55%;height:75%;">
+          <span class="room-label" style="left:3px;top:2px;">ワークスペース</span>
+          <div class="desk" style="left:8px;top:18px;"></div><div class="monitor" style="left:12px;top:16px;"></div><div class="chair" style="left:12px;top:28px;"></div>
+          <div class="desk" style="left:30px;top:18px;"></div><div class="monitor" style="left:34px;top:16px;"></div><div class="chair" style="left:34px;top:28px;"></div>
+          <div class="desk" style="left:8px;top:48px;"></div><div class="monitor" style="left:12px;top:46px;"></div><div class="chair" style="left:12px;top:58px;"></div>
+          <div class="desk" style="left:30px;top:48px;"></div><div class="monitor" style="left:34px;top:46px;"></div><div class="chair" style="left:34px;top:58px;"></div>
+          <div class="plant" style="right:3px;bottom:3px;"></div>
+        </div>
+        <div class="room" style="right:8px;top:8px;width:30%;height:40%;">
+          <span class="room-label" style="left:3px;top:2px;">会議室</span>
+          <div class="table-round" style="left:50%;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;"></div>
+          <div class="chair" style="left:8px;top:14px;"></div><div class="chair" style="right:8px;top:14px;"></div>
+          <div class="chair" style="left:8px;bottom:8px;"></div><div class="chair" style="right:8px;bottom:8px;"></div>
+        </div>
+        <div class="room" style="right:8px;bottom:8px;width:30%;height:33%;">
+          <span class="room-label" style="left:3px;top:2px;">休憩</span>
+          <div class="sofa" style="left:5px;top:15px;width:20px;height:8px;"></div>
+          <div class="sofa" style="left:5px;bottom:5px;width:20px;height:8px;"></div>
+          <div class="plant" style="right:4px;bottom:4px;"></div>
+        </div>
+      </div>
+      <div class="text-sm font-semibold">スタンダード</div>
+      <div class="text-xs text-zinc-500">Free</div>
+    </div>
+
+    <!-- Modern -->
+    <div class="group">
+      <div class="floor-preview theme-modern h-40 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50" style="background:#f9fafb;">
+        <div class="room" style="left:8px;top:8px;width:55%;height:75%;">
+          <span class="room-label" style="left:3px;top:2px;">ワークスペース</span>
+          <div class="desk" style="left:8px;top:18px;"></div><div class="monitor" style="left:12px;top:16px;"></div><div class="chair" style="left:12px;top:28px;"></div>
+          <div class="desk" style="left:30px;top:18px;"></div><div class="monitor" style="left:34px;top:16px;"></div><div class="chair" style="left:34px;top:28px;"></div>
+          <div class="desk" style="left:8px;top:48px;"></div><div class="monitor" style="left:12px;top:46px;"></div><div class="chair" style="left:12px;top:58px;"></div>
+          <div class="desk" style="left:30px;top:48px;"></div><div class="monitor" style="left:34px;top:46px;"></div><div class="chair" style="left:34px;top:58px;"></div>
+        </div>
+        <div class="room" style="right:8px;top:8px;width:30%;height:40%;">
+          <span class="room-label" style="left:3px;top:2px;">会議室</span>
+          <div class="table-round" style="left:50%;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;"></div>
+          <div class="chair" style="left:8px;top:14px;"></div><div class="chair" style="right:8px;top:14px;"></div>
+          <div class="chair" style="left:8px;bottom:8px;"></div><div class="chair" style="right:8px;bottom:8px;"></div>
+        </div>
+        <div class="room" style="right:8px;bottom:8px;width:30%;height:33%;">
+          <span class="room-label" style="left:3px;top:2px;">休憩</span>
+          <div class="sofa" style="left:5px;top:15px;width:20px;height:8px;background:#374151;border-color:#1f2937;"></div>
+        </div>
+      </div>
+      <div class="text-sm font-semibold">モダン</div>
+      <div class="text-xs text-amber-400">Pro</div>
+    </div>
+
+    <!-- Japanese -->
+    <div class="group">
+      <div class="floor-preview theme-japanese h-40 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50" style="background:#faf5ef;">
+        <div class="room" style="left:8px;top:8px;width:55%;height:75%;">
+          <span class="room-label" style="left:3px;top:2px;color:#92400e;">座敷</span>
+          <div class="rug" style="left:5px;top:15px;width:80%;height:65%;background:#c8b88a;opacity:0.2;border-radius:0;"></div>
+          <div class="desk" style="left:12px;top:22px;width:12px;height:12px;border-radius:0;"></div><div class="chair" style="left:14px;top:36px;background:#7c6640;border-color:#5c4d30;"></div>
+          <div class="desk" style="left:30px;top:22px;width:12px;height:12px;border-radius:0;"></div><div class="chair" style="left:32px;top:36px;background:#7c6640;border-color:#5c4d30;"></div>
+          <div class="desk" style="left:12px;top:50px;width:12px;height:12px;border-radius:0;"></div><div class="chair" style="left:14px;top:64px;background:#7c6640;border-color:#5c4d30;"></div>
+          <div class="desk" style="left:30px;top:50px;width:12px;height:12px;border-radius:0;"></div><div class="chair" style="left:32px;top:64px;background:#7c6640;border-color:#5c4d30;"></div>
+          <div class="plant" style="right:4px;bottom:4px;background:#6b8e5a;"></div>
+        </div>
+        <div class="room" style="right:8px;top:8px;width:30%;height:40%;">
+          <span class="room-label" style="left:3px;top:2px;color:#92400e;">茶室</span>
+          <div class="table-round" style="left:50%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;background:#a16207;"></div>
+          <div class="chair" style="left:8px;top:14px;background:#7c6640;"></div><div class="chair" style="right:8px;top:14px;background:#7c6640;"></div>
+        </div>
+        <div class="room" style="right:8px;bottom:8px;width:30%;height:33%;">
+          <span class="room-label" style="left:3px;top:2px;color:#92400e;">庭</span>
+          <div class="plant" style="left:8px;top:15px;background:#6b8e5a;"></div>
+          <div class="plant" style="left:22px;top:20px;background:#4d7c0f;width:8px;height:8px;"></div>
+          <div class="plant" style="right:8px;bottom:8px;background:#6b8e5a;"></div>
+        </div>
+      </div>
+      <div class="text-sm font-semibold">和室</div>
+      <div class="text-xs text-amber-400">Pro</div>
+    </div>
+
+    <!-- Cyberpunk -->
+    <div class="group">
+      <div class="floor-preview theme-cyber h-40 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50" style="background:#0f0f1a;">
+        <div class="room" style="left:8px;top:8px;width:55%;height:75%;">
+          <span class="room-label" style="left:3px;top:2px;color:#a78bfa;">LAB-01</span>
+          <div class="desk" style="left:8px;top:18px;"></div><div class="monitor" style="left:12px;top:16px;"></div><div class="chair" style="left:12px;top:28px;"></div>
+          <div class="desk" style="left:30px;top:18px;"></div><div class="monitor" style="left:34px;top:16px;"></div><div class="chair" style="left:34px;top:28px;"></div>
+          <div class="desk" style="left:8px;top:48px;"></div><div class="monitor" style="left:12px;top:46px;"></div><div class="chair" style="left:12px;top:58px;"></div>
+          <div class="desk" style="left:30px;top:48px;"></div><div class="monitor" style="left:34px;top:46px;"></div><div class="chair" style="left:34px;top:58px;"></div>
+        </div>
+        <div class="room" style="right:8px;top:8px;width:30%;height:40%;">
+          <span class="room-label" style="left:3px;top:2px;color:#22d3ee;">DECK</span>
+          <div class="table-round" style="left:50%;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;background:#7c3aed;"></div>
+          <div class="chair" style="left:8px;top:14px;"></div><div class="chair" style="right:8px;top:14px;"></div>
+        </div>
+        <div class="room" style="right:8px;bottom:8px;width:30%;height:33%;">
+          <span class="room-label" style="left:3px;top:2px;color:#4ade80;">CHILL</span>
+          <div class="sofa" style="left:5px;top:15px;width:20px;height:8px;background:#4c1d95;border-color:#7c3aed;"></div>
+          <div class="plant" style="right:4px;bottom:4px;"></div>
+        </div>
+      </div>
+      <div class="text-sm font-semibold">サイバーパンク</div>
+      <div class="text-xs text-amber-400">Pro</div>
+    </div>
+
+    <!-- Nature -->
+    <div class="group">
+      <div class="floor-preview theme-nature h-40 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50" style="background:#f0fdf4;">
+        <div class="room" style="left:8px;top:8px;width:55%;height:75%;">
+          <span class="room-label" style="left:3px;top:2px;color:#4d7c0f;">森のデスク</span>
+          <div class="desk" style="left:8px;top:18px;"></div><div class="chair" style="left:12px;top:28px;"></div>
+          <div class="desk" style="left:30px;top:18px;"></div><div class="chair" style="left:34px;top:28px;"></div>
+          <div class="plant" style="left:52px;top:20px;width:8px;height:8px;"></div>
+          <div class="desk" style="left:8px;top:48px;"></div><div class="chair" style="left:12px;top:58px;"></div>
+          <div class="desk" style="left:30px;top:48px;"></div><div class="chair" style="left:34px;top:58px;"></div>
+          <div class="plant" style="right:3px;top:20px;"></div>
+          <div class="plant" style="right:3px;bottom:3px;"></div>
+        </div>
+        <div class="room" style="right:8px;top:8px;width:30%;height:85%;">
+          <span class="room-label" style="left:3px;top:2px;color:#4d7c0f;">ガーデン</span>
+          <div class="plant" style="left:6px;top:15px;width:8px;height:8px;"></div>
+          <div class="plant" style="right:6px;top:15px;"></div>
+          <div class="table-round" style="left:50%;top:35%;transform:translate(-50%,-50%);width:16px;height:16px;background:#92400e;"></div>
+          <div class="chair" style="left:8px;top:35%;"></div><div class="chair" style="right:8px;top:35%;"></div>
+          <div class="plant" style="left:6px;bottom:25px;width:8px;height:8px;"></div>
+          <div class="plant" style="right:6px;bottom:25px;"></div>
+          <div class="plant" style="left:50%;bottom:8px;transform:translateX(-50%);width:10px;height:10px;"></div>
+        </div>
+      </div>
+      <div class="text-sm font-semibold">ナチュラル</div>
+      <div class="text-xs text-amber-400">Pro</div>
+    </div>
+
+    <!-- Cafe -->
+    <div class="group">
+      <div class="floor-preview theme-cafe h-40 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50" style="background:#fffbeb;">
+        <div class="room" style="left:8px;top:8px;width:60%;height:80%;">
+          <span class="room-label" style="left:3px;top:2px;color:#92400e;">ホール</span>
+          <div class="table-round" style="left:10px;top:18px;width:14px;height:14px;"></div>
+          <div class="chair" style="left:6px;top:34px;background:#92400e;"></div><div class="chair" style="left:20px;top:34px;background:#92400e;"></div>
+          <div class="table-round" style="left:38px;top:18px;width:14px;height:14px;"></div>
+          <div class="chair" style="left:34px;top:34px;background:#92400e;"></div><div class="chair" style="left:48px;top:34px;background:#92400e;"></div>
+          <div class="sofa" style="left:8px;bottom:12px;width:35px;height:8px;"></div>
+          <div class="table-rect" style="left:8px;bottom:22px;width:35px;height:8px;background:#b45309;"></div>
+          <div class="plant" style="right:4px;bottom:4px;background:#6b8e5a;"></div>
+        </div>
+        <div class="room" style="right:8px;top:8px;width:25%;height:35%;">
+          <span class="room-label" style="left:3px;top:2px;color:#92400e;">BAR</span>
+          <div class="coffee" style="left:50%;top:50%;transform:translate(-50%,-50%);"></div>
+        </div>
+        <div class="room" style="right:8px;bottom:8px;width:25%;height:40%;">
+          <span class="room-label" style="left:3px;top:2px;color:#92400e;">VIP</span>
+          <div class="sofa" style="left:5px;top:15px;width:20px;height:8px;"></div>
+          <div class="table-round" style="left:50%;bottom:12px;transform:translateX(-50%);width:14px;height:14px;"></div>
+        </div>
+      </div>
+      <div class="text-sm font-semibold">カフェ風</div>
+      <div class="text-xs text-amber-400">Pro</div>
+    </div>
+
+    <!-- Pixel Art -->
+    <div class="group">
+      <div class="floor-preview theme-pixel h-40 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50" style="background:#1a1a2e;image-rendering:pixelated;">
+        <div class="room" style="left:8px;top:8px;width:55%;height:75%;">
+          <span class="room-label" style="left:3px;top:2px;color:#a78bfa;">STAGE-1</span>
+          <div class="desk" style="left:8px;top:18px;"></div><div class="monitor" style="left:12px;top:16px;"></div><div class="chair" style="left:12px;top:28px;"></div>
+          <div class="desk" style="left:30px;top:18px;"></div><div class="monitor" style="left:34px;top:16px;"></div><div class="chair" style="left:34px;top:28px;"></div>
+          <div class="desk" style="left:8px;top:48px;"></div><div class="monitor" style="left:12px;top:46px;"></div><div class="chair" style="left:12px;top:58px;"></div>
+          <div class="desk" style="left:30px;top:48px;"></div><div class="monitor" style="left:34px;top:46px;"></div><div class="chair" style="left:34px;top:58px;"></div>
+        </div>
+        <div class="room" style="right:8px;top:8px;width:30%;height:40%;">
+          <span class="room-label" style="left:3px;top:2px;color:#f472b6;">BOSS</span>
+          <div class="table-round" style="left:50%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;"></div>
+          <div class="chair" style="left:8px;top:14px;"></div><div class="chair" style="right:8px;top:14px;"></div>
+        </div>
+        <div class="room" style="right:8px;bottom:8px;width:30%;height:33%;">
+          <span class="room-label" style="left:3px;top:2px;color:#34d399;">SAVE</span>
+          <div class="sofa" style="left:5px;top:15px;width:20px;height:8px;background:#4c1d95;border-radius:0;"></div>
+        </div>
+      </div>
+      <div class="text-sm font-semibold">ドット絵</div>
+      <div class="text-xs text-amber-400">Pro (New!)</div>
+    </div>
+
+    <!-- Dark -->
+    <div class="group">
+      <div class="floor-preview h-40 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50" style="background:#18181b;">
+        <div class="room" style="left:8px;top:8px;width:55%;height:75%;background:rgba(39,39,42,0.8);border-color:#3f3f46;">
+          <span class="room-label" style="left:3px;top:2px;color:#71717a;">ワークスペース</span>
+          <div class="desk" style="left:8px;top:18px;background:#27272a;border-color:#3f3f46;"></div><div class="monitor" style="left:12px;top:16px;background:#f59e0b;"></div><div class="chair" style="left:12px;top:28px;background:#52525b;border-color:#3f3f46;"></div>
+          <div class="desk" style="left:30px;top:18px;background:#27272a;border-color:#3f3f46;"></div><div class="monitor" style="left:34px;top:16px;background:#f59e0b;"></div><div class="chair" style="left:34px;top:28px;background:#52525b;border-color:#3f3f46;"></div>
+          <div class="desk" style="left:8px;top:48px;background:#27272a;border-color:#3f3f46;"></div><div class="monitor" style="left:12px;top:46px;background:#f59e0b;"></div><div class="chair" style="left:12px;top:58px;background:#52525b;border-color:#3f3f46;"></div>
+          <div class="desk" style="left:30px;top:48px;background:#27272a;border-color:#3f3f46;"></div><div class="monitor" style="left:34px;top:46px;background:#f59e0b;"></div><div class="chair" style="left:34px;top:58px;background:#52525b;border-color:#3f3f46;"></div>
+        </div>
+        <div class="room" style="right:8px;top:8px;width:30%;height:40%;background:rgba(39,39,42,0.8);border-color:#3f3f46;">
+          <span class="room-label" style="left:3px;top:2px;color:#71717a;">会議室</span>
+          <div class="table-round" style="left:50%;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;background:#3f3f46;border-color:#52525b;"></div>
+          <div class="chair" style="left:8px;top:14px;background:#52525b;border-color:#3f3f46;"></div>
+          <div class="chair" style="right:8px;top:14px;background:#52525b;border-color:#3f3f46;"></div>
+        </div>
+        <div class="room" style="right:8px;bottom:8px;width:30%;height:33%;background:rgba(39,39,42,0.8);border-color:#3f3f46;">
+          <span class="room-label" style="left:3px;top:2px;color:#71717a;">休憩</span>
+          <div class="sofa" style="left:5px;top:15px;width:20px;height:8px;background:#3f3f46;border-color:#52525b;"></div>
+          <div class="plant" style="right:4px;bottom:4px;background:#4ade80;"></div>
+        </div>
+      </div>
+      <div class="text-sm font-semibold">ダーク</div>
+      <div class="text-xs text-amber-400">Pro (New!)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SECTION 3: レイアウト型バリエーション ========== -->
+<section class="px-6 py-12 border-b border-zinc-800">
+  <h2 class="text-2xl font-bold mb-2">3. レイアウト型バリエーション (同じスタイルで)</h2>
+  <p class="text-zinc-400 mb-8">スタンダードテーマで間取りだけ変えた例。規模 x 配置パターンで量産。</p>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+
+    <!-- 1人ミニマル -->
+    <div class="group">
+      <div class="floor-preview h-32 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50">
+        <div class="room" style="left:15%;top:10%;width:70%;height:80%;">
+          <span class="room-label" style="left:3px;top:2px;">マイデスク</span>
+          <div class="desk" style="left:50%;top:30%;transform:translateX(-50%);"></div>
+          <div class="monitor" style="left:50%;top:28%;transform:translateX(-50%);"></div>
+          <div class="chair" style="left:50%;top:50%;transform:translateX(-50%);"></div>
+          <div class="plant" style="right:5px;bottom:5px;"></div>
+        </div>
+      </div>
+      <div class="text-xs font-semibold">1人ミニマル</div>
+      <div class="text-[10px] text-zinc-500">1席</div>
+    </div>
+
+    <!-- 2人向かい合わせ -->
+    <div class="group">
+      <div class="floor-preview h-32 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50">
+        <div class="room" style="left:10%;top:10%;width:80%;height:80%;">
+          <span class="room-label" style="left:3px;top:2px;">ペアデスク</span>
+          <div class="desk" style="left:30%;top:25%;"></div><div class="chair" style="left:36%;top:15%;"></div>
+          <div class="desk" style="left:30%;top:50%;"></div><div class="chair" style="left:36%;top:62%;"></div>
+          <div class="plant" style="right:5px;top:5px;"></div>
+          <div class="plant" style="right:5px;bottom:5px;"></div>
+        </div>
+      </div>
+      <div class="text-xs font-semibold">ペアプロ向き</div>
+      <div class="text-[10px] text-zinc-500">2席</div>
+    </div>
+
+    <!-- チーム島型 -->
+    <div class="group">
+      <div class="floor-preview h-32 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50">
+        <div class="room" style="left:5%;top:5%;width:55%;height:90%;">
+          <span class="room-label" style="left:3px;top:2px;">チームA</span>
+          <div class="desk" style="left:5px;top:15px;"></div><div class="chair" style="left:9px;top:25px;"></div>
+          <div class="desk" style="left:22px;top:15px;"></div><div class="chair" style="left:26px;top:25px;"></div>
+          <div class="desk" style="left:5px;top:40px;"></div><div class="chair" style="left:9px;top:50px;"></div>
+          <div class="desk" style="left:22px;top:40px;"></div><div class="chair" style="left:26px;top:50px;"></div>
+        </div>
+        <div class="room" style="right:5%;top:5%;width:33%;height:43%;">
+          <span class="room-label" style="left:3px;top:2px;">チームB</span>
+          <div class="desk" style="left:5px;top:15px;"></div><div class="chair" style="left:9px;top:25px;"></div>
+          <div class="desk" style="left:5px;top:40px;"></div><div class="chair" style="left:9px;top:50px;"></div>
+        </div>
+        <div class="room" style="right:5%;bottom:5%;width:33%;height:43%;">
+          <span class="room-label" style="left:3px;top:2px;">MTG</span>
+          <div class="table-round" style="left:50%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;"></div>
+          <div class="chair" style="left:5px;top:40%;"></div><div class="chair" style="right:5px;top:40%;"></div>
+        </div>
+      </div>
+      <div class="text-xs font-semibold">島型 (2チーム)</div>
+      <div class="text-[10px] text-zinc-500">6席</div>
+    </div>
+
+    <!-- 教室型 -->
+    <div class="group">
+      <div class="floor-preview h-32 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50">
+        <div class="room" style="left:5%;top:5%;width:90%;height:90%;">
+          <span class="room-label" style="left:3px;top:2px;">教室</span>
+          <div class="whiteboard" style="left:50%;top:8px;transform:translateX(-50%);width:50px;height:6px;"></div>
+          <div class="desk" style="left:10px;top:28px;width:12px;height:7px;"></div><div class="chair" style="left:13px;top:37px;"></div>
+          <div class="desk" style="left:26px;top:28px;width:12px;height:7px;"></div><div class="chair" style="left:29px;top:37px;"></div>
+          <div class="desk" style="left:42px;top:28px;width:12px;height:7px;"></div><div class="chair" style="left:45px;top:37px;"></div>
+          <div class="desk" style="left:58px;top:28px;width:12px;height:7px;"></div><div class="chair" style="left:61px;top:37px;"></div>
+          <div class="desk" style="left:10px;top:50px;width:12px;height:7px;"></div><div class="chair" style="left:13px;top:59px;"></div>
+          <div class="desk" style="left:26px;top:50px;width:12px;height:7px;"></div><div class="chair" style="left:29px;top:59px;"></div>
+          <div class="desk" style="left:42px;top:50px;width:12px;height:7px;"></div><div class="chair" style="left:45px;top:59px;"></div>
+          <div class="desk" style="left:58px;top:50px;width:12px;height:7px;"></div><div class="chair" style="left:61px;top:59px;"></div>
+          <div class="desk" style="left:10px;top:72px;width:12px;height:7px;"></div><div class="chair" style="left:13px;top:81px;"></div>
+          <div class="desk" style="left:26px;top:72px;width:12px;height:7px;"></div><div class="chair" style="left:29px;top:81px;"></div>
+          <div class="desk" style="left:42px;top:72px;width:12px;height:7px;"></div><div class="chair" style="left:45px;top:81px;"></div>
+          <div class="desk" style="left:58px;top:72px;width:12px;height:7px;"></div><div class="chair" style="left:61px;top:81px;"></div>
+        </div>
+      </div>
+      <div class="text-xs font-semibold">教室型</div>
+      <div class="text-[10px] text-zinc-500">12席</div>
+    </div>
+
+    <!-- コールセンター -->
+    <div class="group">
+      <div class="floor-preview h-32 p-2 border border-zinc-700 rounded-xl mb-2 transition-all group-hover:border-amber-500/50">
+        <div class="room" style="left:5%;top:5%;width:90%;height:90%;">
+          <span class="room-label" style="left:3px;top:2px;">コールセンター</span>
+          <div class="partition" style="left:5px;top:22px;width:85%;"></div>
+          <div class="desk" style="left:8px;top:12px;width:10px;height:7px;"></div><div class="chair" style="left:10px;top:25px;"></div>
+          <div class="desk" style="left:22px;top:12px;width:10px;height:7px;"></div><div class="chair" style="left:24px;top:25px;"></div>
+          <div class="desk" style="left:36px;top:12px;width:10px;height:7px;"></div><div class="chair" style="left:38px;top:25px;"></div>
+          <div class="desk" style="left:50px;top:12px;width:10px;height:7px;"></div><div class="chair" style="left:52px;top:25px;"></div>
+          <div class="desk" style="left:64px;top:12px;width:10px;height:7px;"></div><div class="chair" style="left:66px;top:25px;"></div>
+          <div class="partition" style="left:5px;top:48px;width:85%;"></div>
+          <div class="desk" style="left:8px;top:38px;width:10px;height:7px;"></div><div class="chair" style="left:10px;top:51px;"></div>
+          <div class="desk" style="left:22px;top:38px;width:10px;height:7px;"></div><div class="chair" style="left:24px;top:51px;"></div>
+          <div class="desk" style="left:36px;top:38px;width:10px;height:7px;"></div><div class="chair" style="left:38px;top:51px;"></div>
+          <div class="desk" style="left:50px;top:38px;width:10px;height:7px;"></div><div class="chair" style="left:52px;top:51px;"></div>
+          <div class="desk" style="left:64px;top:38px;width:10px;height:7px;"></div><div class="chair" style="left:66px;top:51px;"></div>
+          <div class="partition" style="left:5px;top:74px;width:85%;"></div>
+          <div class="desk" style="left:8px;top:64px;width:10px;height:7px;"></div><div class="chair" style="left:10px;top:77px;"></div>
+          <div class="desk" style="left:22px;top:64px;width:10px;height:7px;"></div><div class="chair" style="left:24px;top:77px;"></div>
+          <div class="desk" style="left:36px;top:64px;width:10px;height:7px;"></div><div class="chair" style="left:38px;top:77px;"></div>
+          <div class="desk" style="left:50px;top:64px;width:10px;height:7px;"></div><div class="chair" style="left:52px;top:77px;"></div>
+          <div class="desk" style="left:64px;top:64px;width:10px;height:7px;"></div><div class="chair" style="left:66px;top:77px;"></div>
+        </div>
+      </div>
+      <div class="text-xs font-semibold">コールセンター</div>
+      <div class="text-[10px] text-zinc-500">15席</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SECTION 4: ギャラリーUI モックアップ ========== -->
+<section class="px-6 py-12 border-b border-zinc-800">
+  <h2 class="text-2xl font-bold mb-2">4. テンプレートギャラリーUI (アプリ内)</h2>
+  <p class="text-zinc-400 mb-8">ユーザーがフロア作成時に見るテンプレート選択画面のイメージ。</p>
+
+  <div class="max-w-4xl mx-auto bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+    <!-- Gallery Header -->
+    <div class="px-6 py-4 border-b border-zinc-800">
+      <h3 class="font-bold text-lg mb-3">テンプレートを選択</h3>
+      <!-- Search -->
+      <div class="flex items-center gap-3 mb-4">
+        <input type="text" placeholder="テンプレートを検索..." class="flex-1 px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-amber-500/50">
+        <select class="px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-sm text-zinc-300 outline-none">
+          <option>全サイズ</option><option>1-5人</option><option>5-10人</option><option>10-20人</option><option>20人+</option>
+        </select>
+      </div>
+      <!-- Category tabs -->
+      <div class="flex gap-2 overflow-x-auto pb-1">
+        <button class="category-tab active px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all">すべて</button>
+        <button class="category-tab px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-all">スタートアップ</button>
+        <button class="category-tab px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-all">企業</button>
+        <button class="category-tab px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-all">教育</button>
+        <button class="category-tab px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-all">エンジニア</button>
+        <button class="category-tab px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-all">コワーキング</button>
+        <button class="category-tab px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-all">イベント</button>
+        <button class="category-tab px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-all">ミニマル</button>
+      </div>
+    </div>
+
+    <!-- Gallery Grid -->
+    <div class="p-4 grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto">
+      <!-- Template cards (simulated) -->
+      <div class="group cursor-pointer">
+        <div class="floor-preview h-28 p-2 border border-zinc-700 rounded-xl mb-1.5 transition-all group-hover:border-amber-500 group-hover:ring-1 group-hover:ring-amber-500/30">
+          <div class="room" style="left:6px;top:6px;width:55%;height:75%;"><div class="desk" style="left:5px;top:15px;"></div><div class="chair" style="left:9px;top:25px;"></div><div class="desk" style="left:22px;top:15px;"></div><div class="chair" style="left:26px;top:25px;"></div><div class="desk" style="left:5px;top:38px;"></div><div class="chair" style="left:9px;top:48px;"></div><div class="desk" style="left:22px;top:38px;"></div><div class="chair" style="left:26px;top:48px;"></div></div>
+          <div class="room" style="right:6px;top:6px;width:30%;height:42%;"><div class="table-round" style="left:50%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;"></div></div>
+          <div class="room" style="right:6px;bottom:6px;width:30%;height:30%;"><div class="sofa" style="left:5px;top:12px;width:18px;height:7px;"></div></div>
+        </div>
+        <div class="text-xs font-semibold truncate">スタンダード 4人</div>
+        <div class="text-[10px] text-zinc-500">スタートアップ / 4席</div>
+      </div>
+
+      <div class="group cursor-pointer">
+        <div class="floor-preview h-28 p-2 border-2 border-amber-500 rounded-xl mb-1.5 ring-1 ring-amber-500/30">
+          <div class="room" style="left:6px;top:6px;width:90%;height:42%;"><div class="desk" style="left:5px;top:12px;"></div><div class="chair" style="left:9px;top:22px;"></div><div class="desk" style="left:22px;top:12px;"></div><div class="chair" style="left:26px;top:22px;"></div><div class="desk" style="left:39px;top:12px;"></div><div class="chair" style="left:43px;top:22px;"></div><div class="desk" style="left:56px;top:12px;"></div><div class="chair" style="left:60px;top:22px;"></div></div>
+          <div class="room" style="left:6px;bottom:6px;width:42%;height:42%;"><div class="table-round" style="left:50%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;"></div><div class="chair" style="left:5px;top:12px;"></div><div class="chair" style="right:5px;top:12px;"></div><div class="chair" style="left:5px;bottom:5px;"></div><div class="chair" style="right:5px;bottom:5px;"></div></div>
+          <div class="room" style="right:6px;bottom:6px;width:42%;height:42%;"><div class="sofa" style="left:5px;top:10px;width:24px;height:7px;"></div><div class="sofa" style="left:5px;bottom:8px;width:24px;height:7px;"></div><div class="plant" style="right:4px;bottom:4px;"></div></div>
+        </div>
+        <div class="text-xs font-semibold truncate flex items-center gap-1">スモールチーム 8人 <span class="text-[9px] bg-amber-500 text-zinc-950 px-1 rounded">人気</span></div>
+        <div class="text-[10px] text-zinc-500">スタートアップ / 8席</div>
+      </div>
+
+      <div class="group cursor-pointer">
+        <div class="floor-preview theme-cyber h-28 p-2 border border-zinc-700 rounded-xl mb-1.5 transition-all group-hover:border-amber-500 group-hover:ring-1 group-hover:ring-amber-500/30" style="background:#0f0f1a;">
+          <div class="room" style="left:6px;top:6px;width:60%;height:85%;"><div class="desk" style="left:5px;top:15px;"></div><div class="chair" style="left:9px;top:25px;"></div><div class="desk" style="left:22px;top:15px;"></div><div class="chair" style="left:26px;top:25px;"></div><div class="desk" style="left:5px;top:38px;"></div><div class="chair" style="left:9px;top:48px;"></div><div class="desk" style="left:22px;top:38px;"></div><div class="chair" style="left:26px;top:48px;"></div><div class="desk" style="left:5px;top:60px;"></div><div class="chair" style="left:9px;top:70px;"></div><div class="desk" style="left:22px;top:60px;"></div><div class="chair" style="left:26px;top:70px;"></div></div>
+          <div class="room" style="right:6px;top:6px;width:28%;height:40%;"><div class="table-round" style="left:50%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;background:#7c3aed;"></div></div>
+          <div class="room" style="right:6px;bottom:6px;width:28%;height:40%;"></div>
+        </div>
+        <div class="text-xs font-semibold truncate flex items-center gap-1">サイバー開発室 <span class="text-[9px] bg-violet-500 text-white px-1 rounded">Pro</span></div>
+        <div class="text-[10px] text-zinc-500">エンジニア / 6席</div>
+      </div>
+
+      <div class="group cursor-pointer">
+        <div class="floor-preview theme-japanese h-28 p-2 border border-zinc-700 rounded-xl mb-1.5 transition-all group-hover:border-amber-500 group-hover:ring-1 group-hover:ring-amber-500/30" style="background:#faf5ef;">
+          <div class="room" style="left:6px;top:6px;width:90%;height:85%;"><div class="rug" style="left:3px;top:10px;width:90%;height:70%;background:#c8b88a;opacity:0.15;border-radius:0;"></div>
+          <div class="whiteboard" style="left:50%;top:6px;transform:translateX(-50%);width:40px;height:5px;background:#d4c5a9;border-color:#c8b88a;"></div>
+          <div class="desk" style="left:8px;top:22px;width:10px;height:8px;background:#c8b88a;"></div><div class="chair" style="left:10px;top:32px;background:#7c6640;"></div>
+          <div class="desk" style="left:22px;top:22px;width:10px;height:8px;background:#c8b88a;"></div><div class="chair" style="left:24px;top:32px;background:#7c6640;"></div>
+          <div class="desk" style="left:36px;top:22px;width:10px;height:8px;background:#c8b88a;"></div><div class="chair" style="left:38px;top:32px;background:#7c6640;"></div>
+          <div class="desk" style="left:8px;top:48px;width:10px;height:8px;background:#c8b88a;"></div><div class="chair" style="left:10px;top:58px;background:#7c6640;"></div>
+          <div class="desk" style="left:22px;top:48px;width:10px;height:8px;background:#c8b88a;"></div><div class="chair" style="left:24px;top:58px;background:#7c6640;"></div>
+          <div class="desk" style="left:36px;top:48px;width:10px;height:8px;background:#c8b88a;"></div><div class="chair" style="left:38px;top:58px;background:#7c6640;"></div>
+          <div class="plant" style="right:8px;top:15px;background:#6b8e5a;width:7px;height:7px;"></div>
+          <div class="plant" style="right:8px;bottom:8px;background:#6b8e5a;width:7px;height:7px;"></div>
+          </div>
+        </div>
+        <div class="text-xs font-semibold truncate flex items-center gap-1">和室教室 <span class="text-[9px] bg-violet-500 text-white px-1 rounded">Pro</span></div>
+        <div class="text-[10px] text-zinc-500">教育 / 6席</div>
+      </div>
+
+      <div class="group cursor-pointer">
+        <div class="floor-preview h-28 p-2 border border-zinc-700 rounded-xl mb-1.5 transition-all group-hover:border-amber-500 group-hover:ring-1 group-hover:ring-amber-500/30 flex items-center justify-center">
+          <div class="text-center">
+            <div class="text-2xl mb-1">📝</div>
+            <div class="text-[10px] text-zinc-500">白紙から</div>
+          </div>
+        </div>
+        <div class="text-xs font-semibold truncate">空のフロア</div>
+        <div class="text-[10px] text-zinc-500">Free</div>
+      </div>
+
+      <div class="group cursor-pointer">
+        <div class="floor-preview h-28 p-2 border border-dashed border-zinc-600 rounded-xl mb-1.5 transition-all group-hover:border-amber-500 flex items-center justify-center">
+          <div class="text-center">
+            <div class="text-xl mb-1 text-zinc-600">+ 95種</div>
+            <div class="text-[10px] text-zinc-600">スクロールで表示</div>
+          </div>
+        </div>
+        <div class="text-xs font-semibold truncate text-zinc-600">...</div>
+      </div>
+    </div>
+
+    <!-- Apply button -->
+    <div class="px-6 py-4 border-t border-zinc-800 flex justify-between items-center">
+      <span class="text-sm text-zinc-500">100テンプレート中 6件表示</span>
+      <button class="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold text-sm rounded-xl transition-all">このテンプレートを使う</button>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SECTION 5: 量産アーキテクチャ ========== -->
+<section class="px-6 py-12">
+  <h2 class="text-2xl font-bold mb-2">5. 量産アーキテクチャ</h2>
+  <p class="text-zinc-400 mb-8">100テンプレートを効率的に作る仕組み。</p>
+
+  <div class="max-w-4xl mx-auto space-y-6">
+    <!-- Step 1 -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-8 h-8 rounded-full bg-amber-500 text-zinc-950 font-bold text-sm flex items-center justify-center">1</div>
+        <h3 class="font-bold">ゾーンジェネレーター (コード)</h3>
+      </div>
+      <p class="text-sm text-zinc-400 mb-3">SpaceWizardの生成ロジックを抽出。各ゾーンタイプの生成関数:</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+        <div class="bg-zinc-800 rounded-lg px-3 py-2 text-zinc-300">generateDeskArea()</div>
+        <div class="bg-zinc-800 rounded-lg px-3 py-2 text-zinc-300">generateMeetingRoom()</div>
+        <div class="bg-zinc-800 rounded-lg px-3 py-2 text-zinc-300">generateLounge()</div>
+        <div class="bg-zinc-800 rounded-lg px-3 py-2 text-zinc-300">generateCafe()</div>
+        <div class="bg-zinc-800 rounded-lg px-3 py-2 text-amber-400">generateClassroom()</div>
+        <div class="bg-zinc-800 rounded-lg px-3 py-2 text-amber-400">generateCallCenter()</div>
+        <div class="bg-zinc-800 rounded-lg px-3 py-2 text-amber-400">generateReception()</div>
+        <div class="bg-zinc-800 rounded-lg px-3 py-2 text-amber-400">generateLibrary()</div>
+      </div>
+      <p class="text-[10px] text-zinc-500 mt-2">白: 既存 / 黄: 新規追加</p>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-8 h-8 rounded-full bg-amber-500 text-zinc-950 font-bold text-sm flex items-center justify-center">2</div>
+        <h3 class="font-bold">テンプレート定義 (JSONデータ)</h3>
+      </div>
+      <p class="text-sm text-zinc-400 mb-3">各テンプレートは「ゾーンの組合せ」で定義。コードを書かずにデータで量産:</p>
+      <pre class="bg-zinc-800 rounded-xl p-4 text-xs text-zinc-300 overflow-x-auto"><code>{
+  id: "startup-4",
+  name: "スタートアップ 4人",
+  category: "startup",
+  teamSize: "small",
+  theme: "standard",       // ← スタイル軸
+  zones: [
+    { type: "desk-area", rows: 2, cols: 2, x: 50, y: 50 },
+    { type: "meeting", seats: 4, x: 300, y: 50 },
+    { type: "lounge", x: 300, y: 250 },
+  ]
+}
+// 同じレイアウトをテーマ違いで複製:
+{ ...startup4, id: "startup-4-cyber", theme: "cyberpunk" }
+{ ...startup4, id: "startup-4-jp",    theme: "japanese" }</code></pre>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-8 h-8 rounded-full bg-amber-500 text-zinc-950 font-bold text-sm flex items-center justify-center">3</div>
+        <h3 class="font-bold">家具アセット (画像)</h3>
+      </div>
+      <p class="text-sm text-zinc-400 mb-3">テーマごとに同じ17種の家具PNGを差し替え。現在standardのみ実在:</p>
+      <div class="grid grid-cols-4 md:grid-cols-8 gap-2 text-[10px]">
+        <div class="bg-zinc-800 rounded px-2 py-1.5 text-center"><div class="text-emerald-400 mb-0.5">OK</div>standard</div>
+        <div class="bg-zinc-800 rounded px-2 py-1.5 text-center"><div class="text-red-400 mb-0.5">未</div>modern</div>
+        <div class="bg-zinc-800 rounded px-2 py-1.5 text-center"><div class="text-red-400 mb-0.5">未</div>japanese</div>
+        <div class="bg-zinc-800 rounded px-2 py-1.5 text-center"><div class="text-red-400 mb-0.5">未</div>cyberpunk</div>
+        <div class="bg-zinc-800 rounded px-2 py-1.5 text-center"><div class="text-red-400 mb-0.5">未</div>nature</div>
+        <div class="bg-zinc-800 rounded px-2 py-1.5 text-center"><div class="text-red-400 mb-0.5">未</div>cafe</div>
+        <div class="bg-zinc-800 rounded px-2 py-1.5 text-center"><div class="text-amber-400 mb-0.5">新</div>pixel</div>
+        <div class="bg-zinc-800 rounded px-2 py-1.5 text-center"><div class="text-amber-400 mb-0.5">新</div>dark</div>
+      </div>
+      <p class="text-sm text-zinc-400 mt-3">各テーマ x 17アセット = <span class="text-amber-400 font-bold">136枚のPNG生成が必要</span> (AIで生成)</p>
+    </div>
+
+    <!-- Formula -->
+    <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-6 text-center">
+      <p class="text-sm text-zinc-400 mb-2">最終的な量産フロー</p>
+      <p class="text-lg font-bold">
+        <span class="text-amber-400">8ゾーン関数</span> +
+        <span class="text-emerald-400">8テーマx17PNG</span> +
+        <span class="text-violet-400">JSONで100定義</span>
+      </p>
+      <p class="text-sm text-zinc-400 mt-2">→ ゾーン関数xテーマ画像の自動合成で、1テンプレートあたりの追加コスト≒0</p>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

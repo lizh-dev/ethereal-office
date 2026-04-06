@@ -36,32 +36,29 @@ export default function ScreenshotSection() {
   const ActiveIcon = tabs[active].Icon;
 
   return (
-    <section ref={ref} className="scroll-reveal relative py-20 sm:py-32 px-4 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-50/80 via-white to-gray-50/80 -z-10" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-sky-100/30 rounded-full blur-[120px] -z-10" />
-
+    <section ref={ref} className="scroll-reveal relative py-20 sm:py-32 px-4 overflow-hidden bg-background">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-14">
-          <p className="text-sky-500 font-semibold text-sm tracking-wider uppercase mb-3">Product</p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-            実際の<span className="bg-gradient-to-r from-sky-500 to-blue-500 bg-clip-text text-transparent">画面</span>を見てみよう
+          <p className="text-accent font-semibold text-sm tracking-wider uppercase mb-3">Product</p>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-text-primary mb-4">
+            実際の<span className="text-accent">画面</span>を見てみよう
           </h2>
-          <p className="text-gray-500 max-w-xl mx-auto text-lg">
+          <p className="text-text-secondary max-w-xl mx-auto text-lg">
             30秒で作成できるバーチャルオフィスの機能をご紹介します
           </p>
         </div>
 
         {/* Tab selector */}
         <div className="flex justify-center mb-12">
-          <div className="inline-flex items-center bg-gray-100 rounded-2xl p-1.5 gap-1">
+          <div className="inline-flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-2xl p-1.5 gap-1">
             {tabs.map((t, i) => (
               <button
                 key={t.id}
                 onClick={() => setActive(i)}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
                   active === i
-                    ? 'bg-white text-gray-900 shadow-md'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-accent text-zinc-950'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-text-secondary hover:bg-zinc-200 dark:hover:bg-zinc-700'
                 }`}
               >
                 <t.Icon className="w-4 h-4" strokeWidth={1.8} />
@@ -74,31 +71,31 @@ export default function ScreenshotSection() {
         {/* Content */}
         <div className="grid lg:grid-cols-5 gap-10 items-center">
           <div className="lg:col-span-2 order-2 lg:order-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-sky-50 rounded-full border border-sky-100 text-sky-600 text-xs font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-50 dark:bg-amber-500/10 rounded-full border border-amber-200 dark:border-amber-500/20 text-accent text-xs font-medium mb-4">
               <ActiveIcon className="w-3.5 h-3.5" strokeWidth={1.8} />
               {tabs[active].label}
             </div>
-            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 leading-tight">
+            <h3 className="text-2xl sm:text-3xl font-bold text-text-primary mb-4 leading-tight">
               {tabs[active].label}
             </h3>
-            <p className="text-gray-500 leading-relaxed mb-6 text-base">
+            <p className="text-text-secondary leading-relaxed mb-6 text-base">
               {tabs[active].description}
             </p>
 
             <ul className="space-y-3 mb-8">
               {tabs[active].highlights.map((h, i) => (
                 <li key={i} className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-sky-100 flex items-center justify-center shrink-0">
-                    <Check className="w-3 h-3 text-sky-500" strokeWidth={2.5} />
+                  <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 text-accent" strokeWidth={2.5} />
                   </div>
-                  <span className="text-sm text-gray-700">{h}</span>
+                  <span className="text-sm text-text-secondary">{h}</span>
                 </li>
               ))}
             </ul>
 
             <a
               href="#create"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-sky-500 hover:bg-sky-400 text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-sky-200 hover:scale-105"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent-hover text-zinc-950 font-medium rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105"
             >
               無料で試す
               <span>&rarr;</span>
@@ -107,20 +104,24 @@ export default function ScreenshotSection() {
 
           <div className="lg:col-span-3 order-1 lg:order-2">
             <div className="relative">
-              <div className="absolute -inset-6 bg-gradient-to-br from-sky-200/30 via-blue-100/20 to-indigo-200/30 rounded-3xl blur-2xl -z-10" />
-              {/* モバイル: スケール縮小で表示、デスクトップ: そのまま */}
-              <div className="relative w-full" style={{ aspectRatio: active === 0 ? '16/12' : '16/10' }}>
-                <div className="absolute inset-0 origin-top-left" style={{ width: '160%', transform: 'scale(0.625)' }}>
-                  <div className="lg:hidden">
-                    <div className={active === 0 ? 'block' : 'hidden'}><OfficeMockup /></div>
-                    <div className={active === 1 ? 'block' : 'hidden'}><ChatMockup /></div>
-                    <div className={active === 2 ? 'block' : 'hidden'}><MeetingMockup /></div>
+              {/* BezelCard pattern */}
+              <div className="rounded-2xl p-[1px] bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50">
+                <div className="rounded-[14px] bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-700/30 overflow-hidden">
+                  {/* モバイル: スケール縮小で表示、デスクトップ: そのまま */}
+                  <div className="relative w-full" style={{ aspectRatio: active === 0 ? '16/12' : '16/10' }}>
+                    <div className="absolute inset-0 origin-top-left" style={{ width: '160%', transform: 'scale(0.625)' }}>
+                      <div className="lg:hidden">
+                        <div className={active === 0 ? 'block' : 'hidden'}><OfficeMockup /></div>
+                        <div className={active === 1 ? 'block' : 'hidden'}><ChatMockup /></div>
+                        <div className={active === 2 ? 'block' : 'hidden'}><MeetingMockup /></div>
+                      </div>
+                    </div>
+                    <div className="hidden lg:block">
+                      <div className={active === 0 ? 'block' : 'hidden'}><OfficeMockup /></div>
+                      <div className={active === 1 ? 'block' : 'hidden'}><ChatMockup /></div>
+                      <div className={active === 2 ? 'block' : 'hidden'}><MeetingMockup /></div>
+                    </div>
                   </div>
-                </div>
-                <div className="hidden lg:block">
-                  <div className={active === 0 ? 'block' : 'hidden'}><OfficeMockup /></div>
-                  <div className={active === 1 ? 'block' : 'hidden'}><ChatMockup /></div>
-                  <div className={active === 2 ? 'block' : 'hidden'}><MeetingMockup /></div>
                 </div>
               </div>
             </div>

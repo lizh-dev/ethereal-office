@@ -1,12 +1,11 @@
 'use client';
 
 import { useRef } from 'react';
+import LandingNav from '@/components/lp/LandingNav';
 import HeroSection from '@/components/lp/HeroSection';
-import ProblemSection from '@/components/lp/ProblemSection';
+import SocialProofSection from '@/components/lp/SocialProofSection';
 import FeaturesSection from '@/components/lp/FeaturesSection';
-import ScreenshotSection from '@/components/lp/ScreenshotSection';
 import PricingSection from '@/components/lp/PricingSection';
-import StepsSection from '@/components/lp/StepsSection';
 import FAQSection from '@/components/lp/FAQSection';
 import CreateFloorSection from '@/components/lp/CreateFloorSection';
 import Footer from '@/components/lp/Footer';
@@ -23,15 +22,13 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="landing-page min-h-screen bg-white">
-      <div className="fixed inset-0 bg-gradient-to-b from-sky-50 via-white to-sky-50/30 -z-10" />
+    <div className="landing-page min-h-screen bg-background">
+      <LandingNav onCtaClick={scrollToCreate} />
 
       <HeroSection onCtaClick={scrollToCreate} />
-      <ProblemSection />
+      <SocialProofSection />
       <FeaturesSection />
-      <ScreenshotSection />
       <PricingSection />
-      <StepsSection />
       <CreateFloorSection ref={createRef} />
       <FAQSection />
       <Footer />
